@@ -77,13 +77,13 @@ export function ApplicationForm() {
     });
 
     function onSubmit(data: ApplicationSchema) {
-        sessionStorage.setItem('candidateName', `${data.firstName} ${data.lastName}`);
+        localStorage.setItem('candidateName', `${data.firstName} ${data.lastName}`);
         toast({
           title: "Application Submitted",
           description: "Candidate data has been saved successfully.",
         })
         console.log(data)
-        router.push('/dashboard')
+        router.push('/application/success')
     }
 
   return (

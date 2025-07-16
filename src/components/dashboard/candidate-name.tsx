@@ -6,7 +6,8 @@ export function CandidateName() {
   const [candidateName, setCandidateName] = useState<string | null>(null);
 
   useEffect(() => {
-    const name = sessionStorage.getItem("candidateName");
+    // Using localStorage to persist candidate name across sessions for prototype purposes
+    const name = localStorage.getItem("candidateName");
     if (name) {
       setCandidateName(name);
     }
