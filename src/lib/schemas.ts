@@ -133,3 +133,22 @@ export const applicationSchema = z.object({
 
 
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
+
+
+export const interviewReviewSchema = z.object({
+    applicantName: z.string().min(1, "Applicant name is required"),
+    date: z.date({ required_error: "Date is required." }),
+    daysAvailable: z.array(z.string()),
+    personality: z.enum(["friendly", "average", "quiet"]),
+    verbalSkills: z.enum(["excellent", "average", "poor"]),
+    communicates: z.enum(["clear", "somewhat clear", "not very clear"]),
+    flexibility: z.enum(["very flexible", "somewhat", "not flexible"]),
+    skillLevel: z.enum(["higher skilled", "moderately skilled", "lower skilled"]),
+    appearance: z.enum(["professional", "semi-professional", "not professional"]),
+    goodCandidate: z.enum(["yes", "no"]),
+    overallInterview: z.string().min(1, "Overall interview summary is required."),
+    interviewer: z.string().min(1, "Interviewer name is required"),
+    interviewerDate: z.date({ required_error: "Interviewer date is required." }),
+});
+
+export type InterviewReviewSchema = z.infer<typeof interviewReviewSchema>;

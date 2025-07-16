@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 export function CandidateName() {
-  const [candidateName, setCandidateName] = useState("Jane Doe");
+  const [candidateName, setCandidateName] = useState<string | null>(null);
 
   useEffect(() => {
     const name = sessionStorage.getItem("candidateName");
@@ -11,6 +11,14 @@ export function CandidateName() {
       setCandidateName(name);
     }
   }, []);
+
+  if (!candidateName) {
+    return (
+      <h1 className="text-3xl font-headline font-bold text-foreground">
+        Onboarding Workflow
+      </h1>
+    );
+  }
   
   return (
     <h1 className="text-3xl font-headline font-bold text-foreground">
