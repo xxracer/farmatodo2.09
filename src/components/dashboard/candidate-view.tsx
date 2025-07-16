@@ -14,23 +14,17 @@ export function CandidateView() {
     const [hasCandidate, setHasCandidate] = useState(false);
 
     useEffect(() => {
-        // Using localStorage to persist state for prototype purposes
-        const name = localStorage.getItem("candidateName");
-        if (name) {
-            setHasCandidate(true);
-        }
-
-        // Listen for storage changes to update the view in real-time if the form is submitted in another tab
-        const handleStorageChange = () => {
-            const name = localStorage.getItem("candidateName");
-            setHasCandidate(!!name);
+        const checkCandidateData = () => {
+            const data = localStorage.getItem("candidateApplicationDataList");
+            setHasCandidate(!!data && JSON.parse(data).length > 0);
         };
-        window.addEventListener('storage', handleStorageChange);
+
+        checkCandidateData();
+        window.addEventListener('storage', checkCandidateData);
 
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('storage', checkCandidateData);
         };
-
     }, []);
 
     if (!hasCandidate) {
