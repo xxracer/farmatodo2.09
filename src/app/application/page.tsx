@@ -33,7 +33,7 @@ export default function ApplicationPage({ searchParams }: { searchParams: { comp
           <h1 className="font-headline text-3xl font-bold text-center">Candidate Application</h1>
           <p className="text-muted-foreground text-center">Fill out the form below to apply for a position at {company.name}.</p>
         </div>
-        <ApplicationForm />
+        <ApplicationForm company={company.name} />
       </div>
     </div>
   );

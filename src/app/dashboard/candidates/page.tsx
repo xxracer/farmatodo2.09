@@ -6,11 +6,16 @@ import { useEffect, useState } from "react";
 
 export default function CandidatesPage() {
   const [candidateName, setCandidateName] = useState<string | null>(null);
+  const [candidateCompany, setCandidateCompany] = useState<string | null>(null);
 
   useEffect(() => {
     const name = localStorage.getItem("candidateName");
+    const company = localStorage.getItem("candidateCompany");
     if (name) {
       setCandidateName(name);
+    }
+    if (company) {
+      setCandidateCompany(company);
     }
   }, []);
 
@@ -38,7 +43,7 @@ export default function CandidatesPage() {
             <span>{candidateName}</span>
           </CardTitle>
           <CardDescription>
-            Applied recently. Ready for review.
+            Applied for a position at {candidateCompany || 'the company'} recently. Ready for review.
           </CardDescription>
         </CardHeader>
         <CardContent>

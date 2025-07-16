@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
 
 
-export function ApplicationForm() {
+export function ApplicationForm({ company }: { company: string }) {
     const { toast } = useToast()
     const router = useRouter()
 
@@ -78,6 +78,7 @@ export function ApplicationForm() {
 
     function onSubmit(data: ApplicationSchema) {
         localStorage.setItem('candidateName', `${data.firstName} ${data.lastName}`);
+        localStorage.setItem('candidateCompany', company);
         toast({
           title: "Application Submitted",
           description: "Candidate data has been saved successfully.",
