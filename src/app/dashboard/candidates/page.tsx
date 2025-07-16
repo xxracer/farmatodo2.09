@@ -1,41 +1,61 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, Users, Trash2, View } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { type ApplicationData } from "@/lib/schemas";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useRouter } from "next/navigation";
 
 export default function CandidatesPage() {
-  const [candidateName, setCandidateName] = useState<string | null>(null);
-  const [candidateCompany, setCandidateCompany] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<ApplicationData[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
-    const updateCandidateInfo = () => {
-      const name = localStorage.getItem("candidateName");
-      const company = localStorage.getItem("candidateCompany");
-      setCandidateName(name);
-      setCandidateCompany(company);
+    const updateCandidates = () => {
+      const data = localStorage.getItem("candidateApplicationDataList");
+      if (data) {
+        setCandidates(JSON.parse(data));
+      } else {
+        setCandidates([]);
+      }
     };
 
-    updateCandidateInfo();
+    updateCandidates();
 
-    window.addEventListener('storage', updateCandidateInfo);
+    window.addEventListener('storage', updateCandidates);
 
     return () => {
-      window.removeEventListener('storage', updateCandidateInfo);
+      window.removeEventListener('storage', updateCandidates);
     };
   }, []);
 
-  const handleDeleteCandidate = () => {
-    localStorage.removeItem("candidateName");
-    localStorage.removeItem("candidateCompany");
-    localStorage.removeItem("candidateApplicationData");
-    setCandidateName(null);
-    setCandidateCompany(null);
+  const handleDeleteCandidate = (candidateId: string) => {
+    const updatedCandidates = candidates.filter(c => c.id !== candidateId);
+    localStorage.setItem("candidateApplicationDataList", JSON.stringify(updatedCandidates));
+    setCandidates(updatedCandidates);
+    // Also remove single candidate view if it's the one being deleted
+    const currentCandidate = localStorage.getItem("candidateApplicationData");
+    if(currentCandidate) {
+        const parsedCurrent = JSON.parse(currentCandidate);
+        if(parsedCurrent.id === candidateId) {
+            localStorage.removeItem("candidateApplicationData");
+            localStorage.removeItem("candidateName");
+            localStorage.removeItem("candidateCompany");
+        }
+    }
   };
+  
+  const handleViewCandidate = (candidate: ApplicationData) => {
+    localStorage.setItem('candidateApplicationData', JSON.stringify(candidate));
+    localStorage.setItem('candidateName', `${candidate.firstName} ${candidate.lastName}`);
+    localStorage.setItem('candidateCompany', candidate.applyingFor.join(', '));
+    router.push(`/dashboard/candidates/view?id=${candidate.id}`);
+  }
 
-  if (!candidateName) {
+  if (candidates.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
         <div className="flex flex-col items-center gap-2 text-center">
@@ -51,34 +71,39 @@ export default function CandidatesPage() {
 
   return (
     <div className="space-y-4">
-       <h1 className="text-3xl font-headline font-bold text-foreground">Candidates</h1>
+      <h1 className="text-3xl font-headline font-bold text-foreground">Candidates</h1>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-6 w-6 text-primary" />
-            <span>{candidateName}</span>
-          </CardTitle>
-          <CardDescription>
-            Applied for a position at {candidateCompany || 'the company'} recently. Ready for review.
-          </CardDescription>
-        </CardHeader>
         <CardContent>
-            <p className="text-sm text-muted-foreground">
-                The candidate's full application is available for review.
-            </p>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Applying For</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {candidates.map((candidate) => (
+                        <TableRow key={candidate.id}>
+                            <TableCell className="font-medium">{candidate.firstName} {candidate.lastName}</TableCell>
+                            <TableCell>{candidate.applyingFor.join(', ')}</TableCell>
+                            <TableCell>{candidate.date}</TableCell>
+                            <TableCell className="text-right space-x-2">
+                                <Button variant="outline" size="sm" onClick={() => handleViewCandidate(candidate)}>
+                                    <View className="mr-2 h-4 w-4" />
+                                    View
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteCandidate(candidate.id)}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </CardContent>
-        <CardFooter className="flex justify-between">
-            <Button asChild>
-                <Link href="/dashboard/candidates/view">
-                    <View className="mr-2 h-4 w-4" />
-                    View Application
-                </Link>
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteCandidate}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Candidate
-            </Button>
-        </CardFooter>
       </Card>
     </div>
   );

@@ -33,6 +33,11 @@ const professionalReferenceSchema = z.object({
 });
 
 export const applicationSchema = z.object({
+  // Company Selection
+  applyingFor: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one company.",
+  }),
+
   // Personal Information
   lastName: z.string().min(1, "Last name is required"),
   firstName: z.string().min(1, "First name is required"),
@@ -138,6 +143,7 @@ export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
 // This is the type for the data that will be stored in localStorage
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory'> & {
+    id: string;
     company: string;
     resume?: string; // Storing only the filename as a string
     date?: string;

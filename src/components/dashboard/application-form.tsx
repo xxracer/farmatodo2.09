@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
-import { CalendarIcon, PlusCircle, Trash2, View } from "lucide-react"
+import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 
@@ -30,14 +30,21 @@ import { Checkbox } from "../ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
 
+const companies = [
+  { id: "Central Home Texas", label: "Central Home Texas" },
+  { id: "Noble Health", label: "Noble Health" },
+  { id: "Lifecare", label: "Lifecare" },
+] as const;
 
-export function ApplicationForm({ company }: { company: string }) {
+
+export function ApplicationForm() {
     const { toast } = useToast()
     const router = useRouter()
 
     const form = useForm<ApplicationSchema>({
         resolver: zodResolver(applicationSchema),
         defaultValues: {
+            applyingFor: [],
             lastName: "",
             firstName: "",
             middleName: "",
@@ -77,9 +84,11 @@ export function ApplicationForm({ company }: { company: string }) {
     });
 
     function onSubmit(data: ApplicationSchema) {
+        const candidateId = `${data.firstName}-${data.lastName}-${Date.now()}`;
         const fullApplicationData = {
+            id: candidateId,
             ...data,
-            company: company,
+            company: data.applyingFor.join(', '), // for single company context
             date: data.date ? format(data.date, 'yyyy-MM-dd') : undefined,
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
@@ -88,9 +97,18 @@ export function ApplicationForm({ company }: { company: string }) {
             })),
             resume: data.resume?.name,
         };
+
+        // For multi-candidate list
+        const existingData = localStorage.getItem('candidateApplicationDataList');
+        const candidateList = existingData ? JSON.parse(existingData) : [];
+        candidateList.push(fullApplicationData);
+        localStorage.setItem('candidateApplicationDataList', JSON.stringify(candidateList));
+        
+        // For single-candidate view context
         localStorage.setItem('candidateName', `${data.firstName} ${data.lastName}`);
-        localStorage.setItem('candidateCompany', company);
+        localStorage.setItem('candidateCompany', data.applyingFor.join(', '));
         localStorage.setItem('candidateApplicationData', JSON.stringify(fullApplicationData));
+
         toast({
           title: "Application Submitted",
           description: "Candidate data has been saved successfully.",
@@ -108,6 +126,54 @@ export function ApplicationForm({ company }: { company: string }) {
             <CardDescription>All information provided herein will be kept confidential.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+             <FormField
+                control={form.control}
+                name="applyingFor"
+                render={() => (
+                    <FormItem>
+                    <div className="mb-4">
+                        <FormLabel className="text-base font-semibold">Applying for Company</FormLabel>
+                        <FormDescription>
+                        Select the company or companies you are applying to.
+                        </FormDescription>
+                    </div>
+                    {companies.map((item) => (
+                        <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="applyingFor"
+                        render={({ field }) => {
+                            return (
+                            <FormItem
+                                key={item.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                                <FormControl>
+                                <Checkbox
+                                    checked={field.value?.includes(item.id)}
+                                    onCheckedChange={(checked) => {
+                                    return checked
+                                        ? field.onChange([...(field.value || []), item.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                            (value) => value !== item.id
+                                            )
+                                        )
+                                    }}
+                                />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                {item.label}
+                                </FormLabel>
+                            </FormItem>
+                            )
+                        }}
+                        />
+                    ))}
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <FormField control={form.control} name="lastName" render={({ field }) => (
                   <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>

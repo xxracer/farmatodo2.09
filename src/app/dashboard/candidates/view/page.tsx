@@ -7,18 +7,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UserSearch } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
 
 export default function ApplicationViewPage() {
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const searchParams = useSearchParams();
 
     useEffect(() => {
-        const data = localStorage.getItem("candidateApplicationData");
-        if (data) {
-            setApplicationData(JSON.parse(data));
+        const candidateId = searchParams.get('id');
+        let dataToView: ApplicationData | null = null;
+
+        if (candidateId) {
+            const dataList = localStorage.getItem("candidateApplicationDataList");
+            if (dataList) {
+                const candidates: ApplicationData[] = JSON.parse(dataList);
+                dataToView = candidates.find(c => c.id === candidateId) || null;
+            }
+        } else {
+             const data = localStorage.getItem("candidateApplicationData");
+             if (data) {
+                dataToView = JSON.parse(data);
+             }
         }
+        
+        setApplicationData(dataToView);
         setIsLoading(false);
-    }, []);
+    }, [searchParams]);
 
     if (isLoading) {
         return <div className="p-8 text-center">Loading application data...</div>;
