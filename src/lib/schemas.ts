@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const MAX_FILE_SIZE = 5000000; // 5MB
+const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+
 const educationEntrySchema = z.object({
   name: z.string().optional(),
   location: z.string().optional(),
@@ -84,6 +87,26 @@ export const applicationSchema = z.object({
   crimeDescription: z.string().optional(),
   capableOfPerformingJob: z.enum(["yes", "no"], { required_error: "This field is required." }),
   jobRequirementLimitation: z.string().optional(),
+
+  // Credentials & Skills
+  specializedSkills: z.string().optional(),
+  
+  // Resume
+  resume: z
+    .any()
+    .refine((file) => file, "Resume is required.")
+    .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine(
+      (file) => ACCEPTED_FILE_TYPES.includes(file?.type),
+      ".pdf, .doc, and .docx files are accepted."
+    ),
+
+  // Certification
+  certification: z.literal(true, {
+    errorMap: () => ({ message: "You must certify to submit the application." }),
+  }),
+  signature: z.string().min(1, "Signature is required"),
+
 }).superRefine((data, ctx) => {
     if (data.differentLastName === 'yes' && !data.previousName) {
         ctx.addIssue({

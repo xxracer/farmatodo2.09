@@ -5,6 +5,8 @@ import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react"
 import { format } from "date-fns"
+import { useRouter } from "next/navigation"
+
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,12 +28,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "../ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { Separator } from "../ui/separator"
 import { Textarea } from "../ui/textarea"
 
 
 export function ApplicationForm() {
     const { toast } = useToast()
+    const router = useRouter()
 
     const form = useForm<ApplicationSchema>({
         resolver: zodResolver(applicationSchema),
@@ -57,6 +59,10 @@ export function ApplicationForm() {
             },
             employmentHistory: [],
             professionalReferences: [],
+            specializedSkills: "",
+            resume: undefined,
+            certification: false,
+            signature: "",
         },
     });
 
@@ -71,11 +77,13 @@ export function ApplicationForm() {
     });
 
     function onSubmit(data: ApplicationSchema) {
+        sessionStorage.setItem('candidateName', `${data.firstName} ${data.lastName}`);
         toast({
           title: "Application Submitted",
           description: "Candidate data has been saved successfully.",
         })
         console.log(data)
+        router.push('/dashboard')
     }
 
   return (
@@ -418,6 +426,95 @@ export function ApplicationForm() {
             </CardContent>
         </Card>
 
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Credentials & Skills</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <FormField
+                    control={form.control}
+                    name="specializedSkills"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Credentials/Specialized Skills & Qualifications/Equipment Operated</FormLabel>
+                            <FormDescription>List all states in which licensed giving registration and expiration date. Summarize special job-related skills and qualification acquired from employment or other experience.</FormDescription>
+                            <FormControl>
+                                <Textarea rows={5} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Resume / CV</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <FormField
+                    control={form.control}
+                    name="resume"
+                    render={({ field }) => {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { value, ...rest } = field;
+                        return (
+                            <FormItem>
+                                <FormLabel>Upload your resume</FormLabel>
+                                <FormControl>
+                                    <Input type="file" accept=".pdf,.doc,.docx" {...rest} onChange={(e) => field.onChange(e.target.files?.[0])} />
+                                </FormControl>
+                                <FormDescription>Please upload your resume in PDF, DOC, or DOCX format.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        );
+                    }}
+                />
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Certification & Authorization</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6 text-sm text-muted-foreground">
+                <p>I certify that the facts contained in this application are true and complete to the best of my knowledge and understand, that, if employed, falsified statements on this application SHALL BE GROUNDS FOR DISMISSAL.</p>
+                <p>I Authorize complete investigation of all statements contained herein and herby give my full permission for the Agency to contact and fully discuss my background and history with all persons and entities listed above to give the Agency any and all information concerning my previous employment and any information they may have, and release all former employees and others listed above from all liability for any damage that my result from furnishing the same to the Agency.</p>
+                <p>I understand and agree that, if hired, my employment is for no definite period arid may, regardless of the date of payment of my wages and salary, be terminated at any time for any lawful reason, without prior notice and with or without cause.</p>
+                <p>This application for employment shall be considered active for a period of time not to exceed 45 days. Any applicant wishing to be considered for employment beyond this time period shall inquire as to whether or not applications are being accepted at that time.</p>
+                
+                <FormField
+                    control={form.control}
+                    name="certification"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-background">
+                        <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                            <FormLabel>By checking this box, I acknowledge that I have read and agree to the terms above.</FormLabel>
+                        </div>
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="signature"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Electronic Signature</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Type your full name" {...field} />
+                            </FormControl>
+                            <FormDescription>Typing your full name here serves as your electronic signature.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </CardContent>
+        </Card>
 
         <div className="flex justify-end">
           <Button type="submit">Submit Application</Button>
