@@ -46,6 +46,7 @@ export function ApplicationForm() {
             emergencyContact: "",
             hoursAvailable: 40,
             position: "",
+            workEveningsWeekends: false,
         },
     });
 
@@ -63,23 +64,25 @@ export function ApplicationForm() {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Personal Information</CardTitle>
-            <CardDescription>Enter the candidate's basic details.</CardDescription>
+            <CardDescription>All information provided herein will be kept confidential.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <FormField control={form.control} name="firstName" render={({ field }) => (
-                <FormItem><FormLabel>First Name</FormLabel><FormControl><Input placeholder="Jane" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="middleName" render={({ field }) => (
-                <FormItem><FormLabel>Middle Name</FormLabel><FormControl><Input placeholder="(Optional)" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="lastName" render={({ field }) => (
-                <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="date" render={({ field }) => (
-                <FormItem className="flex flex-col"><FormLabel>Application Date</FormLabel>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <FormField control={form.control} name="lastName" render={({ field }) => (
+                  <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>
+              )}/>
+              <FormField control={form.control} name="firstName" render={({ field }) => (
+                  <FormItem><FormLabel>First Name</FormLabel><FormControl><Input placeholder="Jane" {...field} /></FormControl><FormMessage /></FormItem>
+              )}/>
+              <FormField control={form.control} name="middleName" render={({ field }) => (
+                  <FormItem><FormLabel>Middle Name</FormLabel><FormControl><Input placeholder="(Optional)" {...field} /></FormControl><FormMessage /></FormItem>
+              )}/>
+            </div>
+             <FormField control={form.control} name="date" render={({ field }) => (
+                <FormItem className="flex flex-col"><FormLabel>Date</FormLabel>
                 <Popover><PopoverTrigger asChild>
                     <FormControl>
-                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                        <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                         {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -99,10 +102,10 @@ export function ApplicationForm() {
                 <CardTitle className="font-headline">Contact Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+                <FormField control={form.control} name="streetAddress" render={({ field }) => (
+                    <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <FormField control={form.control} name="streetAddress" render={({ field }) => (
-                        <FormItem className="md:col-span-3"><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
                     <FormField control={form.control} name="city" render={({ field }) => (
                         <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
@@ -122,7 +125,7 @@ export function ApplicationForm() {
                     )}/>
                 </div>
                 <FormField control={form.control} name="emergencyContact" render={({ field }) => (
-                    <FormItem><FormLabel>Emergency Contact (not living with you)</FormLabel><FormControl><Input placeholder="John Smith" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Emergency contact (person not living with you)</FormLabel><FormControl><Input placeholder="John Smith" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
             </CardContent>
         </Card>
@@ -132,12 +135,6 @@ export function ApplicationForm() {
                 <CardTitle className="font-headline">Employment Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-8">
-                <FormField control={form.control} name="position" render={({ field }) => (
-                    <FormItem><FormLabel>Position Applying For</FormLabel><FormControl><Input placeholder="Software Engineer" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="hoursAvailable" render={({ field }) => (
-                    <FormItem><FormLabel>Hours Available Per Week</FormLabel><FormControl><Input type="number" placeholder="40" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
                 <FormField control={form.control} name="previouslyEmployed" render={({ field }) => (
                     <FormItem className="space-y-3"><FormLabel>Have you ever applied for employment with this Agency?</FormLabel>
                         <FormControl>
@@ -147,6 +144,9 @@ export function ApplicationForm() {
                             </RadioGroup>
                         </FormControl><FormMessage />
                     </FormItem>
+                )}/>
+                 <FormField control={form.control} name="hoursAvailable" render={({ field }) => (
+                    <FormItem><FormLabel>How many hours a week are you available for work?</FormLabel><FormControl><Input type="number" placeholder="40" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="legallyEligible" render={({ field }) => (
                     <FormItem className="space-y-3"><FormLabel>Are you legally eligible for employment in the United States?</FormLabel>
@@ -159,7 +159,7 @@ export function ApplicationForm() {
                     </FormItem>
                 )}/>
                 <FormField control={form.control} name="howLearned" render={({ field }) => (
-                    <FormItem><FormLabel>How did you learn about us?</FormLabel>
+                    <FormItem><FormLabel>How did you learn of our organization?</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select an option" /></SelectTrigger></FormControl>
                             <SelectContent>
@@ -170,20 +170,23 @@ export function ApplicationForm() {
                         </Select><FormMessage />
                     </FormItem>
                 )}/>
-                 <FormField control={form.control} name="workEveningsWeekends" render={({ field }) => (
+                <FormField control={form.control} name="workEveningsWeekends" render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
                         <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         <div className="space-y-1 leading-none">
-                            <FormLabel>Willing to work evenings and/or weekends?</FormLabel>
-                            <FormDescription>Check if the candidate is available for flexible hours.</FormDescription>
+                            <FormLabel>Are you willing to work evenings/weekends?</FormLabel>
+                            <FormDescription>Check if you are available for flexible hours.</FormDescription>
                         </div>
                     </FormItem>
+                )}/>
+                <FormField control={form.control} name="position" render={({ field }) => (
+                    <FormItem><FormLabel>Position applying for</FormLabel><FormControl><Input placeholder="Software Engineer" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
             </CardContent>
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit">Save Application</Button>
+          <Button type="submit">Submit Application</Button>
         </div>
       </form>
     </Form>

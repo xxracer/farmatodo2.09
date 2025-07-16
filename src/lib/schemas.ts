@@ -9,41 +9,27 @@ export const applicationSchema = z.object({
     required_error: "A date of application is required.",
   }),
 
-  // Address
+  // Contact Information
   streetAddress: z.string().min(1, "Street address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   zipCode: z.string().min(5, "A valid ZIP code is required").max(10),
-
-  // Phone Numbers
   homePhone: z.string().min(10, "A valid phone number is required"),
   businessPhone: z.string().optional(),
+  emergencyContact: z.string().min(1, "Emergency contact is required"),
 
-  // Emergency Contact
-  emergencyContact: z.string().min(1, "Emergency contact name is required"),
-
-  // Previous Employment
+  // Employment Details
   previouslyEmployed: z.enum(["yes", "no"], {
-    required_error: "You must select an option.",
+    required_error: "This field is required.",
   }),
-
-  // Availability
   hoursAvailable: z.coerce.number().min(1, "Please specify hours available").max(168),
-
-  // Eligibility
   legallyEligible: z.enum(["yes", "no"], {
     required_error: "You must confirm eligibility.",
   }),
-
-  // Source
   howLearned: z.enum(["online", "employee", "other"], {
     required_error: "Please select how you learned about us.",
   }),
-  
-  // Work Willingness
-  workEveningsWeekends: z.boolean().default(false).optional(),
-  
-  // Position
+  workEveningsWeekends: z.boolean().default(false),
   position: z.string().min(1, "Position is required"),
 });
 
