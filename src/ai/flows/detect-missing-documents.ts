@@ -39,13 +39,22 @@ const prompt = ai.definePrompt({
   output: {schema: DetectMissingDocumentsOutputSchema},
   prompt: `You are an expert HR assistant specializing in identifying missing documents in candidate onboarding processes.
 
-Based on the candidate's profile, current onboarding phase, and the list of submitted documents, you will generate a ranked list of potentially missing documents. Do not suggest "Cover Letter" as it is not required.
+Based on the candidate's profile, current onboarding phase, and the list of submitted documents, you will generate a ranked list of potentially missing documents.
 
 Candidate Profile: {{{candidateProfile}}}
 Onboarding Phase: {{{onboardingPhase}}}
 Submitted Documents: {{#each submittedDocuments}}{{{this}}}, {{/each}}
 
-Consider common documents required for each phase (like identification, proof of address, or educational certificates) and the candidate's specific information when determining the missing documents.
+Analyze the provided information and determine which of the following standard documents are still needed. Do not suggest documents that are already submitted.
+- CV/Resume
+- Professional References
+- Educational Diplomas/Certificates
+- Form W-4 (Employee's Withholding Certificate)
+- Form I-9 (Employment Eligibility Verification)
+- Proof of Identity
+- Proof of Address
+
+Do not suggest "Cover Letter" as it is not required.
 
 Return a ranked list of potentially missing documents.
 `,
