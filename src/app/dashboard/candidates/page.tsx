@@ -9,14 +9,20 @@ export default function CandidatesPage() {
   const [candidateCompany, setCandidateCompany] = useState<string | null>(null);
 
   useEffect(() => {
-    const name = localStorage.getItem("candidateName");
-    const company = localStorage.getItem("candidateCompany");
-    if (name) {
+    const updateCandidateInfo = () => {
+      const name = localStorage.getItem("candidateName");
+      const company = localStorage.getItem("candidateCompany");
       setCandidateName(name);
-    }
-    if (company) {
       setCandidateCompany(company);
-    }
+    };
+
+    updateCandidateInfo();
+
+    window.addEventListener('storage', updateCandidateInfo);
+
+    return () => {
+      window.removeEventListener('storage', updateCandidateInfo);
+    };
   }, []);
 
   if (!candidateName) {

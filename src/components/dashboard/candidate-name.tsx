@@ -7,15 +7,20 @@ export function CandidateName() {
   const [candidateCompany, setCandidateCompany] = useState<string | null>(null);
 
   useEffect(() => {
-    // Using localStorage to persist candidate info across sessions for prototype purposes
-    const name = localStorage.getItem("candidateName");
-    const company = localStorage.getItem("candidateCompany");
-    if (name) {
-      setCandidateName(name);
-    }
-    if (company) {
-      setCandidateCompany(company);
-    }
+    const updateCandidateInfo = () => {
+        const name = localStorage.getItem("candidateName");
+        const company = localStorage.getItem("candidateCompany");
+        setCandidateName(name);
+        setCandidateCompany(company);
+    };
+    
+    updateCandidateInfo();
+    
+    window.addEventListener('storage', updateCandidateInfo);
+
+    return () => {
+        window.removeEventListener('storage', updateCandidateInfo);
+    };
   }, []);
 
   if (!candidateName) {
