@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, Circle, FileText, FileUp } from "lucide-react";
+import { CheckCircle, FileText, FileUp, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
-type Phase = "application" | "documentation";
+type Phase = "application" | "interview" | "documentation";
 
 export function ProgressTracker() {
   const [currentPhase, setCurrentPhase] = useState<Phase>("application");
@@ -14,13 +14,19 @@ export function ProgressTracker() {
   const phases = [
     {
       id: "application",
-      name: "Application",
-      description: "Submit initial candidate data.",
+      name: "Phase 1: Application Received",
+      description: "Initial candidate data has been submitted.",
       icon: FileText,
     },
     {
+      id: "interview",
+      name: "Phase 2: Interview",
+      description: "Schedule and conduct the candidate interview.",
+      icon: ClipboardList,
+    },
+    {
       id: "documentation",
-      name: "Detailed Documentation",
+      name: "Phase 3: Detailed Documentation",
       description: "Upload and verify all required documents.",
       icon: FileUp,
     },
@@ -62,6 +68,7 @@ export function ProgressTracker() {
              {/* This is for demo purposes to show state changes */}
              <div className="mt-6 flex gap-2">
                 <Button onClick={() => setCurrentPhase('application')} variant={currentPhase === 'application' ? 'default' : 'outline'} size="sm">Set to Application</Button>
+                <Button onClick={() => setCurrentPhase('interview')} variant={currentPhase === 'interview' ? 'default' : 'outline'} size="sm">Set to Interview</Button>
                 <Button onClick={() => setCurrentPhase('documentation')} variant={currentPhase === 'documentation' ? 'default' : 'outline'} size="sm">Set to Documentation</Button>
             </div>
         </CardContent>

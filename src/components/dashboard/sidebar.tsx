@@ -53,7 +53,7 @@ export function DashboardSidebar() {
               isActive={pathname.startsWith("/dashboard/candidates")}
               tooltip="Candidates"
             >
-              <Link href="#">
+              <Link href="/dashboard/candidates">
                 <Users />
                 <span>Candidates</span>
               </Link>
@@ -65,7 +65,7 @@ export function DashboardSidebar() {
               isActive={pathname.startsWith("/dashboard/settings")}
               tooltip="Settings"
             >
-              <Link href="#">
+              <Link href="/dashboard/settings">
                 <Settings />
                 <span>Settings</span>
               </Link>

@@ -4,6 +4,7 @@ import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { CopyApplicationLink } from "@/components/dashboard/copy-link";
 import { Suspense } from "react";
 import { CandidateName } from "@/components/dashboard/candidate-name";
+import { InterviewPhase } from "@/components/dashboard/interview-phase";
 
 export default function DashboardPage() {
   return (
@@ -22,10 +23,14 @@ export default function DashboardPage() {
       
       <ProgressTracker />
 
-      <Tabs defaultValue="documentation" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:w-[200px]">
-          <TabsTrigger value="documentation">Phase 2: Documentation</TabsTrigger>
+      <Tabs defaultValue="interview" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
+          <TabsTrigger value="interview">Phase 2: Interview</TabsTrigger>
+          <TabsTrigger value="documentation">Phase 3: Documentation</TabsTrigger>
         </TabsList>
+        <TabsContent value="interview" className="mt-6">
+            <InterviewPhase />
+        </TabsContent>
         <TabsContent value="documentation" className="mt-6">
           <DocumentationPhase />
         </TabsContent>
