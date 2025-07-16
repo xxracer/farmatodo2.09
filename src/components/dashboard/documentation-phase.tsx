@@ -19,7 +19,6 @@ Name: Jane Doe
 Position Applying For: Senior Software Engineer
 Experience: 8 years in full-stack development.
 Education: M.S. in Computer Science.
-Nationality: Non-US Citizen, requires work visa sponsorship.
 `;
 
 export function DocumentationPhase() {
