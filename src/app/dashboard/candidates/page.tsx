@@ -2,8 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Users, Trash2 } from "lucide-react";
+import { User, Users, Trash2, View } from "lucide-react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function CandidatesPage() {
   const [candidateName, setCandidateName] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export default function CandidatesPage() {
   const handleDeleteCandidate = () => {
     localStorage.removeItem("candidateName");
     localStorage.removeItem("candidateCompany");
+    localStorage.removeItem("candidateApplicationData");
     setCandidateName(null);
     setCandidateCompany(null);
   };
@@ -62,10 +64,16 @@ export default function CandidatesPage() {
         </CardHeader>
         <CardContent>
             <p className="text-sm text-muted-foreground">
-                This is a placeholder for candidate details. You can view progress on the dashboard.
+                The candidate's full application is available for review.
             </p>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex justify-between">
+            <Button asChild>
+                <Link href="/dashboard/candidates/view">
+                    <View className="mr-2 h-4 w-4" />
+                    View Application
+                </Link>
+            </Button>
             <Button variant="destructive" onClick={handleDeleteCandidate}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Candidate

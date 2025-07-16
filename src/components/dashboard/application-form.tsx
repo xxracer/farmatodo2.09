@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
-import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react"
+import { CalendarIcon, PlusCircle, Trash2, View } from "lucide-react"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 
@@ -77,8 +77,20 @@ export function ApplicationForm({ company }: { company: string }) {
     });
 
     function onSubmit(data: ApplicationSchema) {
+        const fullApplicationData = {
+            ...data,
+            company: company,
+            date: data.date ? format(data.date, 'yyyy-MM-dd') : undefined,
+            employmentHistory: data.employmentHistory.map(job => ({
+                ...job,
+                dateFrom: job.dateFrom ? format(job.dateFrom, 'yyyy-MM-dd') : undefined,
+                dateTo: job.dateTo ? format(job.dateTo, 'yyyy-MM-dd') : undefined,
+            })),
+            resume: data.resume?.name,
+        };
         localStorage.setItem('candidateName', `${data.firstName} ${data.lastName}`);
         localStorage.setItem('candidateCompany', company);
+        localStorage.setItem('candidateApplicationData', JSON.stringify(fullApplicationData));
         toast({
           title: "Application Submitted",
           description: "Candidate data has been saved successfully.",
