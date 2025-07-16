@@ -56,12 +56,18 @@ export function ApplicationForm() {
                 other: { name: "", location: "", course: "", degree: "" },
             },
             employmentHistory: [],
+            professionalReferences: [],
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields: employmentFields, append: appendEmployment, remove: removeEmployment } = useFieldArray({
       control: form.control,
       name: "employmentHistory",
+    });
+
+    const { fields: referenceFields, append: appendReference, remove: removeReference } = useFieldArray({
+      control: form.control,
+      name: "professionalReferences",
     });
 
     function onSubmit(data: ApplicationSchema) {
@@ -244,9 +250,9 @@ export function ApplicationForm() {
             <CardDescription>List the last five years of employment history, starting with the most recent employer.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {fields.map((field, index) => (
+            {employmentFields.map((field, index) => (
               <div key={field.id} className="space-y-6 rounded-md border p-4 relative">
-                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(index)}>
+                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeEmployment(index)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
 
@@ -297,14 +303,119 @@ export function ApplicationForm() {
 
               </div>
             ))}
-            {fields.length < 3 && (
-              <Button type="button" variant="outline" size="sm" onClick={() => append({ companyName: "", telephone: "", address: "", city: "", state: "", zipCode: "", dateFrom: new Date(), dateTo: new Date(), startingPay: 0, jobTitleAndDescription: "", reasonForLeaving: "" })}>
+            {employmentFields.length < 3 && (
+              <Button type="button" variant="outline" size="sm" onClick={() => appendEmployment({ companyName: "", telephone: "", address: "", city: "", state: "", zipCode: "", dateFrom: new Date(), dateTo: new Date(), startingPay: 0, jobTitleAndDescription: "", reasonForLeaving: "" })}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Employment
               </Button>
             )}
             
           </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Additional Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                <FormField control={form.control} name="differentLastName" render={({ field }) => (
+                    <FormItem className="space-y-3"><FormLabel>Was your last name different from your present name during the above listed jobs?</FormLabel>
+                        <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-row space-x-4">
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="yes" /></FormControl><FormLabel className="font-normal">Yes</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="no" /></FormControl><FormLabel className="font-normal">No</FormLabel></FormItem>
+                            </RadioGroup>
+                        </FormControl><FormMessage />
+                    </FormItem>
+                )}/>
+                {form.watch('differentLastName') === 'yes' && (
+                    <FormField control={form.control} name="previousName" render={({ field }) => (<FormItem><FormLabel>If yes, what was your name?</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                )}
+                <FormField control={form.control} name="currentlyEmployed" render={({ field }) => (
+                    <FormItem className="space-y-3"><FormLabel>Are you currently employed?</FormLabel>
+                        <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-row space-x-4">
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="yes" /></FormControl><FormLabel className="font-normal">Yes</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="no" /></FormControl><FormLabel className="font-normal">No</FormLabel></FormItem>
+                            </RadioGroup>
+                        </FormControl><FormMessage />
+                    </FormItem>
+                )}/>
+                <FormField control={form.control} name="reliableTransportation" render={({ field }) => (
+                    <FormItem className="space-y-3"><FormLabel>Do you have reliable transportation?</FormLabel>
+                        <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-row space-x-4">
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="yes" /></FormControl><FormLabel className="font-normal">Yes</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="no" /></FormControl><FormLabel className="font-normal">No</FormLabel></FormItem>
+                            </RadioGroup>
+                        </FormControl><FormMessage />
+                    </FormItem>
+                )}/>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Professional References</CardTitle>
+                <CardDescription>List persons who can furnish information about your job performance.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {referenceFields.map((field, index) => (
+                    <div key={field.id} className="space-y-6 rounded-md border p-4 relative">
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeReference(index)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                        <h4 className="font-semibold">Reference #{index + 1}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField control={form.control} name={`professionalReferences.${index}.name`} render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name={`professionalReferences.${index}.telephone`} render={({ field }) => (<FormItem><FormLabel>Telephone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        </div>
+                        <FormField control={form.control} name={`professionalReferences.${index}.address`} render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                ))}
+                {referenceFields.length < 3 && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendReference({ name: "", telephone: "", address: "" })}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Reference
+                    </Button>
+                )}
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">General Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                 <FormField control={form.control} name="convictedOfCrime" render={({ field }) => (
+                    <FormItem className="space-y-3"><FormLabel>Have you ever been convicted of a crime in the past 5 years, barring employment in a Home Care and community support Agency?</FormLabel>
+                        <FormDescription>Conviction will not necessarily disqualify an applicant from employment.</FormDescription>
+                        <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-row space-x-4">
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="yes" /></FormControl><FormLabel className="font-normal">Yes</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="no" /></FormControl><FormLabel className="font-normal">No</FormLabel></FormItem>
+                            </RadioGroup>
+                        </FormControl><FormMessage />
+                    </FormItem>
+                )}/>
+                {form.watch('convictedOfCrime') === 'yes' && (
+                    <FormField control={form.control} name="crimeDescription" render={({ field }) => (<FormItem><FormLabel>If yes, describe in full:</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                )}
+
+                <FormField control={form.control} name="capableOfPerformingJob" render={({ field }) => (
+                    <FormItem className="space-y-3"><FormLabel>Are you capable of performing the job set forth in the job description?</FormLabel>
+                        <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-row space-x-4">
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="yes" /></FormControl><FormLabel className="font-normal">Yes</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="no" /></FormControl><FormLabel className="font-normal">No</FormLabel></FormItem>
+                            </RadioGroup>
+                        </FormControl><FormMessage />
+                    </FormItem>
+                )}/>
+                {form.watch('capableOfPerformingJob') === 'no' && (
+                    <FormField control={form.control} name="jobRequirementLimitation" render={({ field }) => (<FormItem><FormLabel>If you answered No, which job requirement can you not meet?</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                )}
+            </CardContent>
         </Card>
 
 

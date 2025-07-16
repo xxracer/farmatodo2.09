@@ -21,6 +21,12 @@ const employmentHistoryEntrySchema = z.object({
   reasonForLeaving: z.string().min(1, "Reason for leaving is required"),
 });
 
+const professionalReferenceSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  telephone: z.string().min(10, "A valid phone number is required"),
+  address: z.string().min(1, "Address is required"),
+});
+
 export const applicationSchema = z.object({
   // Personal Information
   lastName: z.string().min(1, "Last name is required"),
@@ -63,6 +69,44 @@ export const applicationSchema = z.object({
 
   // Employment History
   employmentHistory: z.array(employmentHistoryEntrySchema).max(3, "You can add a maximum of 3 past employments."),
+
+  // Additional Information
+  differentLastName: z.enum(["yes", "no"], { required_error: "This field is required." }),
+  previousName: z.string().optional(),
+  currentlyEmployed: z.enum(["yes", "no"], { required_error: "This field is required." }),
+  reliableTransportation: z.enum(["yes", "no"], { required_error: "This field is required." }),
+
+  // Professional References
+  professionalReferences: z.array(professionalReferenceSchema).min(1, "At least one professional reference is required.").max(3, "You can add a maximum of 3 references."),
+  
+  // General
+  convictedOfCrime: z.enum(["yes", "no"], { required_error: "This field is required." }),
+  crimeDescription: z.string().optional(),
+  capableOfPerformingJob: z.enum(["yes", "no"], { required_error: "This field is required." }),
+  jobRequirementLimitation: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.differentLastName === 'yes' && !data.previousName) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['previousName'],
+            message: 'Please provide your previous name.',
+        });
+    }
+    if (data.convictedOfCrime === 'yes' && !data.crimeDescription) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['crimeDescription'],
+            message: 'Please provide a description.',
+        });
+    }
+    if (data.capableOfPerformingJob === 'no' && !data.jobRequirementLimitation) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['jobRequirementLimitation'],
+            message: 'Please specify which requirement you cannot meet.',
+        });
+    }
 });
+
 
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
