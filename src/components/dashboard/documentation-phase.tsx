@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, FileCheck, FolderPlus, Lightbulb, Loader2 } from "lucide-react";
+import { AlertCircle, FileCheck, Lightbulb, Loader2, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,7 +12,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const submittedDocs = [
   { id: "resume", label: "Resume/CV" },
-  { id: "cover_letter", label: "Cover Letter" },
   { id: "id_proof", label: "Government-issued ID" },
 ];
 
@@ -59,15 +58,10 @@ export function DocumentationPhase() {
     }
   };
   
-  const handleCreateFolder = () => {
+  const handleConnectDrive = () => {
     toast({
-        title: "Folder Creation Simulated",
-        description: "A Google Drive folder for Jane_Doe_2023-10-27 has been created.",
-        action: (
-            <div className="p-2 bg-green-500 text-white rounded-full">
-                <FolderPlus className="h-5 w-5" />
-            </div>
-        )
+        title: "Connection Simulated",
+        description: "Successfully connected to Google Drive account.",
     });
   }
 
@@ -106,9 +100,9 @@ export function DocumentationPhase() {
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
                         Detect Missing Documents
                     </Button>
-                    <Button onClick={handleCreateFolder} variant="secondary">
-                        <FolderPlus className="mr-2 h-4 w-4" />
-                        Create Google Drive Folder
+                    <Button onClick={handleConnectDrive} variant="secondary">
+                        <LinkIcon className="mr-2 h-4 w-4" />
+                        Connect to Google Drive
                     </Button>
                 </div>
             </CardContent>
@@ -119,7 +113,7 @@ export function DocumentationPhase() {
       <div className="space-y-6">
         <Card className="sticky top-24">
           <CardHeader>
-            <CardTitle className="font-headline">AI Analysis</CardTitle>
+            <CardTitle className="font-headline">Document Suggestions</CardTitle>
             <CardDescription>Results from the missing document detection.</CardDescription>
           </CardHeader>
           <CardContent>
