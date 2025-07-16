@@ -4,11 +4,10 @@ import { useState } from "react";
 import { AlertCircle, FileCheck, Lightbulb, Loader2, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { detectMissingDocuments, DetectMissingDocumentsInput } from "@/ai/flows/detect-missing-documents";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CopyDocumentationLink } from "./copy-documentation-link";
 
 const submittedDocs = [
   { id: "resume", label: "Resume/CV" },
@@ -24,17 +23,11 @@ Nationality: Non-US Citizen, requires work visa sponsorship.
 `;
 
 export function DocumentationPhase() {
-  const [checkedDocuments, setCheckedDocuments] = useState<string[]>(['resume']);
   const [missingDocuments, setMissingDocuments] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleCheckboxChange = (id: string, checked: boolean) => {
-    setCheckedDocuments(prev =>
-      checked ? [...prev, id] : prev.filter(docId => docId !== id)
-    );
-  };
 
   const handleDetectMissing = async () => {
     setIsLoading(true);
@@ -44,7 +37,7 @@ export function DocumentationPhase() {
     const input: DetectMissingDocumentsInput = {
       candidateProfile: candidateProfileText,
       onboardingPhase: "Detailed Documentation",
-      submittedDocuments: checkedDocuments.map(id => submittedDocs.find(d => d.id === id)?.label || ''),
+      submittedDocuments: ["Resume/CV", "Application Form"],
     };
 
     try {
@@ -70,22 +63,13 @@ export function DocumentationPhase() {
       <div className="lg:col-span-2 space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Submitted Documents</CardTitle>
-            <CardDescription>Verify the documents submitted by the candidate.</CardDescription>
+            <CardTitle className="font-headline">Request Documentation</CardTitle>
+            <CardDescription>
+                Send the candidate a link to a secure portal where they can upload the necessary documents for the final phase.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {submittedDocs.map(doc => (
-              <div key={doc.id} className="flex items-center space-x-3 rounded-md border p-4">
-                <Checkbox
-                  id={doc.id}
-                  checked={checkedDocuments.includes(doc.id)}
-                  onCheckedChange={(checked) => handleCheckboxChange(doc.id, !!checked)}
-                />
-                <Label htmlFor={doc.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  {doc.label}
-                </Label>
-              </div>
-            ))}
+          <CardContent>
+            <CopyDocumentationLink />
           </CardContent>
         </Card>
 
@@ -114,7 +98,7 @@ export function DocumentationPhase() {
         <Card className="sticky top-24">
           <CardHeader>
             <CardTitle className="font-headline">Document Suggestions</CardTitle>
-            <CardDescription>Results from the missing document detection.</CardDescription>
+            <CardDescription>AI-powered check for potentially missing documents.</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading && (

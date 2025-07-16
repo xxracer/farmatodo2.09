@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 const MAX_FILE_SIZE = 5000000; // 5MB
-const ACCEPTED_FILE_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+const ACCEPTED_RESUME_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+
 
 const educationEntrySchema = z.object({
   name: z.string().optional(),
@@ -97,7 +99,7 @@ export const applicationSchema = z.object({
     .refine((file) => file, "Resume is required.")
     .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
-      (file) => ACCEPTED_FILE_TYPES.includes(file?.type),
+      (file) => ACCEPTED_RESUME_TYPES.includes(file?.type),
       ".pdf, .doc, and .docx files are accepted."
     ),
 
@@ -152,3 +154,24 @@ export const interviewReviewSchema = z.object({
 });
 
 export type InterviewReviewSchema = z.infer<typeof interviewReviewSchema>;
+
+export const documentationSchema = z.object({
+  idCard: z
+    .any()
+    .refine((file) => file, "ID is required.")
+    .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
+    ),
+  proofOfAddress: z
+    .any()
+    .refine((file) => file, "Proof of address is required.")
+    .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
+    ),
+});
+
+export type DocumentationSchema = z.infer<typeof documentationSchema>;
