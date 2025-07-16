@@ -1,30 +1,29 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApplicationForm } from "@/components/dashboard/application-form";
 import { DocumentationPhase } from "@/components/dashboard/documentation-phase";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
+import { CopyApplicationLink } from "@/components/dashboard/copy-link";
 
 export default function DashboardPage() {
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-headline font-bold text-foreground">
-          New Candidate: Jane Doe
-        </h1>
-        <p className="text-muted-foreground">
-          Complete the steps below to onboard the new candidate.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-headline font-bold text-foreground">
+            New Candidate: Jane Doe
+          </h1>
+          <p className="text-muted-foreground">
+            Complete the steps below to onboard the new candidate.
+          </p>
+        </div>
+        <CopyApplicationLink />
       </div>
       
       <ProgressTracker />
 
-      <Tabs defaultValue="application" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-          <TabsTrigger value="application">Phase 1: Application</TabsTrigger>
+      <Tabs defaultValue="documentation" className="w-full">
+        <TabsList className="grid w-full grid-cols-1 md:w-[200px]">
           <TabsTrigger value="documentation">Phase 2: Documentation</TabsTrigger>
         </TabsList>
-        <TabsContent value="application" className="mt-6">
-          <ApplicationForm />
-        </TabsContent>
         <TabsContent value="documentation" className="mt-6">
           <DocumentationPhase />
         </TabsContent>
