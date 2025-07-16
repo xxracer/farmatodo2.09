@@ -1,7 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Users } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { User, Users, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function CandidatesPage() {
@@ -24,6 +25,13 @@ export default function CandidatesPage() {
       window.removeEventListener('storage', updateCandidateInfo);
     };
   }, []);
+
+  const handleDeleteCandidate = () => {
+    localStorage.removeItem("candidateName");
+    localStorage.removeItem("candidateCompany");
+    setCandidateName(null);
+    setCandidateCompany(null);
+  };
 
   if (!candidateName) {
     return (
@@ -57,6 +65,12 @@ export default function CandidatesPage() {
                 This is a placeholder for candidate details. You can view progress on the dashboard.
             </p>
         </CardContent>
+        <CardFooter>
+            <Button variant="destructive" onClick={handleDeleteCandidate}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Candidate
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );
