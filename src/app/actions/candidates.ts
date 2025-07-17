@@ -3,12 +3,12 @@
 
 import { db, storage } from "@/lib/firebase";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
 
 async function uploadFileAndGetURL(candidateId: string, file: File, fileName: string): Promise<string> {
-    const storageRef = ref(storage, `${candidateId}/${fileName}`);
+    const storageRef = ref(storage, `candidates/${candidateId}/${fileName}`);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
     return downloadURL;
@@ -18,8 +18,8 @@ export async function createCandidate(data: ApplicationSchema, resume: File) {
     try {
         const docRef = await addDoc(collection(db, "candidates"), {
             ...data,
-            resume: undefined, // Clear resume from initial data
-            status: 'candidate', // Set initial status
+            resume: undefined,
+            status: 'candidate',
         });
         
         const candidateId = docRef.id;
@@ -38,7 +38,7 @@ export async function createCandidate(data: ApplicationSchema, resume: File) {
 
 export async function getCandidates(): Promise<ApplicationData[]> {
     try {
-        const q = query(collection(db, "candidates"), where("status", "==", "candidate"), orderBy("date", "desc"));
+        const q = query(collection(db, "candidates"), where("status", "==", "candidate"));
         const querySnapshot = await getDocs(q);
         const candidates = querySnapshot.docs.map(doc => ({
             id: doc.id,
@@ -53,7 +53,7 @@ export async function getCandidates(): Promise<ApplicationData[]> {
 
 export async function getNewHires(): Promise<ApplicationData[]> {
     try {
-        const q = query(collection(db, "candidates"), where("status", "==", "new-hire"), orderBy("date", "desc"));
+        const q = query(collection(db, "candidates"), where("status", "==", "new-hire"));
         const querySnapshot = await getDocs(q);
         const candidates = querySnapshot.docs.map(doc => ({
             id: doc.id,
@@ -68,7 +68,7 @@ export async function getNewHires(): Promise<ApplicationData[]> {
 
 export async function getEmployees(): Promise<ApplicationData[]> {
     try {
-        const q = query(collection(db, "candidates"), where("status", "==", "employee"), orderBy("date", "desc"));
+        const q = query(collection(db, "candidates"), where("status", "==", "employee"));
         const querySnapshot = await getDocs(q);
         const employees = querySnapshot.docs.map(doc => ({
             id: doc.id,
@@ -143,24 +143,24 @@ export async function updateCandidateStatus(id: string, status: 'new-hire' | 'em
 
 export async function deleteCandidate(id: string) {
     try {
-        await deleteDoc(doc(db, "candidates", id));
+        const candidateDocRef = doc(db, "candidates", id);
+        const candidateData = (await getDoc(candidateDocRef)).data() as ApplicationData | undefined;
 
-        // Note: This is a simplified deletion. For a production app,
-        // you'd list all files in the candidate's folder and delete them one by one.
-        // This example deletes known files.
-        try {
-            const candidateData = await getCandidate(id);
-            if(candidateData?.resume) {
-                await deleteObject(ref(storage, candidateData.resume));
+        await deleteDoc(candidateDocRef);
+
+        // Delete associated files from storage
+        const filesToDelete = [candidateData?.resume, candidateData?.idCard, candidateData?.proofOfAddress];
+        for (const fileUrl of filesToDelete) {
+            if (fileUrl) {
+                try {
+                    const fileRef = ref(storage, fileUrl);
+                    await deleteObject(fileRef);
+                } catch (storageError: any) {
+                    if (storageError.code !== 'storage/object-not-found') {
+                       console.error("Could not delete associated file:", fileUrl, storageError);
+                    }
+                }
             }
-             if(candidateData?.idCard) {
-                await deleteObject(ref(storage, candidateData.idCard));
-            }
-             if(candidateData?.proofOfAddress) {
-                await deleteObject(ref(storage, candidateData.proofOfAddress));
-            }
-        } catch (storageError) {
-            console.error("Could not delete associated files, they may not exist: ", storageError);
         }
 
         revalidatePath('/dashboard/candidates');
