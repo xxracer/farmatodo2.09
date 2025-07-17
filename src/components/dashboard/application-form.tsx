@@ -309,42 +309,54 @@ export function ApplicationForm() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="font-headline">Education</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-2 md:grid-cols-5 items-center">
-              <div/>
-              <FormLabel className="text-muted-foreground text-sm">School Name</FormLabel>
-              <FormLabel className="text-muted-foreground text-sm">Location of School</FormLabel>
-              <FormLabel className="text-muted-foreground text-sm">Course of Study</FormLabel>
-              <FormLabel className="text-muted-foreground text-sm">Degree/Diploma</FormLabel>
-              
-              <FormLabel>College</FormLabel>
-              <FormField control={form.control} name="education.college.name" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.college.location" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.college.course" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.college.degree" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              
-              <FormLabel>Vo-Tech or Trade</FormLabel>
-              <FormField control={form.control} name="education.voTech.name" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.voTech.location" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.voTech.course" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.voTech.degree" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
+            <CardHeader>
+                <CardTitle className="font-headline">Education</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">Enter your educational background below.</p>
+                    
+                    <div className="p-4 border rounded-md">
+                        <h4 className="font-semibold text-md mb-4">College</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="education.college.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.college.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.college.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.college.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                        </div>
+                    </div>
 
-              <FormLabel>High School</FormLabel>
-              <FormField control={form.control} name="education.highSchool.name" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.highSchool.location" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.highSchool.course" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.highSchool.degree" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              
-              <FormLabel>Other</FormLabel>
-              <FormField control={form.control} name="education.other.name" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.other.location" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.other.course" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              <FormField control={form.control} name="education.other.degree" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl></FormItem>)} />
-            </div>
-          </CardContent>
+                    <div className="p-4 border rounded-md">
+                        <h4 className="font-semibold text-md mb-4">Vo-Tech or Trade School</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="education.voTech.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.voTech.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.voTech.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.voTech.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                        </div>
+                    </div>
+
+                    <div className="p-4 border rounded-md">
+                        <h4 className="font-semibold text-md mb-4">High School</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="education.highSchool.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.highSchool.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.highSchool.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.highSchool.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                        </div>
+                    </div>
+                    
+                    <div className="p-4 border rounded-md">
+                        <h4 className="font-semibold text-md mb-4">Other</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="education.other.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.other.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.other.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.other.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
         </Card>
 
         <Card>
