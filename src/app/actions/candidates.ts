@@ -2,7 +2,7 @@
 
 import { db, storage } from "@/lib/firebase";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
 
@@ -17,7 +17,8 @@ export async function createCandidate(data: ApplicationSchema, resume: File) {
     try {
         const docRef = await addDoc(collection(db, "candidates"), {
             ...data,
-            resume: undefined // Clear resume from initial data
+            resume: undefined, // Clear resume from initial data
+            status: 'candidate', // Set initial status
         });
         
         const candidateId = docRef.id;
@@ -36,7 +37,7 @@ export async function createCandidate(data: ApplicationSchema, resume: File) {
 
 export async function getCandidates(): Promise<ApplicationData[]> {
     try {
-        const q = query(collection(db, "candidates"), orderBy("date", "desc"));
+        const q = query(collection(db, "candidates"), where("status", "==", "candidate"), orderBy("date", "desc"));
         const querySnapshot = await getDocs(q);
         const candidates = querySnapshot.docs.map(doc => ({
             id: doc.id,
@@ -48,6 +49,22 @@ export async function getCandidates(): Promise<ApplicationData[]> {
         return [];
     }
 }
+
+export async function getNewHires(): Promise<ApplicationData[]> {
+    try {
+        const q = query(collection(db, "candidates"), where("status", "==", "new-hire"), orderBy("date", "desc"));
+        const querySnapshot = await getDocs(q);
+        const candidates = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as ApplicationData));
+        return candidates;
+    } catch (error) {
+        console.error("Error getting new hires: ", error);
+        return [];
+    }
+}
+
 
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
     try {
@@ -91,6 +108,23 @@ export async function updateCandidateWithDocuments(id: string, documents: { idCa
     }
 }
 
+export async function updateCandidateStatus(id: string, status: 'new-hire' | 'employee') {
+    try {
+        const docRef = doc(db, "candidates", id);
+        await updateDoc(docRef, { status });
+
+        revalidatePath('/dashboard/candidates');
+        revalidatePath('/dashboard/candidates/view', 'page');
+        revalidatePath('/dashboard/new-hires');
+        revalidatePath('/dashboard/employees');
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating status: ", error);
+        return { success: false, error: "Failed to update candidate status." };
+    }
+}
+
+
 export async function deleteCandidate(id: string) {
     try {
         await deleteDoc(doc(db, "candidates", id));
@@ -124,7 +158,8 @@ export async function deleteCandidate(id: string) {
 
 export async function hasCandidates() {
     try {
-        const querySnapshot = await getDocs(collection(db, "candidates"));
+        const q = query(collection(db, "candidates"), where("status", "==", "candidate"));
+        const querySnapshot = await getDocs(q);
         return !querySnapshot.empty;
     } catch (error) {
         console.error("Error checking for candidates: ", error);

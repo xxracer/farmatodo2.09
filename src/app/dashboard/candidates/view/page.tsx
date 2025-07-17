@@ -1,11 +1,21 @@
 
+import { getCandidate, updateCandidateStatus } from "@/app/actions/candidates";
 import { ApplicationView } from "@/components/dashboard/application-view";
-import { type ApplicationData } from "@/lib/schemas";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserSearch } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getCandidate } from "@/app/actions/candidates";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { type ApplicationData } from "@/lib/schemas";
+import { UserCheck, UserSearch } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+async function handleMarkAsNewHire(candidateId: string) {
+    'use server';
+    const result = await updateCandidateStatus(candidateId, 'new-hire');
+    if (result.success) {
+        redirect('/dashboard/new-hires');
+    }
+    // Handle error case if needed
+}
 
 export default async function ApplicationViewPage({ searchParams }: { searchParams: { id?: string } }) {
     const candidateId = searchParams.id;
@@ -44,9 +54,17 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
                  <h1 className="text-3xl font-headline font-bold text-foreground">
                     Viewing Application: {applicationData.firstName} {applicationData.lastName}
                 </h1>
-                <Button asChild variant="outline">
-                    <Link href="/dashboard/candidates">Back to Candidates</Link>
-                </Button>
+                <div className="flex gap-2">
+                    <form action={handleMarkAsNewHire.bind(null, applicationData.id)}>
+                        <Button type="submit">
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            Mark as New Hire
+                        </Button>
+                    </form>
+                    <Button asChild variant="outline">
+                        <Link href="/dashboard/candidates">Back to Candidates</Link>
+                    </Button>
+                </div>
             </div>
             <ApplicationView data={applicationData} />
         </div>
