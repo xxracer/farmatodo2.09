@@ -1,18 +1,13 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public write access for candidates submitting applications,
-    // but restrict read access to authenticated users (i.e., HR personnel).
     match /candidates/{candidateId} {
-      allow read: if request.auth != null;
-      allow write; // Allows create, update, delete for unauthenticated users
-    }
-    
-    // Default deny all other collections
-    match /{document=**} {
-      allow read, write: if false;
+      // Allow anyone to create a candidate (submit an application)
+      // but only authenticated users to read/update/delete.
+      // For the prototype, we will allow reads for anyone.
+      allow read: if true; 
+      allow create: if true;
+      allow update, delete: if request.auth != null;
     }
   }
 }
