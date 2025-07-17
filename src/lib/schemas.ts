@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 
 const MAX_FILE_SIZE = 5000000; // 5MB
@@ -100,7 +101,8 @@ export const applicationSchema = z.object({
   
   // Resume
   resume: z
-    .instanceof(File, { message: "Resume is required." })
+    .any()
+    .refine((file): file is File => file instanceof File, "Resume is required.")
     .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
       (file) => ACCEPTED_RESUME_TYPES.includes(file.type),
@@ -141,10 +143,17 @@ export const applicationSchema = z.object({
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
 // This is the type for the data that will be stored in localStorage
-export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory'> & {
+export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory' | 'previouslyEmployed' | 'legallyEligible' | 'differentLastName' | 'currentlyEmployed' | 'reliableTransportation' | 'convictedOfCrime' | 'capableOfPerformingJob'> & {
     id: string;
     resume?: string; // Storing the download URL as a string
     date?: string;
+    previouslyEmployed?: "yes" | "no";
+    legallyEligible?: "yes" | "no";
+    differentLastName?: "yes" | "no";
+    currentlyEmployed?: "yes" | "no";
+    reliableTransportation?: "yes" | "no";
+    convictedOfCrime?: "yes" | "no";
+    capableOfPerformingJob?: "yes" | "no";
     employmentHistory: Array<Omit<z.infer<typeof employmentHistoryEntrySchema>, 'dateFrom' | 'dateTo'> & {
         dateFrom?: string;
         dateTo?: string;
@@ -189,3 +198,5 @@ export const documentationSchema = z.object({
 });
 
 export type DocumentationSchema = z.infer<typeof documentationSchema>;
+
+    

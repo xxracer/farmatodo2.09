@@ -75,16 +75,16 @@ export function ApplicationForm() {
             resume: undefined,
             certification: false,
             signature: "",
-            previouslyEmployed: undefined,
-            legallyEligible: undefined,
+            previouslyEmployed: "no",
+            legallyEligible: "yes",
             howLearned: undefined,
-            differentLastName: undefined,
+            differentLastName: "no",
             previousName: "",
-            currentlyEmployed: undefined,
-            reliableTransportation: undefined,
-            convictedOfCrime: undefined,
+            currentlyEmployed: "no",
+            reliableTransportation: "yes",
+            convictedOfCrime: "no",
             crimeDescription: "",
-            capableOfPerformingJob: undefined,
+            capableOfPerformingJob: "yes",
             jobRequirementLimitation: "",
         },
     });
@@ -102,6 +102,16 @@ export function ApplicationForm() {
     async function onSubmit(data: ApplicationSchema) {
         setIsSubmitting(true);
         const resumeFile = data.resume;
+
+        if (!resumeFile) {
+            toast({
+                variant: "destructive",
+                title: "Submission Failed",
+                description: "Resume file is missing.",
+            });
+            setIsSubmitting(false);
+            return;
+        }
 
         const serializableData = {
             ...data,
@@ -319,40 +329,40 @@ export function ApplicationForm() {
                     <div className="p-4 border rounded-md">
                         <h4 className="font-semibold text-md mb-4">College</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="education.college.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.college.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.college.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.college.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.college.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.college.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.college.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.college.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </div>
 
                     <div className="p-4 border rounded-md">
                         <h4 className="font-semibold text-md mb-4">Vo-Tech or Trade School</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="education.voTech.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.voTech.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.voTech.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.voTech.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.voTech.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.voTech.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.voTech.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.voTech.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </div>
 
                     <div className="p-4 border rounded-md">
                         <h4 className="font-semibold text-md mb-4">High School</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="education.highSchool.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.highSchool.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.highSchool.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.highSchool.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.highSchool.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.highSchool.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.highSchool.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.highSchool.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </div>
                     
                     <div className="p-4 border rounded-md">
                         <h4 className="font-semibold text-md mb-4">Other</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="education.other.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.other.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.other.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="education.other.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="education.other.name" render={({ field }) => (<FormItem><FormLabel>School Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.other.location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.other.course" render={({ field }) => (<FormItem><FormLabel>Course of Study</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="education.other.degree" render={({ field }) => (<FormItem><FormLabel>Degree/Diploma</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     </div>
                 </div>
@@ -360,72 +370,108 @@ export function ApplicationForm() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="font-headline">Employment History</CardTitle>
-            <CardDescription>List the last five years of employment history, starting with the most recent employer.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {employmentFields.map((field, index) => (
-              <div key={field.id} className="space-y-6 rounded-md border p-4 relative">
-                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeEmployment(index)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+            <CardHeader>
+                <CardTitle className="font-headline">Employment History</CardTitle>
+                <CardDescription>List the last five years of employment history, starting with the most recent employer.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {employmentFields.map((field, index) => (
+                <div key={field.id} className="space-y-6 rounded-md border p-4 relative">
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeEmployment(index)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+
+                    <h4 className="font-semibold">Employer #{index + 1}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name={`employmentHistory.${index}.companyName`} render={({ field }) => (
+                        <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`employmentHistory.${index}.telephone`} render={({ field }) => (
+                        <FormItem><FormLabel>Telephone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    </div>
+                    <FormField control={form.control} name={`employmentHistory.${index}.address`} render={({ field }) => (
+                        <FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField control={form.control} name={`employmentHistory.${index}.city`} render={({ field }) => (
+                        <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`employmentHistory.${index}.state`} render={({ field }) => (
+                        <FormItem><FormLabel>State</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`employmentHistory.${index}.zipCode`} render={({ field }) => (
+                        <FormItem><FormLabel>Zip Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField control={form.control} name={`employmentHistory.${index}.dateFrom`} render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Dates of Employment: From</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name={`employmentHistory.${index}.dateTo`} render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>To</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name={`employmentHistory.${index}.startingPay`} render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Starting Pay</FormLabel>
+                            <FormControl><Input type="number" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    </div>
+
+                    <FormField control={form.control} name={`employmentHistory.${index}.jobTitleAndDescription`} render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Job Title and Describe your work</FormLabel>
+                            <FormControl><Textarea {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name={`employmentHistory.${index}.reasonForLeaving`} render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Reason for leaving</FormLabel>
+                            <FormControl><Textarea {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                </div>
+                ))}
+                {employmentFields.length < 3 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => appendEmployment({ companyName: "", telephone: "", address: "", city: "", state: "", zipCode: "", dateFrom: new Date(), dateTo: new Date(), startingPay: 0, jobTitleAndDescription: "", reasonForLeaving: "" })}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Employment
                 </Button>
-
-                <h4 className="font-semibold">Employer #{index + 1}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField control={form.control} name={`employmentHistory.${index}.companyName`} render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name={`employmentHistory.${index}.telephone`} render={({ field }) => (<FormItem><FormLabel>Telephone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                </div>
-                <FormField control={form.control} name={`employmentHistory.${index}.address`} render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField control={form.control} name={`employmentHistory.${index}.city`} render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name={`employmentHistory.${index}.state`} render={({ field }) => (<FormItem><FormLabel>State</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name={`employmentHistory.${index}.zipCode`} render={({ field }) => (<FormItem><FormLabel>Zip Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField control={form.control} name={`employmentHistory.${index}.dateFrom`} render={({ field }) => (
-                      <FormItem className="flex flex-col"><FormLabel>Dates of Employment: From</FormLabel>
-                      <Popover><PopoverTrigger asChild>
-                          <FormControl>
-                              <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                          </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage />
-                      </FormItem>
-                  )}/>
-                  <FormField control={form.control} name={`employmentHistory.${index}.dateTo`} render={({ field }) => (
-                      <FormItem className="flex flex-col"><FormLabel>To</FormLabel>
-                      <Popover><PopoverTrigger asChild>
-                          <FormControl>
-                              <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                          </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage />
-                      </FormItem>
-                  )}/>
-                   <FormField control={form.control} name={`employmentHistory.${index}.startingPay`} render={({ field }) => (<FormItem><FormLabel>Starting Pay</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                </div>
-
-                <FormField control={form.control} name={`employmentHistory.${index}.jobTitleAndDescription`} render={({ field }) => (<FormItem><FormLabel>Job Title and Describe your work</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name={`employmentHistory.${index}.reasonForLeaving`} render={({ field }) => (<FormItem><FormLabel>Reason for leaving</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-
-              </div>
-            ))}
-            {employmentFields.length < 3 && (
-              <Button type="button" variant="outline" size="sm" onClick={() => appendEmployment({ companyName: "", telephone: "", address: "", city: "", state: "", zipCode: "", dateFrom: new Date(), dateTo: new Date(), startingPay: 0, jobTitleAndDescription: "", reasonForLeaving: "" })}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Employment
-              </Button>
-            )}
-            
-          </CardContent>
+                )}
+            </CardContent>
         </Card>
 
         <Card>
@@ -482,10 +528,16 @@ export function ApplicationForm() {
                         </Button>
                         <h4 className="font-semibold">Reference #{index + 1}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormField control={form.control} name={`professionalReferences.${index}.name`} render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name={`professionalReferences.${index}.telephone`} render={({ field }) => (<FormItem><FormLabel>Telephone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name={`professionalReferences.${index}.name`} render={({ field }) => (
+                                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name={`professionalReferences.${index}.telephone`} render={({ field }) => (
+                                <FormItem><FormLabel>Telephone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
                         </div>
-                        <FormField control={form.control} name={`professionalReferences.${index}.address`} render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name={`professionalReferences.${index}.address`} render={({ field }) => (
+                            <FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                     </div>
                 ))}
                 {referenceFields.length < 3 && (
@@ -563,7 +615,9 @@ export function ApplicationForm() {
                 <FormField
                     control={form.control}
                     name="resume"
-                    render={({ field: { onChange, ...fieldProps} }) => {
+                    render={({ field: { onChange, value, ...fieldProps} }) => {
+                        // Check if a file is selected to display its name
+                        const fileName = value instanceof File ? value.name : "No file chosen";
                         return (
                             <FormItem>
                                 <FormLabel>Upload your resume</FormLabel>
@@ -573,10 +627,13 @@ export function ApplicationForm() {
                                         accept=".pdf,.doc,.docx" 
                                         onChange={(e) => onChange(e.target.files?.[0])}
                                         {...fieldProps}
-                                        value={undefined}
+                                        value={undefined} // Required to allow file input to be controlled
                                      />
                                 </FormControl>
-                                <FormDescription>Please upload your resume in PDF, DOC, or DOCX format.</FormDescription>
+                                <FormDescription>
+                                  Please upload your resume in PDF, DOC, or DOCX format.
+                                  {value instanceof File && <span className="block mt-1">Selected file: {fileName}</span>}
+                                </FormDescription>
                                 <FormMessage />
                             </FormItem>
                         );
@@ -637,3 +694,5 @@ export function ApplicationForm() {
     </Form>
   )
 }
+
+    

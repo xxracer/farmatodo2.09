@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,15 +14,19 @@ type DataRowProps = {
 
 const DataRow = ({ label, value }: DataRowProps) => {
     if (value === null || value === undefined || value === '') return null;
+    
+    let displayValue = value;
+    if (typeof value === 'string' && (value === 'yes' || value === 'no')) {
+        displayValue = value === 'yes' ? <Check className="h-5 w-5 text-green-600" /> : <X className="h-5 w-5 text-destructive" />;
+    } else if (typeof value === 'boolean') {
+        displayValue = value ? <Check className="h-5 w-5 text-green-600" /> : <X className="h-5 w-5 text-destructive" />;
+    }
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
             <div className="text-foreground break-words">
-                {typeof value === 'boolean' ? (
-                    value ? <Check className="h-5 w-5 text-green-600" /> : <X className="h-5 w-5 text-destructive" />
-                ) : (
-                    value
-                )}
+                {displayValue}
             </div>
         </div>
     );
@@ -231,3 +236,5 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
     </div>
   );
 }
+
+    
