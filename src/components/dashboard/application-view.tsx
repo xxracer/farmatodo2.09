@@ -2,7 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ApplicationData } from "@/lib/schemas";
-import { Check, X, Paperclip } from "lucide-react";
+import { Check, X, Paperclip, Download } from "lucide-react";
+import Link from "next/link";
+import { Button } from "../ui/button";
 
 type DataRowProps = {
     label: string;
@@ -14,16 +16,32 @@ const DataRow = ({ label, value }: DataRowProps) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
-            <p className="text-foreground">
+            <div className="text-foreground break-words">
                 {typeof value === 'boolean' ? (
                     value ? <Check className="h-5 w-5 text-green-600" /> : <X className="h-5 w-5 text-destructive" />
                 ) : (
-                    String(value)
+                    value
                 )}
-            </p>
+            </div>
         </div>
     );
 };
+
+const FileRow = ({ label, value }: { label: string, value?: string }) => {
+    if (!value) return null;
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <p className="font-medium text-muted-foreground">{label}</p>
+            <p>
+                <Button asChild variant="link" className="p-0 h-auto">
+                    <Link href={value} target="_blank" rel="noopener noreferrer">
+                        View/Download Document <Download className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </p>
+        </div>
+    )
+}
 
 const EducationDetails = ({ title, education }: { title: string, education: ApplicationData['education']['college']}) => {
     if (!education || (!education.name && !education.location && !education.course && !education.degree)) return null;
@@ -176,10 +194,10 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
 
         <Card>
             <CardHeader>
-                <CardTitle className="font-headline">Credentials & Skills</CardTitle>
+                <CardTitle className="font-headline">Credentials, Skills & Resume</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-                <DataRow label="Resume File" value={data.resume} />
+                <FileRow label="Resume File" value={data.resume} />
                 <DataRow label="Specialized Skills & Qualifications" value={data.specializedSkills} />
             </CardContent>
         </Card>
@@ -190,8 +208,8 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <CardDescription>Documents uploaded during Phase 3.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                {data.idCard ? <DataRow label="Government-issued ID" value={data.idCard} /> : null}
-                {data.proofOfAddress ? <DataRow label="Proof of Address" value={data.proofOfAddress} /> : null}
+                <FileRow label="Government-issued ID" value={data.idCard} />
+                <FileRow label="Proof of Address" value={data.proofOfAddress} />
                 {!data.idCard && !data.proofOfAddress && (
                     <div className="flex items-center justify-center text-sm text-muted-foreground p-4">
                         <Paperclip className="mr-2 h-4 w-4" />

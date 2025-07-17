@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const MAX_FILE_SIZE = 5000000; // 5MB
+const MAX_FILE_SIZE = 10000000; // 10MB
 const ACCEPTED_RESUME_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
 
@@ -100,11 +100,10 @@ export const applicationSchema = z.object({
   
   // Resume
   resume: z
-    .any()
-    .refine((file) => file, "Resume is required.")
-    .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .instanceof(File, { message: "Resume is required." })
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
     .refine(
-      (file) => ACCEPTED_RESUME_TYPES.includes(file?.type),
+      (file) => ACCEPTED_RESUME_TYPES.includes(file.type),
       ".pdf, .doc, and .docx files are accepted."
     ),
 
@@ -144,14 +143,14 @@ export type ApplicationSchema = z.infer<typeof applicationSchema>;
 // This is the type for the data that will be stored in localStorage
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory'> & {
     id: string;
-    resume?: string; // Storing only the filename as a string
+    resume?: string; // Storing the download URL as a string
     date?: string;
     employmentHistory: Array<Omit<z.infer<typeof employmentHistoryEntrySchema>, 'dateFrom' | 'dateTo'> & {
         dateFrom?: string;
         dateTo?: string;
     }>;
-    idCard?: string;
-    proofOfAddress?: string;
+    idCard?: string; // Storing the download URL as a string
+    proofOfAddress?: string; // Storing the download URL as a string
 };
 
 export const interviewReviewSchema = z.object({
@@ -174,19 +173,17 @@ export type InterviewReviewSchema = z.infer<typeof interviewReviewSchema>;
 
 export const documentationSchema = z.object({
   idCard: z
-    .any()
-    .refine((file) => file, "ID is required.")
-    .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .instanceof(File, { message: "ID is required." })
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
     .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
     ),
   proofOfAddress: z
-    .any()
-    .refine((file) => file, "Proof of address is required.")
-    .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .instanceof(File, { message: "Proof of address is required." })
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
     .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
     ),
 });

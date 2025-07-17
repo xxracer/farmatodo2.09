@@ -7,6 +7,7 @@ import { z } from "zod"
 import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ import { Checkbox } from "../ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
 import { createCandidate } from "@/app/actions/candidates"
+import { Loader2 } from "lucide-react"
 
 const companies = [
   { id: "Central Home Texas", label: "Central Home Texas" },
@@ -42,6 +44,7 @@ const companies = [
 export function ApplicationForm() {
     const { toast } = useToast()
     const router = useRouter()
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<ApplicationSchema>({
         resolver: zodResolver(applicationSchema),
@@ -86,7 +89,9 @@ export function ApplicationForm() {
     });
 
     async function onSubmit(data: ApplicationSchema) {
-        // TODO: Handle file uploads to a cloud storage
+        setIsSubmitting(true);
+        const resumeFile = data.resume;
+
         const serializableData = {
             ...data,
             date: data.date ? format(data.date, 'yyyy-MM-dd') : undefined,
@@ -95,10 +100,11 @@ export function ApplicationForm() {
                 dateFrom: job.dateFrom ? format(job.dateFrom, 'yyyy-MM-dd') : undefined,
                 dateTo: job.dateTo ? format(job.dateTo, 'yyyy-MM-dd') : undefined,
             })),
-            resume: data.resume?.name, // For now, just store the name
+            resume: undefined, // Will be replaced by URL
         };
 
-        const result = await createCandidate(serializableData);
+        const result = await createCandidate(serializableData, resumeFile);
+        setIsSubmitting(false);
 
         if (result.success) {
             toast({
@@ -533,14 +539,17 @@ export function ApplicationForm() {
                 <FormField
                     control={form.control}
                     name="resume"
-                    render={({ field }) => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        const { value, ...rest } = field;
+                    render={({ field: { onChange, ...fieldProps} }) => {
                         return (
                             <FormItem>
                                 <FormLabel>Upload your resume</FormLabel>
                                 <FormControl>
-                                    <Input type="file" accept=".pdf,.doc,.docx" {...rest} onChange={(e) => field.onChange(e.target.files?.[0])} />
+                                    <Input 
+                                        type="file" 
+                                        accept=".pdf,.doc,.docx" 
+                                        onChange={(e) => onChange(e.target.files?.[0])}
+                                        {...fieldProps}
+                                     />
                                 </FormControl>
                                 <FormDescription>Please upload your resume in PDF, DOC, or DOCX format.</FormDescription>
                                 <FormMessage />
@@ -594,7 +603,10 @@ export function ApplicationForm() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit">Submit Application</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Submit Application
+          </Button>
         </div>
       </form>
     </Form>
