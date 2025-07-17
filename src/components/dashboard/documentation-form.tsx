@@ -17,10 +17,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { documentationSchema, type DocumentationSchema } from "@/lib/schemas"
+import { documentationSchema, type DocumentationSchema, type ApplicationData } from "@/lib/schemas"
 
 
-export function DocumentationForm({ company }: { company: string }) {
+export function DocumentationForm({ company, candidateId }: { company: string, candidateId?: string | null }) {
     const { toast } = useToast()
     const router = useRouter()
 
@@ -33,6 +33,50 @@ export function DocumentationForm({ company }: { company: string }) {
     });
 
     function onSubmit(data: DocumentationSchema) {
+        if (!candidateId) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "No candidate ID found. This link may be invalid.",
+            });
+            return;
+        }
+
+        const existingData = localStorage.getItem('candidateApplicationDataList');
+        const candidateList: ApplicationData[] = existingData ? JSON.parse(existingData) : [];
+        
+        const candidateIndex = candidateList.findIndex(c => c.id === candidateId);
+
+        if (candidateIndex === -1) {
+             toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not find the specified candidate.",
+            });
+            return;
+        }
+
+        // Update the candidate's data
+        const updatedCandidate = {
+            ...candidateList[candidateIndex],
+            idCard: data.idCard?.name,
+            proofOfAddress: data.proofOfAddress?.name,
+        };
+
+        candidateList[candidateIndex] = updatedCandidate;
+
+        localStorage.setItem('candidateApplicationDataList', JSON.stringify(candidateList));
+        
+        // Also update single candidate view if it matches
+        const currentCandidateData = localStorage.getItem('candidateApplicationData');
+        if (currentCandidateData) {
+            const parsedCurrent = JSON.parse(currentCandidateData);
+            if(parsedCurrent.id === candidateId) {
+                localStorage.setItem('candidateApplicationData', JSON.stringify(updatedCandidate));
+            }
+        }
+
+
         toast({
           title: "Documents Submitted",
           description: "Candidate documents have been uploaded.",

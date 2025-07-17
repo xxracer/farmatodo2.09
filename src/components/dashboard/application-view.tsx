@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ApplicationData } from "@/lib/schemas";
-import { Check, X } from "lucide-react";
+import { Check, X, Paperclip } from "lucide-react";
 
 type DataRowProps = {
     label: string;
@@ -90,6 +90,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
           <CardContent className="space-y-2">
             <DataRow label="Full Name" value={`${data.firstName} ${data.middleName || ''} ${data.lastName}`} />
             <DataRow label="Date of Application" value={data.date} />
+            <DataRow label="Applying For" value={data.applyingFor.join(", ")} />
           </CardContent>
         </Card>
 
@@ -180,6 +181,23 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
             <CardContent className="space-y-2">
                 <DataRow label="Resume File" value={data.resume} />
                 <DataRow label="Specialized Skills & Qualifications" value={data.specializedSkills} />
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Attached Documents</CardTitle>
+                <CardDescription>Documents uploaded during Phase 3.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {data.idCard ? <DataRow label="Government-issued ID" value={data.idCard} /> : null}
+                {data.proofOfAddress ? <DataRow label="Proof of Address" value={data.proofOfAddress} /> : null}
+                {!data.idCard && !data.proofOfAddress && (
+                    <div className="flex items-center justify-center text-sm text-muted-foreground p-4">
+                        <Paperclip className="mr-2 h-4 w-4" />
+                        No documents have been uploaded yet.
+                    </div>
+                )}
             </CardContent>
         </Card>
 

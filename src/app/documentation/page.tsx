@@ -14,8 +14,9 @@ const companyDetails: Record<string, CompanyInfo> = {
   default: { name: "Onboard Panel", logo: "https://placehold.co/150x50.png", hint: "generic logo" },
 };
 
-export default function DocumentationPage({ searchParams }: { searchParams: { company?: string } }) {
+export default function DocumentationPage({ searchParams }: { searchParams: { company?: string, candidateId?: string } }) {
   const companyKey = searchParams.company || "default";
+  const candidateId = searchParams.candidateId;
   const company = companyDetails[companyKey] || companyDetails.default;
   
   return (
@@ -33,7 +34,7 @@ export default function DocumentationPage({ searchParams }: { searchParams: { co
           <h1 className="font-headline text-3xl font-bold text-center">Detailed Documentation</h1>
           <p className="text-muted-foreground text-center">Please upload the required documents for {company.name}.</p>
         </div>
-        <DocumentationForm company={company.name} />
+        <DocumentationForm company={company.name} candidateId={candidateId} />
       </div>
     </div>
   );

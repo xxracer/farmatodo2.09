@@ -144,13 +144,14 @@ export type ApplicationSchema = z.infer<typeof applicationSchema>;
 // This is the type for the data that will be stored in localStorage
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory'> & {
     id: string;
-    company: string;
     resume?: string; // Storing only the filename as a string
     date?: string;
     employmentHistory: Array<Omit<z.infer<typeof employmentHistoryEntrySchema>, 'dateFrom' | 'dateTo'> & {
         dateFrom?: string;
         dateTo?: string;
     }>;
+    idCard?: string;
+    proofOfAddress?: string;
 };
 
 export const interviewReviewSchema = z.object({
