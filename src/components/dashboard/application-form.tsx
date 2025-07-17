@@ -110,8 +110,9 @@ export function ApplicationForm() {
                 ...job,
                 dateFrom: job.dateFrom ? format(job.dateFrom, 'yyyy-MM-dd') : "",
                 dateTo: job.dateTo ? format(job.dateTo, 'yyyy-MM-dd') : "",
+                startingPay: parseFloat(job.startingPay as any) || 0,
             })),
-            resume: undefined, // Will be replaced by URL
+            resume: undefined, 
         };
 
         const result = await createCandidate(serializableData, resumeFile);
