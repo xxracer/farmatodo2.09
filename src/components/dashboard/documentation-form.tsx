@@ -82,7 +82,7 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
                             <FormItem>
                                 <FormLabel>Government-issued ID</FormLabel>
                                 <FormControl>
-                                    <Input type="file" accept="image/*,.pdf" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} />
+                                    <Input type="file" accept="image/*,.pdf" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} value={undefined} />
                                 </FormControl>
                                 <FormDescription>Please upload a clear copy of your ID (e.g., Driver's License, Passport).</FormDescription>
                                 <FormMessage />
@@ -98,7 +98,7 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
                             <FormItem>
                                 <FormLabel>Proof of Address</FormLabel>
                                 <FormControl>
-                                    <Input type="file" accept="image/*,.pdf" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} />
+                                    <Input type="file" accept="image/*,.pdf" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} value={undefined} />
                                 </FormControl>
                                 <FormDescription>Please upload a recent utility bill or bank statement.</FormDescription>
                                 <FormMessage />

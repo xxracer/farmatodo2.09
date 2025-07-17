@@ -75,6 +75,17 @@ export function ApplicationForm() {
             resume: undefined,
             certification: false,
             signature: "",
+            previouslyEmployed: undefined,
+            legallyEligible: undefined,
+            howLearned: undefined,
+            differentLastName: undefined,
+            previousName: "",
+            currentlyEmployed: undefined,
+            reliableTransportation: undefined,
+            convictedOfCrime: undefined,
+            crimeDescription: "",
+            capableOfPerformingJob: undefined,
+            jobRequirementLimitation: "",
         },
     });
 
@@ -549,6 +560,7 @@ export function ApplicationForm() {
                                         accept=".pdf,.doc,.docx" 
                                         onChange={(e) => onChange(e.target.files?.[0])}
                                         {...fieldProps}
+                                        value={undefined}
                                      />
                                 </FormControl>
                                 <FormDescription>Please upload your resume in PDF, DOC, or DOCX format.</FormDescription>
