@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -29,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "../ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
+import { createCandidate } from "@/app/actions/candidates"
 
 const companies = [
   { id: "Central Home Texas", label: "Central Home Texas" },
@@ -83,38 +85,34 @@ export function ApplicationForm() {
       name: "professionalReferences",
     });
 
-    function onSubmit(data: ApplicationSchema) {
-        const candidateId = `${data.firstName}-${data.lastName}-${Date.now()}`;
-        const fullApplicationData = {
-            id: candidateId,
+    async function onSubmit(data: ApplicationSchema) {
+        // TODO: Handle file uploads to a cloud storage
+        const serializableData = {
             ...data,
-            company: data.applyingFor.join(', '), // for single company context
             date: data.date ? format(data.date, 'yyyy-MM-dd') : undefined,
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
                 dateFrom: job.dateFrom ? format(job.dateFrom, 'yyyy-MM-dd') : undefined,
                 dateTo: job.dateTo ? format(job.dateTo, 'yyyy-MM-dd') : undefined,
             })),
-            resume: data.resume?.name,
+            resume: data.resume?.name, // For now, just store the name
         };
 
-        // For multi-candidate list
-        const existingData = localStorage.getItem('candidateApplicationDataList');
-        const candidateList = existingData ? JSON.parse(existingData) : [];
-        candidateList.push(fullApplicationData);
-        localStorage.setItem('candidateApplicationDataList', JSON.stringify(candidateList));
-        
-        // For single-candidate view context
-        localStorage.setItem('candidateName', `${data.firstName} ${data.lastName}`);
-        localStorage.setItem('candidateCompany', data.applyingFor.join(', '));
-        localStorage.setItem('candidateApplicationData', JSON.stringify(fullApplicationData));
+        const result = await createCandidate(serializableData);
 
-        toast({
-          title: "Application Submitted",
-          description: "Candidate data has been saved successfully.",
-        })
-        console.log(data)
-        router.push('/application/success')
+        if (result.success) {
+            toast({
+              title: "Application Submitted",
+              description: "Candidate data has been saved successfully.",
+            });
+            router.push('/application/success');
+        } else {
+            toast({
+              variant: "destructive",
+              title: "Submission Failed",
+              description: result.error || "An unknown error occurred.",
+            });
+        }
     }
 
   return (

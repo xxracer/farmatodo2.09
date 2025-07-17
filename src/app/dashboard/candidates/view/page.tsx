@@ -1,44 +1,20 @@
-"use client";
 
-import { useEffect, useState } from "react";
 import { ApplicationView } from "@/components/dashboard/application-view";
 import { type ApplicationData } from "@/lib/schemas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserSearch } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useSearchParams } from "next/navigation";
+import { getCandidate } from "@/app/actions/candidates";
 
-export default function ApplicationViewPage() {
-    const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const searchParams = useSearchParams();
+export default async function ApplicationViewPage({ searchParams }: { searchParams: { id?: string } }) {
+    const candidateId = searchParams.id;
+    let applicationData: ApplicationData | null = null;
 
-    useEffect(() => {
-        const candidateId = searchParams.get('id');
-        let dataToView: ApplicationData | null = null;
-
-        if (candidateId) {
-            const dataList = localStorage.getItem("candidateApplicationDataList");
-            if (dataList) {
-                const candidates: ApplicationData[] = JSON.parse(dataList);
-                dataToView = candidates.find(c => c.id === candidateId) || null;
-            }
-        } else {
-             const data = localStorage.getItem("candidateApplicationData");
-             if (data) {
-                dataToView = JSON.parse(data);
-             }
-        }
-        
-        setApplicationData(dataToView);
-        setIsLoading(false);
-    }, [searchParams]);
-
-    if (isLoading) {
-        return <div className="p-8 text-center">Loading application data...</div>;
+    if (candidateId) {
+        applicationData = await getCandidate(candidateId);
     }
-
+    
     if (!applicationData) {
         return (
              <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full">
@@ -49,7 +25,7 @@ export default function ApplicationViewPage() {
                         </div>
                         <CardTitle className="font-headline text-2xl mt-4">No Application Data Found</CardTitle>
                         <CardDescription>
-                            There is no submitted application data to display. Please ensure a candidate has applied.
+                           Could not find application data. The link may be invalid or the candidate was deleted.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

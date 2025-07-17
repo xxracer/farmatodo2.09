@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -8,7 +9,7 @@ import { Button } from "../ui/button";
 
 type Phase = "application" | "interview" | "documentation";
 
-export function ProgressTracker() {
+export function ProgressTracker({ candidateId }: { candidateId: string }) {
   const [currentPhase, setCurrentPhase] = useState<Phase>("application");
 
   const phases = [

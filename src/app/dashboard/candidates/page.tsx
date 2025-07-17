@@ -1,63 +1,17 @@
-"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { User, Users, Trash2, View } from "lucide-react";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Users } from "lucide-react";
 import { type ApplicationData } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useRouter } from "next/navigation";
+import { getCandidates } from "@/app/actions/candidates";
+import { CandidatesActions } from "./_components/candidates-actions";
 
-export default function CandidatesPage() {
-  const [candidates, setCandidates] = useState<ApplicationData[]>([]);
-  const router = useRouter();
-
-  useEffect(() => {
-    const updateCandidates = () => {
-      const data = localStorage.getItem("candidateApplicationDataList");
-      if (data) {
-        setCandidates(JSON.parse(data));
-      } else {
-        setCandidates([]);
-      }
-    };
-
-    updateCandidates();
-
-    window.addEventListener('storage', updateCandidates);
-
-    return () => {
-      window.removeEventListener('storage', updateCandidates);
-    };
-  }, []);
-
-  const handleDeleteCandidate = (candidateId: string) => {
-    const updatedCandidates = candidates.filter(c => c.id !== candidateId);
-    localStorage.setItem("candidateApplicationDataList", JSON.stringify(updatedCandidates));
-    setCandidates(updatedCandidates);
-    // Also remove single candidate view if it's the one being deleted
-    const currentCandidate = localStorage.getItem("candidateApplicationData");
-    if(currentCandidate) {
-        const parsedCurrent = JSON.parse(currentCandidate);
-        if(parsedCurrent.id === candidateId) {
-            localStorage.removeItem("candidateApplicationData");
-            localStorage.removeItem("candidateName");
-            localStorage.removeItem("candidateCompany");
-        }
-    }
-  };
-  
-  const handleViewCandidate = (candidate: ApplicationData) => {
-    localStorage.setItem('candidateApplicationData', JSON.stringify(candidate));
-    localStorage.setItem('candidateName', `${candidate.firstName} ${candidate.lastName}`);
-    localStorage.setItem('candidateCompany', candidate.applyingFor.join(', '));
-    router.push(`/dashboard/candidates/view?id=${candidate.id}`);
-  }
+export default async function CandidatesPage() {
+  const candidates = await getCandidates();
 
   if (candidates.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+      <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full">
         <div className="flex flex-col items-center gap-2 text-center">
           <Users className="h-12 w-12 text-muted-foreground" />
           <h3 className="text-2xl font-bold tracking-tight">No Candidates Yet</h3>
@@ -73,7 +27,7 @@ export default function CandidatesPage() {
     <div className="space-y-4">
       <h1 className="text-3xl font-headline font-bold text-foreground">Candidates</h1>
       <Card>
-        <CardContent>
+        <CardContent className="p-0">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -90,14 +44,7 @@ export default function CandidatesPage() {
                             <TableCell>{candidate.applyingFor.join(', ')}</TableCell>
                             <TableCell>{candidate.date}</TableCell>
                             <TableCell className="text-right space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => handleViewCandidate(candidate)}>
-                                    <View className="mr-2 h-4 w-4" />
-                                    View
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleDeleteCandidate(candidate.id)}>
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                </Button>
+                               <CandidatesActions candidateId={candidate.id} />
                             </TableCell>
                         </TableRow>
                     ))}

@@ -1,34 +1,23 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Link as LinkIcon } from "lucide-react";
+import { Check, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { type ApplicationData } from "@/lib/schemas";
 
-export function CopyDocumentationLink() {
+export function CopyDocumentationLink({ candidateId, companyName }: { candidateId?: string, companyName?: string }) {
   const { toast } = useToast();
   const [isCopied, setIsCopied] = useState(false);
   const [baseUrl, setBaseUrl] = useState('');
-  const [candidateCompany, setCandidateCompany] = useState<string | null>(null);
-  const [candidateId, setCandidateId] = useState<string | null>(null);
 
   useEffect(() => {
     // This runs only on the client, avoiding hydration issues.
     setBaseUrl(`${window.location.origin}/documentation`);
-    
-    const candidateData = localStorage.getItem("candidateApplicationData");
-    if (candidateData) {
-        const parsed: ApplicationData = JSON.parse(candidateData);
-        // Take the first company, assuming it's the primary one for branding
-        const companyId = parsed.applyingFor[0]?.toLowerCase().replace(/\s+/g, '-') || 'default';
-        setCandidateCompany(companyId);
-        setCandidateId(parsed.id);
-    }
   }, []);
 
   const handleCopy = () => {
-    if (!baseUrl || !candidateCompany || !candidateId) {
+    if (!baseUrl || !companyName || !candidateId) {
       toast({
         variant: "destructive",
         title: "Cannot copy link",
@@ -37,7 +26,8 @@ export function CopyDocumentationLink() {
       return;
     };
     
-    const urlToCopy = `${baseUrl}?company=${candidateCompany}&candidateId=${candidateId}`;
+    const companyId = companyName.toLowerCase().replace(/\s+/g, '-');
+    const urlToCopy = `${baseUrl}?company=${companyId}&candidateId=${candidateId}`;
 
     navigator.clipboard.writeText(urlToCopy).then(() => {
       setIsCopied(true);

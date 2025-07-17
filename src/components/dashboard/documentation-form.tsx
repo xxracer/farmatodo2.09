@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -17,7 +18,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { documentationSchema, type DocumentationSchema, type ApplicationData } from "@/lib/schemas"
+import { documentationSchema, type DocumentationSchema } from "@/lib/schemas"
+import { updateCandidateWithDocuments } from "@/app/actions/candidates"
 
 
 export function DocumentationForm({ company, candidateId }: { company: string, candidateId?: string | null }) {
@@ -32,7 +34,7 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
         },
     });
 
-    function onSubmit(data: DocumentationSchema) {
+    async function onSubmit(data: DocumentationSchema) {
         if (!candidateId) {
             toast({
                 variant: "destructive",
@@ -42,47 +44,27 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
             return;
         }
 
-        const existingData = localStorage.getItem('candidateApplicationDataList');
-        const candidateList: ApplicationData[] = existingData ? JSON.parse(existingData) : [];
-        
-        const candidateIndex = candidateList.findIndex(c => c.id === candidateId);
-
-        if (candidateIndex === -1) {
-             toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Could not find the specified candidate.",
-            });
-            return;
-        }
-
-        // Update the candidate's data
-        const updatedCandidate = {
-            ...candidateList[candidateIndex],
+        // TODO: Handle file uploads to a cloud storage
+        const documentsData = {
             idCard: data.idCard?.name,
             proofOfAddress: data.proofOfAddress?.name,
         };
 
-        candidateList[candidateIndex] = updatedCandidate;
+        const result = await updateCandidateWithDocuments(candidateId, documentsData);
 
-        localStorage.setItem('candidateApplicationDataList', JSON.stringify(candidateList));
-        
-        // Also update single candidate view if it matches
-        const currentCandidateData = localStorage.getItem('candidateApplicationData');
-        if (currentCandidateData) {
-            const parsedCurrent = JSON.parse(currentCandidateData);
-            if(parsedCurrent.id === candidateId) {
-                localStorage.setItem('candidateApplicationData', JSON.stringify(updatedCandidate));
-            }
+        if (result.success) {
+            toast({
+              title: "Documents Submitted",
+              description: "Candidate documents have been uploaded.",
+            });
+            router.push('/documentation/success');
+        } else {
+            toast({
+              variant: "destructive",
+              title: "Submission Failed",
+              description: result.error || "An unknown error occurred.",
+            });
         }
-
-
-        toast({
-          title: "Documents Submitted",
-          description: "Candidate documents have been uploaded.",
-        })
-        console.log(data)
-        router.push('/documentation/success')
     }
 
   return (

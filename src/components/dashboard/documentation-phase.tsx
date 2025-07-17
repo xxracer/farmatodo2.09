@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertCircle, FileCheck, Lightbulb, Loader2, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,35 +9,52 @@ import { detectMissingDocuments, DetectMissingDocumentsInput } from "@/ai/flows/
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CopyDocumentationLink } from "./copy-documentation-link";
+import { getCandidate } from "@/app/actions/candidates";
+import { ApplicationData } from "@/lib/schemas";
 
-const submittedDocs = [
-  { id: "resume", label: "Resume/CV" },
-  { id: "id_proof", label: "Government-issued ID" },
-];
 
-const candidateProfileText = `
-Name: Jane Doe
-Position Applying For: Senior Software Engineer
-Experience: 8 years in full-stack development.
-Education: M.S. in Computer Science.
-`;
+function buildCandidateProfile(candidate: ApplicationData | null): string {
+  if (!candidate) return "No candidate data available.";
+  return `
+    Name: ${candidate.firstName} ${candidate.lastName}
+    Position Applying For: ${candidate.position}
+    Applying to: ${candidate.applyingFor.join(", ")}
+    Education: College - ${candidate.education.college?.degree || 'N/A'}, High School - ${candidate.education.highSchool?.degree || 'N/A'}
+    Key Skills: ${candidate.specializedSkills || 'N/A'}
+  `;
+}
 
-export function DocumentationPhase() {
+export function DocumentationPhase({ candidateId }: { candidateId: string, candidateProfile: string, submittedDocuments: string[]}) {
   const [missingDocuments, setMissingDocuments] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [candidate, setCandidate] = useState<ApplicationData | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (candidateId) {
+      getCandidate(candidateId).then(setCandidate);
+    }
+  }, [candidateId]);
 
 
   const handleDetectMissing = async () => {
+    if (!candidate) {
+      setError("Candidate data is not loaded yet.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     setMissingDocuments(null);
 
+    const submittedDocs = ["Resume/CV", "Application Form"];
+    if (candidate.idCard) submittedDocs.push("Proof of Identity");
+    if (candidate.proofOfAddress) submittedDocs.push("Proof of Address");
+
     const input: DetectMissingDocumentsInput = {
-      candidateProfile: candidateProfileText,
+      candidateProfile: buildCandidateProfile(candidate),
       onboardingPhase: "Detailed Documentation",
-      submittedDocuments: ["Resume/CV", "Application Form"],
+      submittedDocuments: submittedDocs,
     };
 
     try {
@@ -68,7 +86,7 @@ export function DocumentationPhase() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CopyDocumentationLink />
+            <CopyDocumentationLink candidateId={candidateId} companyName={candidate?.applyingFor[0]} />
           </CardContent>
         </Card>
 
@@ -79,7 +97,7 @@ export function DocumentationPhase() {
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <Button onClick={handleDetectMissing} disabled={isLoading}>
+                    <Button onClick={handleDetectMissing} disabled={isLoading || !candidate}>
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
                         Detect Missing Documents
                     </Button>
