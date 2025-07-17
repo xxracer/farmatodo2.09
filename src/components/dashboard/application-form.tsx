@@ -105,11 +105,11 @@ export function ApplicationForm() {
 
         const serializableData = {
             ...data,
-            date: data.date ? format(data.date, 'yyyy-MM-dd') : undefined,
+            date: data.date ? format(data.date, 'yyyy-MM-dd') : "",
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
-                dateFrom: job.dateFrom ? format(job.dateFrom, 'yyyy-MM-dd') : undefined,
-                dateTo: job.dateTo ? format(job.dateTo, 'yyyy-MM-dd') : undefined,
+                dateFrom: job.dateFrom ? format(job.dateFrom, 'yyyy-MM-dd') : "",
+                dateTo: job.dateTo ? format(job.dateTo, 'yyyy-MM-dd') : "",
             })),
             resume: undefined, // Will be replaced by URL
         };
