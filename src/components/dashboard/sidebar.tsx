@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -17,8 +18,12 @@ import {
   Settings,
   LogOut,
   User,
+  UserCheck,
+  Briefcase,
+  FileClock,
+  BookOpenCheck,
+  Files,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -56,6 +61,66 @@ export function DashboardSidebar() {
               <Link href="/dashboard/candidates">
                 <Users />
                 <span>Candidates</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith("/dashboard/new-hires")}
+              tooltip="New Hires"
+            >
+              <Link href="/dashboard/new-hires">
+                <UserCheck />
+                <span>New Hires</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith("/dashboard/employees")}
+              tooltip="Employees"
+            >
+              <Link href="/dashboard/employees">
+                <Briefcase />
+                <span>Employees</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith("/dashboard/expiring-documentation")}
+              tooltip="Expiring Documentation"
+            >
+              <Link href="/dashboard/expiring-documentation">
+                <FileClock />
+                <span>Expiring Docs</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith("/dashboard/in-services")}
+              tooltip="In-Services"
+            >
+              <Link href="/dashboard/in-services">
+                <BookOpenCheck />
+                <span>In-Services</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith("/dashboard/misc-documents")}
+              tooltip="Misc Documents"
+            >
+              <Link href="/dashboard/misc-documents">
+                <Files />
+                <span>Misc Docs</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
