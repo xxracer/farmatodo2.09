@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const MAX_FILE_SIZE = 10000000; // 10MB
+const MAX_FILE_SIZE = 5000000; // 5MB
 const ACCEPTED_RESUME_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
 
@@ -101,7 +101,7 @@ export const applicationSchema = z.object({
   // Resume
   resume: z
     .instanceof(File, { message: "Resume is required." })
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
       (file) => ACCEPTED_RESUME_TYPES.includes(file.type),
       ".pdf, .doc, and .docx files are accepted."
@@ -174,14 +174,14 @@ export type InterviewReviewSchema = z.infer<typeof interviewReviewSchema>;
 export const documentationSchema = z.object({
   idCard: z
     .instanceof(File, { message: "ID is required." })
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
       (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
     ),
   proofOfAddress: z
     .instanceof(File, { message: "Proof of address is required." })
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 10MB.`)
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
       (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
