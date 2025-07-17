@@ -4,7 +4,7 @@ import { ApplicationView } from "@/components/dashboard/application-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ApplicationData } from "@/lib/schemas";
-import { UserCheck, UserSearch } from "lucide-react";
+import { Briefcase, UserCheck, UserSearch } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -13,6 +13,15 @@ async function handleMarkAsNewHire(candidateId: string) {
     const result = await updateCandidateStatus(candidateId, 'new-hire');
     if (result.success) {
         redirect('/dashboard/new-hires');
+    }
+    // Handle error case if needed
+}
+
+async function handleMarkAsEmployee(candidateId: string) {
+    'use server';
+    const result = await updateCandidateStatus(candidateId, 'employee');
+    if (result.success) {
+        redirect('/dashboard/employees');
     }
     // Handle error case if needed
 }
@@ -48,6 +57,9 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
         )
     }
 
+    const isCandidate = applicationData.status === 'candidate';
+    const isNewHire = applicationData.status === 'new-hire';
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -55,12 +67,22 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
                     Viewing Application: {applicationData.firstName} {applicationData.lastName}
                 </h1>
                 <div className="flex gap-2">
-                    <form action={handleMarkAsNewHire.bind(null, applicationData.id)}>
-                        <Button type="submit">
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Mark as New Hire
-                        </Button>
-                    </form>
+                    {isCandidate && (
+                        <form action={handleMarkAsNewHire.bind(null, applicationData.id)}>
+                            <Button type="submit">
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Mark as New Hire
+                            </Button>
+                        </form>
+                    )}
+                    {isNewHire && (
+                         <form action={handleMarkAsEmployee.bind(null, applicationData.id)}>
+                            <Button type="submit">
+                                <Briefcase className="mr-2 h-4 w-4" />
+                                Mark as Employee
+                            </Button>
+                        </form>
+                    )}
                     <Button asChild variant="outline">
                         <Link href="/dashboard/candidates">Back to Candidates</Link>
                     </Button>

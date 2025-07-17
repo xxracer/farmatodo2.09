@@ -65,6 +65,21 @@ export async function getNewHires(): Promise<ApplicationData[]> {
     }
 }
 
+export async function getEmployees(): Promise<ApplicationData[]> {
+    try {
+        const q = query(collection(db, "candidates"), where("status", "==", "employee"), orderBy("date", "desc"));
+        const querySnapshot = await getDocs(q);
+        const employees = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as ApplicationData));
+        return employees;
+    } catch (error) {
+        console.error("Error getting employees: ", error);
+        return [];
+    }
+}
+
 
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
     try {
