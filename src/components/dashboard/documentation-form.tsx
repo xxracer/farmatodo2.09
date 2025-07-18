@@ -5,8 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { format } from "date-fns"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,9 +22,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { documentationSchema, type DocumentationSchema } from "@/lib/schemas"
 import { updateCandidateWithDocuments } from "@/app/actions/candidates"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
-import { Calendar } from "../ui/calendar"
-import { cn } from "@/lib/utils"
 
 
 export function DocumentationForm({ company, candidateId }: { company: string, candidateId?: string | null }) {
@@ -38,8 +34,6 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
         defaultValues: {
             idCard: undefined,
             proofOfAddress: undefined,
-            driversLicense: undefined,
-            driversLicenseName: "",
         },
     });
 
@@ -59,12 +53,8 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
             {
                 idCard: data.idCard,
                 proofOfAddress: data.proofOfAddress,
-                driversLicense: data.driversLicense,
             },
-            {
-                driversLicenseName: data.driversLicenseName,
-                driversLicenseExpiration: data.driversLicenseExpiration,
-            }
+            {}
         );
         setIsSubmitting(false);
 
@@ -120,56 +110,6 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
                         );
                     }}
                 />
-                <FormField
-                    control={form.control}
-                    name="driversLicense"
-                    render={({ field: { onChange, ...fieldProps } }) => {
-                        return (
-                            <FormItem>
-                                <FormLabel>Driver's License</FormLabel>
-                                <FormControl>
-                                    <Input type="file" accept="image/*,.pdf" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} value={undefined} />
-                                </FormControl>
-                                <FormDescription>Please upload a photo or PDF of your driver's license.</FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        );
-                    }}
-                />
-                 <FormField
-                    control={form.control}
-                    name="driversLicenseName"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Name on Driver's License</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Jane Doe" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField 
-                    control={form.control} 
-                    name="driversLicenseExpiration" 
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col"><FormLabel>License Expiration Date</FormLabel>
-                        <Popover><PopoverTrigger asChild>
-                            <FormControl>
-                                <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                        </PopoverContent></Popover>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
           </CardContent>
         </Card>
 

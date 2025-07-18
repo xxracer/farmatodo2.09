@@ -109,6 +109,19 @@ export const applicationSchema = z.object({
       ".pdf, .doc, and .docx files are accepted."
     ),
 
+  // Driver's License
+  driversLicense: z
+    .any()
+    .refine((file): file is File => file instanceof File, "Driver's license is required.")
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
+    ),
+  driversLicenseName: z.string().min(1, "Name on license is required."),
+  driversLicenseExpiration: z.date({ required_error: "Expiration date is required." }),
+
+
   // Certification
   certification: z.literal(true, {
     errorMap: () => ({ message: "You must certify to submit the application." }),
@@ -150,7 +163,7 @@ type FirebaseTimestamp = {
 };
 
 // This is the type for the data that will be stored in Firestore
-export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory'> & {
+export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory' | 'driversLicense' | 'driversLicenseExpiration'> & {
     id: string;
     resume?: string; // Storing the download URL as a string
     date?: Date | FirebaseTimestamp;
@@ -162,7 +175,7 @@ export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'emplo
     proofOfAddress?: string;
     driversLicense?: string;
     driversLicenseName?: string;
-    driversLicenseExpiration?: Date | FirebaseTimestamp | string;
+    driversLicenseExpiration?: Date | FirebaseTimestamp;
 };
 
 export const interviewReviewSchema = z.object({
@@ -190,23 +203,14 @@ export const documentationSchema = z.object({
     .refine(
       (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
-    ),
+    ).optional(),
   proofOfAddress: z
     .instanceof(File, { message: "Proof of address is required." })
     .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
       (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
-    ),
-  driversLicense: z
-    .instanceof(File, { message: "Driver's license is required." })
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-    .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
-      "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
-    ),
-  driversLicenseName: z.string().min(1, "Name on license is required."),
-  driversLicenseExpiration: z.date({ required_error: "Expiration date is required." }),
+    ).optional(),
 });
 
 export type DocumentationSchema = z.infer<typeof documentationSchema>;

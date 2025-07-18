@@ -59,13 +59,14 @@ async function uploadFileAndGetURL(candidateId: string, file: File, fileName: st
     }
 }
 
-export async function createCandidate(data: ApplicationSchema, resume: File) {
+export async function createCandidate(data: ApplicationSchema, resume: File, driversLicense: File) {
     let candidateId: string | null = null;
     try {
-        // Create the document in Firestore first without the resume URL
+        // Create the document in Firestore first without the file URLs
         const docData = {
             ...data,
             resume: undefined, // Will be updated after upload
+            driversLicense: undefined, // Will be updated after upload
             date: data.date ? new Date(data.date) : new Date(),
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
@@ -73,17 +74,22 @@ export async function createCandidate(data: ApplicationSchema, resume: File) {
                 dateTo: job.dateTo ? new Date(job.dateTo) : undefined,
                 startingPay: parseFloat(job.startingPay as any) || 0,
             })),
+            driversLicenseExpiration: data.driversLicenseExpiration ? new Date(data.driversLicenseExpiration) : undefined,
             status: 'candidate',
         };
 
         const docRef = await addDoc(collection(db, "candidates"), docData);
         candidateId = docRef.id;
 
-        // Now upload the resume file
+        // Now upload the files
         const resumeURL = await uploadFileAndGetURL(candidateId, resume, `resume-${resume.name}`);
+        const driversLicenseURL = await uploadFileAndGetURL(candidateId, driversLicense, `driversLicense-${driversLicense.name}`);
         
-        // Update the document with the resume URL
-        await updateDoc(docRef, { resume: resumeURL });
+        // Update the document with the file URLs
+        await updateDoc(docRef, { 
+            resume: resumeURL,
+            driversLicense: driversLicenseURL,
+        });
 
         revalidatePath('/dashboard/candidates');
         revalidatePath('/dashboard');

@@ -73,6 +73,8 @@ export function ApplicationForm() {
             professionalReferences: [],
             specializedSkills: "",
             resume: undefined,
+            driversLicense: undefined,
+            driversLicenseName: "",
             certification: false,
             signature: "",
             previouslyEmployed: "no",
@@ -102,6 +104,7 @@ export function ApplicationForm() {
     async function onSubmit(data: ApplicationSchema) {
         setIsSubmitting(true);
         const resumeFile = data.resume;
+        const licenseFile = data.driversLicense;
 
         if (!resumeFile) {
             toast({
@@ -113,7 +116,17 @@ export function ApplicationForm() {
             return;
         }
 
-        const result = await createCandidate(data, resumeFile);
+        if (!licenseFile) {
+            toast({
+                variant: "destructive",
+                title: "Submission Failed",
+                description: "Driver's license file is missing.",
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const result = await createCandidate(data, resumeFile, licenseFile);
         setIsSubmitting(false);
 
         if (result.success) {
@@ -629,6 +642,74 @@ export function ApplicationForm() {
                 />
             </CardContent>
         </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Driver's License</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="driversLicense"
+                    render={({ field: { onChange, value, ...fieldProps} }) => {
+                        const fileName = value instanceof File ? value.name : "No file chosen";
+                        return (
+                            <FormItem>
+                                <FormLabel>Upload your Driver's License</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        type="file" 
+                                        accept="image/*,.pdf" 
+                                        onChange={(e) => onChange(e.target.files?.[0])}
+                                        {...fieldProps}
+                                        value={undefined}
+                                     />
+                                </FormControl>
+                                <FormDescription>
+                                  Please upload a clear image or PDF of your license.
+                                  {value instanceof File && <span className="block mt-1">Selected file: {fileName}</span>}
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        );
+                    }}
+                />
+                 <FormField
+                    control={form.control}
+                    name="driversLicenseName"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Name on Driver's License</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Jane Doe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField 
+                    control={form.control} 
+                    name="driversLicenseExpiration" 
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>License Expiration Date</FormLabel>
+                        <Popover><PopoverTrigger asChild>
+                            <FormControl>
+                                <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                        </PopoverContent></Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </CardContent>
+        </Card>
+
 
         <Card>
             <CardHeader>
