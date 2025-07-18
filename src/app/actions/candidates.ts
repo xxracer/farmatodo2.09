@@ -9,16 +9,6 @@ import { revalidatePath } from "next/cache";
 // within will effectively be client-side logic passed to the server action context.
 // In a real app, these would be true server-side database operations.
 
-// Helper to convert a File to a base64 data URI
-async function fileToDataURL(file: File): Promise<string> {
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 // Client-side helpers for localStorage. These would be API calls in a real app.
 const getCandidatesFromStorage = (): ApplicationData[] => {
     if (typeof window === 'undefined') return [];
@@ -33,33 +23,35 @@ const saveCandidatesToStorage = (candidates: ApplicationData[]) => {
 
 export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | 'driversLicense'> & { resume: string; driversLicense: string }) {
     try {
-        const newCandidate: ApplicationData = {
-            id: crypto.randomUUID(),
-            ...data,
-            date: new Date(),
-            employmentHistory: data.employmentHistory.map(job => ({
-                ...job,
-                dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
-                dateTo: job.dateTo ? new Date(job.dateTo) : undefined,
-                startingPay: parseFloat(job.startingPay as any) || 0,
-            })),
-            driversLicenseExpiration: data.driversLicenseExpiration ? new Date(data.driversLicenseExpiration) : undefined,
-            status: 'candidate',
-        };
-
-        const candidates = getCandidatesFromStorage();
-        candidates.unshift(newCandidate); // Add to the beginning
-        saveCandidatesToStorage(candidates);
-        
         if (typeof window !== 'undefined') {
+            const newCandidate: ApplicationData = {
+                id: crypto.randomUUID(),
+                ...data,
+                date: new Date(),
+                employmentHistory: data.employmentHistory.map(job => ({
+                    ...job,
+                    dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
+                    dateTo: job.dateTo ? new Date(job.dateTo) : undefined,
+                    startingPay: parseFloat(job.startingPay as any) || 0,
+                })),
+                driversLicenseExpiration: data.driversLicenseExpiration ? new Date(data.driversLicenseExpiration) : undefined,
+                status: 'candidate',
+            };
+
+            const candidates = getCandidatesFromStorage();
+            candidates.unshift(newCandidate); // Add to the beginning
+            saveCandidatesToStorage(candidates);
+            
             localStorage.setItem('candidateName', `${newCandidate.firstName} ${newCandidate.lastName}`);
             localStorage.setItem('candidateCompany', newCandidate.applyingFor.join(', '));
             window.dispatchEvent(new Event('storage'));
-        }
 
-        revalidatePath('/dashboard/candidates');
-        revalidatePath('/dashboard');
-        return { success: true, id: newCandidate.id };
+            revalidatePath('/dashboard/candidates');
+            revalidatePath('/dashboard');
+            return { success: true, id: newCandidate.id };
+        }
+        // This should not happen in a client-side scenario but is good practice.
+        return { success: false, error: "Window object not found." };
     } catch (error) {
         console.error("Error creating candidate: ", error);
         return { success: false, error: (error as Error).message || "Failed to create candidate." };
