@@ -26,6 +26,31 @@ async function handleMarkAsEmployee(candidateId: string) {
     // Handle error case if needed
 }
 
+// Helper to convert Firestore Timestamps to ISO strings for serialization
+function serializeDates(data: ApplicationData): ApplicationData {
+    const toISODate = (timestamp: any): string | undefined => {
+        if (!timestamp) return undefined;
+        if (typeof timestamp.toDate === 'function') {
+            return timestamp.toDate().toISOString();
+        }
+        if (timestamp instanceof Date) {
+            return timestamp.toISOString();
+        }
+        return timestamp; // Assume it's already a string
+    };
+    
+    return {
+        ...data,
+        date: toISODate(data.date) as any, // Cast to any to satisfy the type temporarily
+        driversLicenseExpiration: toISODate(data.driversLicenseExpiration) as any,
+        employmentHistory: data.employmentHistory.map(job => ({
+            ...job,
+            dateFrom: toISODate(job.dateFrom) as any,
+            dateTo: toISODate(job.dateTo) as any,
+        })),
+    };
+}
+
 export default async function ApplicationViewPage({ searchParams }: { searchParams: { id?: string } }) {
     const candidateId = searchParams.id;
     let applicationData: ApplicationData | null = null;
@@ -61,6 +86,8 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
     const isNewHire = applicationData.status === 'new-hire';
     const isEmployee = applicationData.status === 'employee';
 
+    const serializableData = serializeDates(applicationData);
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -89,7 +116,7 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
                     </Button>
                 </div>
             </div>
-            <ApplicationView data={applicationData} />
+            <ApplicationView data={serializableData} />
         </div>
     );
 }

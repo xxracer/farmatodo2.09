@@ -6,17 +6,34 @@ import { type ApplicationData } from "@/lib/schemas";
 import { Check, X, Paperclip, Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import { format, parseISO } from "date-fns";
+
+// Helper to safely convert a string or date object to a formatted date string
+function formatDisplayDate(dateValue: any): string {
+    if (!dateValue) return 'N/A';
+    try {
+        const date = typeof dateValue === 'string' ? parseISO(dateValue) : dateValue;
+        return format(date, "PPP");
+    } catch (error) {
+        // Fallback for invalid date formats
+        return String(dateValue);
+    }
+}
 
 type DataRowProps = {
     label: string;
     value: React.ReactNode;
+    isDate?: boolean;
 };
 
-const DataRow = ({ label, value }: DataRowProps) => {
+const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
     if (value === null || value === undefined || value === '') return null;
     
     let displayValue = value;
-    if (typeof value === 'string' && (value === 'yes' || value === 'no')) {
+
+    if (isDate) {
+        displayValue = formatDisplayDate(value);
+    } else if (typeof value === 'string' && (value === 'yes' || value === 'no')) {
         displayValue = value === 'yes' ? <Check className="h-5 w-5 text-green-600" /> : <X className="h-5 w-5 text-destructive" />;
     } else if (typeof value === 'boolean') {
         displayValue = value ? <Check className="h-5 w-5 text-green-600" /> : <X className="h-5 w-5 text-destructive" />;
@@ -74,7 +91,7 @@ const EmploymentHistoryDetails = ({ history }: { history: ApplicationData['emplo
                         <DataRow label="Company Name" value={job.companyName} />
                         <DataRow label="Telephone" value={job.telephone} />
                         <DataRow label="Address" value={`${job.address}, ${job.city}, ${job.state} ${job.zipCode}`} />
-                        <DataRow label="Employment Dates" value={`From: ${job.dateFrom} To: ${job.dateTo}`} />
+                        <DataRow label="Employment Dates" value={`From: ${formatDisplayDate(job.dateFrom)} To: ${formatDisplayDate(job.dateTo)}`} />
                         <DataRow label="Starting Pay" value={`$${job.startingPay}`} />
                         <DataRow label="Job Title & Description" value={job.jobTitleAndDescription} />
                         <DataRow label="Reason for Leaving" value={job.reasonForLeaving} />
@@ -112,7 +129,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
           </CardHeader>
           <CardContent className="space-y-2">
             <DataRow label="Full Name" value={`${data.firstName} ${data.middleName || ''} ${data.lastName}`} />
-            <DataRow label="Date of Application" value={data.date} />
+            <DataRow label="Date of Application" value={data.date} isDate={true} />
             <DataRow label="Applying For" value={data.applyingFor.join(", ")} />
           </CardContent>
         </Card>
@@ -217,7 +234,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <FileRow label="Proof of Address" value={data.proofOfAddress} />
                 <FileRow label="Driver's License" value={data.driversLicense} />
                 <DataRow label="Name on License" value={data.driversLicenseName} />
-                <DataRow label="License Expiration" value={data.driversLicenseExpiration} />
+                <DataRow label="License Expiration" value={data.driversLicenseExpiration} isDate={true}/>
                 {!data.idCard && !data.proofOfAddress && !data.driversLicense && (
                     <div className="flex items-center justify-center text-sm text-muted-foreground p-4">
                         <Paperclip className="mr-2 h-4 w-4" />
