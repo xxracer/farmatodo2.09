@@ -2,9 +2,8 @@
 'use client';
 
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
 
-// NOTE: Since we are using localStorage, these actions will be called from client components.
+// NOTE: Since we are using localStorage, these actions are client-side.
 // In a real app, these would be true server-side database operations.
 
 const getCandidatesFromStorage = (): ApplicationData[] => {
@@ -19,6 +18,9 @@ const saveCandidatesToStorage = (candidates: ApplicationData[]) => {
 };
 
 export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | 'driversLicense'> & { resume: string; driversLicense: string }) {
+    if (typeof window === 'undefined') {
+        return { success: false, error: "Window object not found." };
+    }
     try {
         const newCandidate: ApplicationData = {
             id: crypto.randomUUID(),
@@ -41,9 +43,6 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
         localStorage.setItem('candidateName', `${newCandidate.firstName} ${newCandidate.lastName}`);
         localStorage.setItem('candidateCompany', newCandidate.applyingFor.join(', '));
         window.dispatchEvent(new Event('storage'));
-
-        // revalidatePath is a server-side function and won't work here,
-        // but we keep the structure. The storage event will trigger re-renders.
         
         return { success: true, id: newCandidate.id };
     } catch (error) {
@@ -76,7 +75,12 @@ export async function getPersonnel(): Promise<ApplicationData[]> {
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
     const candidates = getCandidatesFromStorage();
     const candidate = candidates.find(c => c.id === id) || null;
-    return JSON.parse(JSON.stringify(candidate)); // Ensure plain object
+    // We need to re-serialize and deserialize to avoid passing a reference
+    // that could be mutated, and to handle date objects correctly.
+    if (candidate) {
+      return JSON.parse(JSON.stringify(candidate));
+    }
+    return null;
 }
 
 export async function updateCandidateWithDocuments(
@@ -86,6 +90,7 @@ export async function updateCandidateWithDocuments(
         proofOfAddress?: string, 
     }
 ) {
+    if (typeof window === 'undefined') return { success: false, error: "Window object not found." };
     try {
         let candidates = getCandidatesFromStorage();
         const candidateIndex = candidates.findIndex(c => c.id === id);
@@ -116,6 +121,7 @@ export async function updateCandidateWithDocuments(
 
 
 export async function updateCandidateStatus(id: string, status: 'new-hire' | 'employee') {
+    if (typeof window === 'undefined') return { success: false, error: "Window object not found." };
     try {
         let candidates = getCandidatesFromStorage();
         const candidateIndex = candidates.findIndex(c => c.id === id);
@@ -136,6 +142,7 @@ export async function updateCandidateStatus(id: string, status: 'new-hire' | 'em
 
 
 export async function deleteCandidate(id: string) {
+    if (typeof window === 'undefined') return { success: false, error: "Window object not found." };
     try {
         let candidates = getCandidatesFromStorage();
         const updatedCandidates = candidates.filter(c => c.id !== id);

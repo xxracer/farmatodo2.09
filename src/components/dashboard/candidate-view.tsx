@@ -8,8 +8,8 @@ import { CopyApplicationLink } from "@/components/dashboard/copy-link";
 import { InterviewPhase } from "@/components/dashboard/interview-phase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ClipboardCheck, Users } from "lucide-react";
-import { hasCandidates, getCandidates } from "@/app/actions/candidates";
-import { useEffect, useState } from "react";
+import { getCandidates } from "@/app/actions/candidates";
+import { useEffect, useState, useCallback } from "react";
 import type { ApplicationData } from "@/lib/schemas";
 import { CandidateName } from "./candidate-name";
 
@@ -46,12 +46,14 @@ export function CandidateView() {
     const [latestCandidate, setLatestCandidate] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        const candidates = await getCandidates();
+        setLatestCandidate(candidates[0] || null);
+        setLoading(false);
+    }, []);
+
     useEffect(() => {
-        async function loadData() {
-            const candidates = await getCandidates();
-            setLatestCandidate(candidates[0] || null);
-            setLoading(false);
-        }
         loadData();
 
         const handleStorageChange = () => {
@@ -60,7 +62,7 @@ export function CandidateView() {
 
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
+    }, [loadData]);
 
     if (loading) {
         return (

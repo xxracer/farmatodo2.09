@@ -14,20 +14,31 @@ import { useEffect, useState } from "react";
 function toDate(dateString: string | Date | undefined): Date | null {
   if (!dateString) return null;
   if (dateString instanceof Date) return dateString;
-  return new Date(dateString);
+  try {
+    return new Date(dateString);
+  } catch (e) {
+    return null;
+  }
 }
 
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadData = async () => {
+    setLoading(true);
+    const data = await getCandidates();
+    setCandidates(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    async function loadData() {
-      const data = await getCandidates();
-      setCandidates(data);
-      setLoading(false);
-    }
     loadData();
+
+    window.addEventListener('storage', loadData);
+    return () => {
+      window.removeEventListener('storage', loadData);
+    };
   }, []);
 
   if (loading) {

@@ -27,24 +27,30 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { checkForExpiringDocuments } from "@/app/actions/candidates";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const [showAlert, setShowAlert] = useState(false);
 
+  const checkDocs = useCallback(async () => {
+    const hasExpiring = await checkForExpiringDocuments();
+    setShowAlert(hasExpiring);
+  }, []);
+
   useEffect(() => {
-    async function checkDocs() {
-      const hasExpiring = await checkForExpiringDocuments();
-      setShowAlert(hasExpiring);
-    }
     checkDocs();
     
-    // Optional: Poll for changes every few minutes
-    const interval = setInterval(checkDocs, 5 * 60 * 1000); // every 5 minutes
-    return () => clearInterval(interval);
-  }, []);
+    // Check on navigation changes and storage updates
+    window.addEventListener('storage', checkDocs);
+    const interval = setInterval(checkDocs, 5 * 60 * 1000); // Poll every 5 minutes
+
+    return () => {
+      window.removeEventListener('storage', checkDocs);
+      clearInterval(interval);
+    };
+  }, [pathname, checkDocs]);
 
   return (
     <Sidebar>

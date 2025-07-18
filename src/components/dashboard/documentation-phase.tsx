@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AlertCircle, FileCheck, Lightbulb, Loader2, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,13 +31,21 @@ export function DocumentationPhase({ candidateId }: { candidateId: string, candi
   const [candidate, setCandidate] = useState<ApplicationData | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (candidateId) {
-      getCandidate(candidateId).then(data => {
-        setCandidate(data ? JSON.parse(JSON.stringify(data)) : null);
-      });
+      const data = await getCandidate(candidateId);
+      setCandidate(data ? JSON.parse(JSON.stringify(data)) : null);
     }
   }, [candidateId]);
+
+  useEffect(() => {
+    loadData();
+
+    window.addEventListener('storage', loadData);
+    return () => {
+      window.removeEventListener('storage', loadData);
+    };
+  }, [loadData]);
 
 
   const handleDetectMissing = async () => {

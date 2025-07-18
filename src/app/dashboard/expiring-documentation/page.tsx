@@ -10,20 +10,17 @@ import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
 import { add, isBefore, format } from "date-fns";
 import { AlertTriangle, FileClock, Mail } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-// Helper to convert Firestore Timestamp or string to JS Date
-function toDate(timestamp: any): Date | null {
-  if (timestamp && typeof timestamp.toDate === 'function') {
-    return timestamp.toDate();
+// Helper to convert string to JS Date
+function toDate(dateString: string | Date | undefined): Date | null {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  try {
+    return new Date(dateString);
+  } catch (e) {
+    return null;
   }
-  if (timestamp instanceof Date) {
-    return timestamp;
-  }
-  if (typeof timestamp === 'string') {
-    return new Date(timestamp);
-  }
-  return null;
 }
 
 const isLicenseExpiringSoon = (expirationDate: any): boolean => {
@@ -39,15 +36,22 @@ export default function ExpiringDocumentationPage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchPersonnel() {
-      const data = await getPersonnel();
-      const filteredData = data.filter(p => isLicenseExpiringSoon(p.driversLicenseExpiration));
-      setExpiringPersonnel(filteredData);
-      setLoading(false);
-    }
-    fetchPersonnel();
+  const fetchPersonnel = useCallback(async () => {
+    setLoading(true);
+    const data = await getPersonnel();
+    const filteredData = data.filter(p => isLicenseExpiringSoon(p.driversLicenseExpiration));
+    setExpiringPersonnel(filteredData);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchPersonnel();
+    
+    window.addEventListener('storage', fetchPersonnel);
+    return () => {
+      window.removeEventListener('storage', fetchPersonnel);
+    };
+  }, [fetchPersonnel]);
 
   const handleRenewLicense = (candidate: ApplicationData) => {
     toast({

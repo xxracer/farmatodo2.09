@@ -9,7 +9,7 @@ import { type ApplicationData } from "@/lib/schemas";
 import { Briefcase, UserCheck, UserSearch } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export default function ApplicationViewPage() {
     const router = useRouter();
@@ -19,27 +19,36 @@ export default function ApplicationViewPage() {
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+    const loadData = useCallback(async () => {
         if (candidateId) {
-            getCandidate(candidateId).then(data => {
-                setApplicationData(data);
-                setLoading(false);
-            });
+            setLoading(true);
+            const data = await getCandidate(candidateId);
+            setApplicationData(data);
+            setLoading(false);
         } else {
             setLoading(false);
         }
     }, [candidateId]);
 
-    const handleMarkAsNewHire = async (candidateId: string) => {
-        const result = await updateCandidateStatus(candidateId, 'new-hire');
+    useEffect(() => {
+        loadData();
+        
+        window.addEventListener('storage', loadData);
+        return () => {
+          window.removeEventListener('storage', loadData);
+        };
+    }, [loadData]);
+
+    const handleMarkAsNewHire = async (id: string) => {
+        const result = await updateCandidateStatus(id, 'new-hire');
         if (result.success) {
             router.push('/dashboard/new-hires');
         }
         // Handle error case if needed
     }
 
-    const handleMarkAsEmployee = async (candidateId: string) => {
-        const result = await updateCandidateStatus(candidateId, 'employee');
+    const handleMarkAsEmployee = async (id: string) => {
+        const result = await updateCandidateStatus(id, 'employee');
         if (result.success) {
             router.push('/dashboard/employees');
         }
