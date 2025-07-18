@@ -1,32 +1,25 @@
 
+'use client';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentationPhase } from "@/components/dashboard/documentation-phase";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { CopyApplicationLink } from "@/components/dashboard/copy-link";
 import { InterviewPhase } from "@/components/dashboard/interview-phase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, Users } from "lucide-react";
 import { hasCandidates, getCandidates } from "@/app/actions/candidates";
-import { Suspense } from "react";
+import { useEffect, useState } from "react";
+import type { ApplicationData } from "@/lib/schemas";
 import { CandidateName } from "./candidate-name";
 
-async function CandidateDetails() {
-    const candidates = await getCandidates();
-    const latestCandidate = candidates[0]; // Assuming the list is sorted by date
-
+function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationData }) {
     if (!latestCandidate) return null;
 
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                   <h1 className="text-3xl font-headline font-bold text-foreground">
-                        New Candidate for {latestCandidate.applyingFor.join(", ")}: {latestCandidate.firstName} {latestCandidate.lastName}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Complete the steps below to onboard the new candidate.
-                    </p>
-                </div>
+               <CandidateName />
                 <CopyApplicationLink />
             </div>
 
@@ -49,10 +42,35 @@ async function CandidateDetails() {
 }
 
 
-export async function CandidateView() {
-    const hasData = await hasCandidates();
+export function CandidateView() {
+    const [latestCandidate, setLatestCandidate] = useState<ApplicationData | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    if (!hasData) {
+    useEffect(() => {
+        async function loadData() {
+            const candidates = await getCandidates();
+            setLatestCandidate(candidates[0] || null);
+            setLoading(false);
+        }
+        loadData();
+
+        const handleStorageChange = () => {
+            loadData();
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex flex-1 items-center justify-center">
+                <Users className="h-12 w-12 text-muted-foreground animate-pulse" />
+            </div>
+        )
+    }
+
+    if (!latestCandidate) {
         return (
             <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -82,9 +100,5 @@ export async function CandidateView() {
         )
     }
 
-    return (
-        <Suspense fallback={<div>Loading candidate details...</div>}>
-            <CandidateDetails />
-        </Suspense>
-    );
+    return <CandidateDetails latestCandidate={latestCandidate} />;
 }

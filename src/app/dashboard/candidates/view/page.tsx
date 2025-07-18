@@ -1,4 +1,6 @@
 
+'use client';
+
 import { getCandidate, updateCandidateStatus } from "@/app/actions/candidates";
 import { ApplicationView } from "@/components/dashboard/application-view";
 import { Button } from "@/components/ui/button";
@@ -6,32 +8,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { type ApplicationData } from "@/lib/schemas";
 import { Briefcase, UserCheck, UserSearch } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-async function handleMarkAsNewHire(candidateId: string) {
-    'use server';
-    const result = await updateCandidateStatus(candidateId, 'new-hire');
-    if (result.success) {
-        redirect('/dashboard/new-hires');
+export default function ApplicationViewPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const candidateId = searchParams.get('id');
+
+    const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (candidateId) {
+            getCandidate(candidateId).then(data => {
+                setApplicationData(data);
+                setLoading(false);
+            });
+        } else {
+            setLoading(false);
+        }
+    }, [candidateId]);
+
+    const handleMarkAsNewHire = async (candidateId: string) => {
+        const result = await updateCandidateStatus(candidateId, 'new-hire');
+        if (result.success) {
+            router.push('/dashboard/new-hires');
+        }
+        // Handle error case if needed
     }
-    // Handle error case if needed
-}
 
-async function handleMarkAsEmployee(candidateId: string) {
-    'use server';
-    const result = await updateCandidateStatus(candidateId, 'employee');
-    if (result.success) {
-        redirect('/dashboard/employees');
+    const handleMarkAsEmployee = async (candidateId: string) => {
+        const result = await updateCandidateStatus(candidateId, 'employee');
+        if (result.success) {
+            router.push('/dashboard/employees');
+        }
+        // Handle error case if needed
     }
-    // Handle error case if needed
-}
 
-export default async function ApplicationViewPage({ searchParams }: { searchParams: { id?: string } }) {
-    const candidateId = searchParams.id;
-    let applicationData: ApplicationData | null = null;
-
-    if (candidateId) {
-        applicationData = await getCandidate(candidateId);
+    if (loading) {
+        return (
+            <div className="flex flex-1 items-center justify-center">
+                <UserSearch className="h-12 w-12 text-muted-foreground animate-pulse" />
+            </div>
+        );
     }
     
     if (!applicationData) {
@@ -69,20 +89,16 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
                 </h1>
                 <div className="flex gap-2">
                     {isCandidate && (
-                        <form action={handleMarkAsNewHire.bind(null, applicationData.id)}>
-                            <Button type="submit">
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Mark as New Hire
-                            </Button>
-                        </form>
+                        <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            Mark as New Hire
+                        </Button>
                     )}
                     {isNewHire && (
-                         <form action={handleMarkAsEmployee.bind(null, applicationData.id)}>
-                            <Button type="submit">
-                                <Briefcase className="mr-2 h-4 w-4" />
-                                Mark as Employee
-                            </Button>
-                        </form>
+                        <Button onClick={() => handleMarkAsEmployee(applicationData.id)}>
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            Mark as Employee
+                        </Button>
                     )}
                     <Button asChild variant="outline">
                        {isEmployee ? <Link href="/dashboard/employees">Back to Employees</Link> : isNewHire ? <Link href="/dashboard/new-hires">Back to New Hires</Link> : <Link href="/dashboard/candidates">Back to Candidates</Link>}

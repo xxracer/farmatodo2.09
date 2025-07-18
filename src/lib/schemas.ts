@@ -156,26 +156,13 @@ export const applicationSchema = z.object({
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
 
-type FirebaseTimestamp = {
-    seconds: number;
-    nanoseconds: number;
-    toDate: () => Date;
-};
-
-// This is the type for the data that will be stored in Firestore
-export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory' | 'driversLicense' | 'driversLicenseExpiration'> & {
+// This is the type for the data that will be stored in localStorage
+export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
-    resume?: string; // Storing the download URL as a string
-    date?: Date | FirebaseTimestamp;
-    employmentHistory: Array<Omit<z.infer<typeof employmentHistoryEntrySchema>, 'dateFrom' | 'dateTo'> & {
-        dateFrom?: Date | FirebaseTimestamp;
-        dateTo?: Date | FirebaseTimestamp;
-    }>;
-    idCard?: string;
-    proofOfAddress?: string;
-    driversLicense?: string;
-    driversLicenseName?: string;
-    driversLicenseExpiration?: Date | FirebaseTimestamp;
+    resume?: string; // Storing as a data URL string
+    driversLicense?: string; // Storing as a data URL string
+    idCard?: string; // Storing as a data URL string
+    proofOfAddress?: string; // Storing as a data URL string
 };
 
 export const interviewReviewSchema = z.object({

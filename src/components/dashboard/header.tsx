@@ -1,3 +1,4 @@
+
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -13,14 +14,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, LifeBuoy, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
+import { CandidateName } from "./candidate-name";
 
 export function DashboardHeader() {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur sm:px-6 lg:px-8">
       <SidebarTrigger className="md:hidden" />
-      <h1 className="font-headline text-xl font-bold text-foreground">
-        Onboarding Workflow
-      </h1>
+      <div className="flex-1">
+        <CandidateName />
+      </div>
       <div className="ml-auto flex items-center gap-4">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
@@ -30,7 +32,7 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="https://placehold.co/40x40" alt="HR Admin" />
+                <AvatarImage src="https://placehold.co/40x40" alt="HR Admin" data-ai-hint="person avatar" />
                 <AvatarFallback>HR</AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>

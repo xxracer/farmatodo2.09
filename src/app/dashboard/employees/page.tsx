@@ -1,4 +1,6 @@
 
+'use client';
+
 import { getEmployees } from "@/app/actions/candidates";
 import { CandidatesActions } from "@/app/dashboard/candidates/_components/candidates-actions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,20 +8,37 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ApplicationData } from "@/lib/schemas";
 import { Briefcase } from "lucide-react";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
-// Helper to convert Firestore Timestamp to JS Date
-function toDate(timestamp: any): Date | null {
-  if (timestamp && typeof timestamp.toDate === 'function') {
-    return timestamp.toDate();
-  }
-  if (timestamp instanceof Date) {
-    return timestamp;
-  }
-  return null;
+
+// Helper to convert string to JS Date
+function toDate(dateString: string | Date | undefined): Date | null {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  return new Date(dateString);
 }
 
-export default async function EmployeesPage() {
-  const employees = await getEmployees();
+
+export default function EmployeesPage() {
+  const [employees, setEmployees] = useState<ApplicationData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+        const data = await getEmployees();
+        setEmployees(data);
+        setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+         <div className="flex flex-1 items-center justify-center">
+            <Briefcase className="h-12 w-12 text-muted-foreground animate-pulse" />
+        </div>
+    )
+  }
 
   if (employees.length === 0) {
     return (

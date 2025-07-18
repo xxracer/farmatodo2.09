@@ -1,73 +1,47 @@
 
 'use server';
 
-import { db, storage } from "@/lib/firebase";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, Timestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
-import { format, add, isBefore } from "date-fns";
 
-// Helper to convert Firestore Timestamp to JS Date
-function toDate(timestamp: any): Date | null {
-  if (timestamp && typeof timestamp.toDate === 'function') {
-    return timestamp.toDate();
-  }
-  if (timestamp instanceof Date) {
-    return timestamp;
-  }
-  return null;
+// NOTE: Since we are using localStorage, these actions will be called from client components.
+// The 'use server' directive is kept for structural consistency, but the logic
+// within will effectively be client-side logic passed to the server action context.
+// In a real app, these would be true server-side database operations.
+
+// Helper to convert a File to a base64 data URI
+async function fileToDataURL(file: File): Promise<string> {
+    const reader = new FileReader();
+    return new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
-// Helper to process a document, converting all timestamps
-function processDoc(docData: any): any {
-    if (!docData) return null;
+// Client-side helpers for localStorage. These would be API calls in a real app.
+const getCandidatesFromStorage = (): ApplicationData[] => {
+    if (typeof window === 'undefined') return [];
+    const data = window.localStorage.getItem('candidates');
+    return data ? JSON.parse(data) : [];
+};
 
-    const data = { ...docData };
-
-    for (const key in data) {
-        if (data[key] instanceof Timestamp) {
-            data[key] = data[key].toDate();
-        }
-    }
-
-    if (data.employmentHistory && Array.isArray(data.employmentHistory)) {
-        data.employmentHistory = data.employmentHistory.map((job: any) => {
-            const newJob = { ...job };
-            if (newJob.dateFrom instanceof Timestamp) {
-                newJob.dateFrom = newJob.dateFrom.toDate();
-            }
-            if (newJob.dateTo instanceof Timestamp) {
-                newJob.dateTo = newJob.dateTo.toDate();
-            }
-            return newJob;
-        });
-    }
-
-    return data;
-}
-
-async function uploadFileAndGetURL(candidateId: string, file: File, fileName: string): Promise<string> {
-    const storageRef = ref(storage, `candidates/${candidateId}/${fileName}`);
-    try {
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        return downloadURL;
-    } catch (error) {
-        console.error(`Error uploading file ${fileName} for candidate ${candidateId}:`, error);
-        throw new Error(`Failed to upload ${fileName}.`);
-    }
-}
+const saveCandidatesToStorage = (candidates: ApplicationData[]) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('candidates', JSON.stringify(candidates));
+};
 
 export async function createCandidate(data: ApplicationSchema, resume: File, driversLicense: File) {
-    let candidateId: string | null = null;
     try {
-        // Create the document in Firestore first without the file URLs
-        const docData = {
+        const resumeURL = await fileToDataURL(resume);
+        const driversLicenseURL = await fileToDataURL(driversLicense);
+
+        const newCandidate: ApplicationData = {
+            id: crypto.randomUUID(),
             ...data,
-            resume: undefined, // Will be updated after upload
-            driversLicense: undefined, // Will be updated after upload
-            date: data.date ? new Date(data.date) : new Date(),
+            resume: resumeURL,
+            driversLicense: driversLicenseURL,
+            date: new Date(),
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
                 dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
@@ -78,117 +52,50 @@ export async function createCandidate(data: ApplicationSchema, resume: File, dri
             status: 'candidate',
         };
 
-        const docRef = await addDoc(collection(db, "candidates"), docData);
-        candidateId = docRef.id;
-
-        // Now upload the files
-        const resumeURL = await uploadFileAndGetURL(candidateId, resume, `resume-${resume.name}`);
-        const driversLicenseURL = await uploadFileAndGetURL(candidateId, driversLicense, `driversLicense-${driversLicense.name}`);
+        const candidates = getCandidatesFromStorage();
+        candidates.unshift(newCandidate); // Add to the beginning
+        saveCandidatesToStorage(candidates);
         
-        // Update the document with the file URLs
-        await updateDoc(docRef, { 
-            resume: resumeURL,
-            driversLicense: driversLicenseURL,
-        });
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('candidateName', `${newCandidate.firstName} ${newCandidate.lastName}`);
+            localStorage.setItem('candidateCompany', newCandidate.applyingFor.join(', '));
+            window.dispatchEvent(new Event('storage'));
+        }
 
         revalidatePath('/dashboard/candidates');
         revalidatePath('/dashboard');
-        return { success: true, id: candidateId };
+        return { success: true, id: newCandidate.id };
     } catch (error) {
         console.error("Error creating candidate: ", error);
-        // If something fails (e.g., file upload), delete the created Firestore document
-        if (candidateId) {
-            await deleteDoc(doc(db, "candidates", candidateId));
-        }
         return { success: false, error: (error as Error).message || "Failed to create candidate." };
     }
 }
 
 
 export async function getCandidates(): Promise<ApplicationData[]> {
-    try {
-        const q = query(collection(db, "candidates"), where("status", "==", "candidate"));
-        const querySnapshot = await getDocs(q);
-        const candidates = querySnapshot.docs.map(doc => {
-            return processDoc({
-                id: doc.id,
-                ...doc.data(),
-            }) as ApplicationData;
-        });
-        return candidates;
-    } catch (error) {
-        console.error("Error getting documents: ", error);
-        return [];
-    }
+    const all = getCandidatesFromStorage();
+    return all.filter(c => c.status === 'candidate');
 }
 
 export async function getNewHires(): Promise<ApplicationData[]> {
-    try {
-        const q = query(collection(db, "candidates"), where("status", "==", "new-hire"));
-        const querySnapshot = await getDocs(q);
-        const candidates = querySnapshot.docs.map(doc => {
-             return processDoc({
-                id: doc.id,
-                ...doc.data(),
-            }) as ApplicationData;
-        });
-        return candidates;
-    } catch (error) {
-        console.error("Error getting new hires: ", error);
-        return [];
-    }
+     const all = getCandidatesFromStorage();
+    return all.filter(c => c.status === 'new-hire');
 }
 
 export async function getEmployees(): Promise<ApplicationData[]> {
-    try {
-        const q = query(collection(db, "candidates"), where("status", "==", "employee"));
-        const querySnapshot = await getDocs(q);
-        const employees = querySnapshot.docs.map(doc => {
-             return processDoc({
-                id: doc.id,
-                ...doc.data(),
-            }) as ApplicationData;
-        });
-        return employees;
-    } catch (error) {
-        console.error("Error getting employees: ", error);
-        return [];
-    }
+     const all = getCandidatesFromStorage();
+    return all.filter(c => c.status === 'employee');
 }
 
 export async function getPersonnel(): Promise<ApplicationData[]> {
-    try {
-        const q = query(collection(db, "candidates"), where("status", "in", ["new-hire", "employee"]));
-        const querySnapshot = await getDocs(q);
-        const personnel = querySnapshot.docs.map(doc => {
-             return processDoc({
-                id: doc.id,
-                ...doc.data(),
-            }) as ApplicationData;
-        });
-        return personnel;
-    } catch (error) {
-        console.error("Error getting personnel: ", error);
-        return [];
-    }
+     const all = getCandidatesFromStorage();
+    return all.filter(p => p.status === 'new-hire' || p.status === 'employee');
 }
 
-
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
-    try {
-        const docRef = doc(db, "candidates", id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            return processDoc({ id: docSnap.id, ...docSnap.data() }) as ApplicationData;
-        } else {
-            console.log("No such document!");
-            return null;
-        }
-    } catch (error) {
-        console.error("Error getting document: ", error);
-        return null;
-    }
+    const candidates = getCandidatesFromStorage();
+    const candidate = candidates.find(c => c.id === id) || null;
+    return JSON.parse(JSON.stringify(candidate)); // Ensure plain object
 }
 
 export async function updateCandidateWithDocuments(
@@ -196,37 +103,27 @@ export async function updateCandidateWithDocuments(
     documents: { 
         idCard?: File, 
         proofOfAddress?: File, 
-        driversLicense?: File 
-    },
-    metadata: {
-        driversLicenseName?: string,
-        driversLicenseExpiration?: Date,
     }
 ) {
     try {
-        const docRef = doc(db, "candidates", id);
-        const updates: { [key: string]: any } = {};
+        let candidates = getCandidatesFromStorage();
+        const candidateIndex = candidates.findIndex(c => c.id === id);
+
+        if (candidateIndex === -1) {
+            throw new Error("Candidate not found");
+        }
+        
+        const candidate = candidates[candidateIndex];
 
         if (documents.idCard) {
-            updates.idCard = await uploadFileAndGetURL(id, documents.idCard, `idCard-${documents.idCard.name}`);
+            candidate.idCard = await fileToDataURL(documents.idCard);
         }
         if (documents.proofOfAddress) {
-            updates.proofOfAddress = await uploadFileAndGetURL(id, documents.proofOfAddress, `proofOfAddress-${documents.proofOfAddress.name}`);
-        }
-        if (documents.driversLicense) {
-            updates.driversLicense = await uploadFileAndGetURL(id, documents.driversLicense, `driversLicense-${documents.driversLicense.name}`);
-        }
-        if (metadata.driversLicenseName) {
-            updates.driversLicenseName = metadata.driversLicenseName;
-        }
-        if (metadata.driversLicenseExpiration) {
-            updates.driversLicenseExpiration = Timestamp.fromDate(new Date(metadata.driversLicenseExpiration));
+            candidate.proofOfAddress = await fileToDataURL(documents.proofOfAddress);
         }
 
-
-        if (Object.keys(updates).length > 0) {
-            await updateDoc(docRef, updates);
-        }
+        candidates[candidateIndex] = candidate;
+        saveCandidatesToStorage(candidates);
         
         revalidatePath(`/dashboard/candidates/view`, 'page');
         revalidatePath('/dashboard/candidates');
@@ -239,10 +136,17 @@ export async function updateCandidateWithDocuments(
     }
 }
 
+
 export async function updateCandidateStatus(id: string, status: 'new-hire' | 'employee') {
     try {
-        const docRef = doc(db, "candidates", id);
-        await updateDoc(docRef, { status });
+        let candidates = getCandidatesFromStorage();
+        const candidateIndex = candidates.findIndex(c => c.id === id);
+        if (candidateIndex > -1) {
+            candidates[candidateIndex].status = status;
+            saveCandidatesToStorage(candidates);
+        } else {
+            throw new Error("Candidate not found");
+        }
 
         revalidatePath('/dashboard/candidates');
         revalidatePath('/dashboard/candidates/view', 'page');
@@ -259,26 +163,9 @@ export async function updateCandidateStatus(id: string, status: 'new-hire' | 'em
 
 export async function deleteCandidate(id: string) {
     try {
-        const candidateDocRef = doc(db, "candidates", id);
-        const candidateSnap = await getDoc(candidateDocRef);
-        const candidateData = candidateSnap.data() as ApplicationData | undefined;
-
-        await deleteDoc(candidateDocRef);
-
-        // Delete associated files from storage
-        const filesToDelete = [candidateData?.resume, candidateData?.idCard, candidateData?.proofOfAddress, candidateData?.driversLicense];
-        for (const fileUrl of filesToDelete) {
-            if (fileUrl) {
-                try {
-                    const fileRef = ref(storage, fileUrl);
-                    await deleteObject(fileRef);
-                } catch (storageError: any) {
-                    if (storageError.code !== 'storage/object-not-found') {
-                       console.error("Could not delete associated file:", fileUrl, storageError);
-                    }
-                }
-            }
-        }
+        let candidates = getCandidatesFromStorage();
+        const updatedCandidates = candidates.filter(c => c.id !== id);
+        saveCandidatesToStorage(updatedCandidates);
 
         revalidatePath('/dashboard/candidates');
         revalidatePath('/dashboard');
@@ -292,30 +179,26 @@ export async function deleteCandidate(id: string) {
     }
 }
 
-export async function hasCandidates() {
-    try {
-        const q = query(collection(db, "candidates"), where("status", "==", "candidate"));
-        const querySnapshot = await getDocs(q);
-        return !querySnapshot.empty;
-    } catch (error) {
-        console.error("Error checking for candidates: ", error);
-        return false;
-    }
+export async function hasCandidates(): Promise<boolean> {
+    const candidates = await getCandidates();
+    return candidates.length > 0;
 }
 
 export async function checkForExpiringDocuments(): Promise<boolean> {
-  try {
-    const personnel = await getPersonnel();
-    const sixtyDaysFromNow = add(new Date(), { days: 60 });
+    if (typeof window === 'undefined') return false;
     
-    return personnel.some(p => {
-      if (!p.driversLicenseExpiration) return false;
-      const expiry = toDate(p.driversLicenseExpiration);
-      if (!expiry) return false;
-      return isBefore(expiry, sixtyDaysFromNow);
-    });
-  } catch (error) {
-    console.error("Error checking for expiring documents:", error);
-    return false;
-  }
+    try {
+        const personnel = await getPersonnel();
+        const sixtyDaysFromNow = new Date();
+        sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
+        
+        return personnel.some(p => {
+          if (!p.driversLicenseExpiration) return false;
+          const expiry = new Date(p.driversLicenseExpiration);
+          return expiry < sixtyDaysFromNow;
+        });
+    } catch (error) {
+        console.error("Error checking for expiring documents:", error);
+        return false;
+    }
 }

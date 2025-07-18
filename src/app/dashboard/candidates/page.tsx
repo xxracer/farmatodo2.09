@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { type ApplicationData } from "@/lib/schemas";
@@ -6,20 +8,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getCandidates } from "@/app/actions/candidates";
 import { CandidatesActions } from "./_components/candidates-actions";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
-// Helper to convert Firestore Timestamp to JS Date
-function toDate(timestamp: any): Date | null {
-  if (timestamp && typeof timestamp.toDate === 'function') {
-    return timestamp.toDate();
-  }
-  if (timestamp instanceof Date) {
-    return timestamp;
-  }
-  return null;
+// Helper to convert string to JS Date
+function toDate(dateString: string | Date | undefined): Date | null {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  return new Date(dateString);
 }
 
-export default async function CandidatesPage() {
-  const candidates = await getCandidates();
+export default function CandidatesPage() {
+  const [candidates, setCandidates] = useState<ApplicationData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const data = await getCandidates();
+      setCandidates(data);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Users className="h-12 w-12 text-muted-foreground animate-pulse" />
+      </div>
+    );
+  }
 
   if (candidates.length === 0) {
     return (

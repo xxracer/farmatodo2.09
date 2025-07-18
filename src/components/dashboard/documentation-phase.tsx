@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -33,7 +34,9 @@ export function DocumentationPhase({ candidateId }: { candidateId: string, candi
 
   useEffect(() => {
     if (candidateId) {
-      getCandidate(candidateId).then(setCandidate);
+      getCandidate(candidateId).then(data => {
+        setCandidate(data ? JSON.parse(JSON.stringify(data)) : null);
+      });
     }
   }, [candidateId]);
 
