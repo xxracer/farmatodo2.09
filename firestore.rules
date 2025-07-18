@@ -1,16 +1,16 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // By default, deny all reads and writes
-    match /{document=**} {
-      allow read, write: if false;
-    }
-    
-    // Allow anyone to create a candidate document (submit an application)
-    // Only allow authenticated users (HR) to read/update/delete
+    // Rules for the 'candidates' collection
     match /candidates/{candidateId} {
+      // Allow anyone to create a candidate (submit an application)
       allow create: if true;
-      allow read, update, delete: if request.auth != null;
+
+      // Allow read, update, delete only for authenticated users (your HR team)
+      // For the prototype, we'll allow reads for now.
+      allow read: if true;
+      allow update, delete: if request.auth != null;
     }
   }
 }
