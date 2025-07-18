@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ApplicationData } from "@/lib/schemas";
 import { Briefcase } from "lucide-react";
+import { format, parseISO } from "date-fns";
 
 export default async function EmployeesPage() {
   const employees = await getEmployees();
@@ -42,7 +43,7 @@ export default async function EmployeesPage() {
                         <TableRow key={employee.id}>
                             <TableCell className="font-medium">{employee.firstName} {employee.lastName}</TableCell>
                             <TableCell>{employee.position}</TableCell>
-                            <TableCell>{employee.date}</TableCell>
+                            <TableCell>{employee.date ? format(parseISO(employee.date as string), 'PPP') : 'N/A'}</TableCell>
                             <TableCell className="text-right space-x-2">
                                <CandidatesActions candidateId={employee.id} />
                             </TableCell>

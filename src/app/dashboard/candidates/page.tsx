@@ -5,6 +5,7 @@ import { type ApplicationData } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCandidates } from "@/app/actions/candidates";
 import { CandidatesActions } from "./_components/candidates-actions";
+import { format, parseISO } from "date-fns";
 
 export default async function CandidatesPage() {
   const candidates = await getCandidates();
@@ -42,7 +43,7 @@ export default async function CandidatesPage() {
                         <TableRow key={candidate.id}>
                             <TableCell className="font-medium">{candidate.firstName} {candidate.lastName}</TableCell>
                             <TableCell>{candidate.applyingFor.join(', ')}</TableCell>
-                            <TableCell>{candidate.date}</TableCell>
+                            <TableCell>{candidate.date ? format(parseISO(candidate.date as string), 'PPP') : 'N/A'}</TableCell>
                             <TableCell className="text-right space-x-2">
                                <CandidatesActions candidateId={candidate.id} />
                             </TableCell>

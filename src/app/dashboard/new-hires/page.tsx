@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
-import { add, isBefore } from "date-fns";
+import { add, isBefore, format, parseISO } from "date-fns";
 import { AlertTriangle, UserCheck, Mail, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -96,8 +96,8 @@ export default function NewHiresPage() {
                                 {candidate.firstName} {candidate.lastName}
                             </TableCell>
                             <TableCell>{candidate.applyingFor.join(', ')}</TableCell>
-                            <TableCell>{candidate.date}</TableCell>
-                            <TableCell>{candidate.driversLicenseExpiration || 'N/A'}</TableCell>
+                            <TableCell>{candidate.date ? format(parseISO(candidate.date as string), 'PPP') : 'N/A'}</TableCell>
+                            <TableCell>{candidate.driversLicenseExpiration ? format(parseISO(candidate.driversLicenseExpiration), 'PPP') : 'N/A'}</TableCell>
                             <TableCell className="text-right space-x-2">
                                {isLicenseExpiringSoon(candidate.driversLicenseExpiration) && (
                                  <Button variant="secondary" size="sm" onClick={() => handleRenewLicense(candidate)}>
