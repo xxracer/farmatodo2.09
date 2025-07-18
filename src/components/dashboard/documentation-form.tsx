@@ -24,6 +24,16 @@ import { documentationSchema, type DocumentationSchema } from "@/lib/schemas"
 import { updateCandidateWithDocuments } from "@/app/actions/candidates"
 
 
+async function fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+
 export function DocumentationForm({ company, candidateId }: { company: string, candidateId?: string | null }) {
     const { toast } = useToast()
     const router = useRouter()
@@ -48,28 +58,40 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
         }
 
         setIsSubmitting(true);
-        const result = await updateCandidateWithDocuments(
-            candidateId, 
-            {
-                idCard: data.idCard,
-                proofOfAddress: data.proofOfAddress,
-            },
-            {}
-        );
-        setIsSubmitting(false);
+        try {
 
-        if (result.success) {
-            toast({
-              title: "Documents Submitted",
-              description: "Candidate documents have been uploaded.",
-            });
-            router.push('/documentation/success');
-        } else {
+            const idCardURL = data.idCard ? await fileToDataURL(data.idCard) : undefined;
+            const proofOfAddressURL = data.proofOfAddress ? await fileToDataURL(data.proofOfAddress) : undefined;
+
+            const result = await updateCandidateWithDocuments(
+                candidateId, 
+                {
+                    idCard: idCardURL,
+                    proofOfAddress: proofOfAddressURL,
+                }
+            );
+
+            if (result.success) {
+                toast({
+                  title: "Documents Submitted",
+                  description: "Candidate documents have been uploaded.",
+                });
+                router.push('/documentation/success');
+            } else {
+                toast({
+                  variant: "destructive",
+                  title: "Submission Failed",
+                  description: result.error || "An unknown error occurred.",
+                });
+            }
+        } catch (error) {
             toast({
               variant: "destructive",
               title: "Submission Failed",
-              description: result.error || "An unknown error occurred.",
+              description: (error as Error).message || "An unexpected error occurred.",
             });
+        } finally {
+            setIsSubmitting(false);
         }
     }
 

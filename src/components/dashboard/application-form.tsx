@@ -41,6 +41,17 @@ const companies = [
 ] as const;
 
 
+// Helper to convert a File to a base64 data URI
+async function fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+
 export function ApplicationForm() {
     const { toast } = useToast()
     const router = useRouter()
@@ -103,44 +114,54 @@ export function ApplicationForm() {
 
     async function onSubmit(data: ApplicationSchema) {
         setIsSubmitting(true);
-        const resumeFile = data.resume;
-        const licenseFile = data.driversLicense;
 
-        if (!resumeFile) {
-            toast({
-                variant: "destructive",
-                title: "Submission Failed",
-                description: "Resume file is missing.",
+        try {
+            const resumeFile = data.resume;
+            const licenseFile = data.driversLicense;
+
+            if (!resumeFile) {
+                toast({ variant: "destructive", title: "Submission Failed", description: "Resume file is missing." });
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (!licenseFile) {
+                toast({ variant: "destructive", title: "Submission Failed", description: "Driver's license file is missing." });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Convert files to data URLs on the client
+            const resumeURL = await fileToDataURL(resumeFile);
+            const driversLicenseURL = await fileToDataURL(licenseFile);
+
+            const result = await createCandidate({
+                ...data,
+                resume: resumeURL,
+                driversLicense: driversLicenseURL,
             });
-            setIsSubmitting(false);
-            return;
-        }
 
-        if (!licenseFile) {
-            toast({
-                variant: "destructive",
-                title: "Submission Failed",
-                description: "Driver's license file is missing.",
-            });
-            setIsSubmitting(false);
-            return;
-        }
-
-        const result = await createCandidate(data, resumeFile, licenseFile);
-        setIsSubmitting(false);
-
-        if (result.success) {
-            toast({
-              title: "Application Submitted",
-              description: "Your application has been received.",
-            });
-            router.push('/application/success');
-        } else {
-            toast({
+            if (result.success) {
+                toast({
+                  title: "Application Submitted",
+                  description: "Your application has been received.",
+                });
+                router.push('/application/success');
+            } else {
+                toast({
+                  variant: "destructive",
+                  title: "Submission Failed",
+                  description: result.error || "An unknown error occurred.",
+                });
+            }
+        } catch (error) {
+             toast({
               variant: "destructive",
               title: "Submission Failed",
-              description: result.error || "An unknown error occurred. Please check your connection and try again.",
+              description: (error as Error).message || "An unexpected error occurred.",
             });
+        } finally {
+            setIsSubmitting(false);
         }
     }
 

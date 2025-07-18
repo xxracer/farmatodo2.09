@@ -31,16 +31,11 @@ const saveCandidatesToStorage = (candidates: ApplicationData[]) => {
     window.localStorage.setItem('candidates', JSON.stringify(candidates));
 };
 
-export async function createCandidate(data: ApplicationSchema, resume: File, driversLicense: File) {
+export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | 'driversLicense'> & { resume: string; driversLicense: string }) {
     try {
-        const resumeURL = await fileToDataURL(resume);
-        const driversLicenseURL = await fileToDataURL(driversLicense);
-
         const newCandidate: ApplicationData = {
             id: crypto.randomUUID(),
             ...data,
-            resume: resumeURL,
-            driversLicense: driversLicenseURL,
             date: new Date(),
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
@@ -101,8 +96,8 @@ export async function getCandidate(id: string): Promise<ApplicationData | null> 
 export async function updateCandidateWithDocuments(
     id: string, 
     documents: { 
-        idCard?: File, 
-        proofOfAddress?: File, 
+        idCard?: string, 
+        proofOfAddress?: string, 
     }
 ) {
     try {
@@ -116,10 +111,10 @@ export async function updateCandidateWithDocuments(
         const candidate = candidates[candidateIndex];
 
         if (documents.idCard) {
-            candidate.idCard = await fileToDataURL(documents.idCard);
+            candidate.idCard = documents.idCard;
         }
         if (documents.proofOfAddress) {
-            candidate.proofOfAddress = await fileToDataURL(documents.proofOfAddress);
+            candidate.proofOfAddress = documents.proofOfAddress;
         }
 
         candidates[candidateIndex] = candidate;
