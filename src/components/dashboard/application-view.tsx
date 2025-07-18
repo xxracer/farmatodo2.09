@@ -210,12 +210,15 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Attached Documents</CardTitle>
-                <CardDescription>Documents uploaded during Phase 3.</CardDescription>
+                <CardDescription>Documents uploaded during the documentation phase.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
                 <FileRow label="Government-issued ID" value={data.idCard} />
                 <FileRow label="Proof of Address" value={data.proofOfAddress} />
-                {!data.idCard && !data.proofOfAddress && (
+                <FileRow label="Driver's License" value={data.driversLicense} />
+                <DataRow label="Name on License" value={data.driversLicenseName} />
+                <DataRow label="License Expiration" value={data.driversLicenseExpiration} />
+                {!data.idCard && !data.proofOfAddress && !data.driversLicense && (
                     <div className="flex items-center justify-center text-sm text-muted-foreground p-4">
                         <Paperclip className="mr-2 h-4 w-4" />
                         No documents have been uploaded yet.
@@ -236,5 +239,3 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
     </div>
   );
 }
-
-    

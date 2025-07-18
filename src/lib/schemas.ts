@@ -158,8 +158,11 @@ export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'emplo
         dateFrom?: string;
         dateTo?: string;
     }>;
-    idCard?: string; // Storing the download URL as a string
-    proofOfAddress?: string; // Storing the download URL as a string
+    idCard?: string;
+    proofOfAddress?: string;
+    driversLicense?: string;
+    driversLicenseName?: string;
+    driversLicenseExpiration?: string;
 };
 
 export const interviewReviewSchema = z.object({
@@ -195,8 +198,15 @@ export const documentationSchema = z.object({
       (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
     ),
+  driversLicense: z
+    .instanceof(File, { message: "Driver's license is required." })
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
+    ),
+  driversLicenseName: z.string().min(1, "Name on license is required."),
+  driversLicenseExpiration: z.date({ required_error: "Expiration date is required." }),
 });
 
 export type DocumentationSchema = z.infer<typeof documentationSchema>;
-
-    

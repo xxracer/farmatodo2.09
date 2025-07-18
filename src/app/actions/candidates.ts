@@ -6,6 +6,7 @@ import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
 import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
+import { format } from "date-fns";
 
 async function uploadFileAndGetURL(candidateId: string, file: File, fileName: string): Promise<string> {
     const storageRef = ref(storage, `candidates/${candidateId}/${fileName}`);
@@ -99,10 +100,21 @@ export async function getCandidate(id: string): Promise<ApplicationData | null> 
     }
 }
 
-export async function updateCandidateWithDocuments(id: string, documents: { idCard?: File, proofOfAddress?: File }) {
+export async function updateCandidateWithDocuments(
+    id: string, 
+    documents: { 
+        idCard?: File, 
+        proofOfAddress?: File, 
+        driversLicense?: File 
+    },
+    metadata: {
+        driversLicenseName?: string,
+        driversLicenseExpiration?: Date,
+    }
+) {
     try {
         const docRef = doc(db, "candidates", id);
-        const updates: { idCard?: string, proofOfAddress?: string } = {};
+        const updates: { [key: string]: string } = {};
 
         if (documents.idCard) {
             updates.idCard = await uploadFileAndGetURL(id, documents.idCard, `idCard-${documents.idCard.name}`);
@@ -110,6 +122,16 @@ export async function updateCandidateWithDocuments(id: string, documents: { idCa
         if (documents.proofOfAddress) {
             updates.proofOfAddress = await uploadFileAndGetURL(id, documents.proofOfAddress, `proofOfAddress-${documents.proofOfAddress.name}`);
         }
+        if (documents.driversLicense) {
+            updates.driversLicense = await uploadFileAndGetURL(id, documents.driversLicense, `driversLicense-${documents.driversLicense.name}`);
+        }
+        if (metadata.driversLicenseName) {
+            updates.driversLicenseName = metadata.driversLicenseName;
+        }
+        if (metadata.driversLicenseExpiration) {
+            updates.driversLicenseExpiration = format(metadata.driversLicenseExpiration, 'yyyy-MM-dd');
+        }
+
 
         if (Object.keys(updates).length > 0) {
             await updateDoc(docRef, updates);
@@ -149,7 +171,7 @@ export async function deleteCandidate(id: string) {
         await deleteDoc(candidateDocRef);
 
         // Delete associated files from storage
-        const filesToDelete = [candidateData?.resume, candidateData?.idCard, candidateData?.proofOfAddress];
+        const filesToDelete = [candidateData?.resume, candidateData?.idCard, candidateData?.proofOfAddress, candidateData?.driversLicense];
         for (const fileUrl of filesToDelete) {
             if (fileUrl) {
                 try {
