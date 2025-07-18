@@ -3,10 +3,49 @@
 
 import { db, storage } from "@/lib/firebase";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, Timestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
 import { format, add, isBefore } from "date-fns";
+
+// Helper to convert Firestore Timestamp to JS Date
+function toDate(timestamp: any): Date | null {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  return null;
+}
+
+// Helper to process a document, converting all timestamps
+function processDoc(docData: any): any {
+    if (!docData) return null;
+
+    const data = { ...docData };
+
+    for (const key in data) {
+        if (data[key] instanceof Timestamp) {
+            data[key] = data[key].toDate();
+        }
+    }
+
+    if (data.employmentHistory && Array.isArray(data.employmentHistory)) {
+        data.employmentHistory = data.employmentHistory.map((job: any) => {
+            const newJob = { ...job };
+            if (newJob.dateFrom instanceof Timestamp) {
+                newJob.dateFrom = newJob.dateFrom.toDate();
+            }
+            if (newJob.dateTo instanceof Timestamp) {
+                newJob.dateTo = newJob.dateTo.toDate();
+            }
+            return newJob;
+        });
+    }
+
+    return data;
+}
 
 async function uploadFileAndGetURL(candidateId: string, file: File, fileName: string): Promise<string> {
     const storageRef = ref(storage, `candidates/${candidateId}/${fileName}`);
@@ -64,10 +103,12 @@ export async function getCandidates(): Promise<ApplicationData[]> {
     try {
         const q = query(collection(db, "candidates"), where("status", "==", "candidate"));
         const querySnapshot = await getDocs(q);
-        const candidates = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        } as ApplicationData));
+        const candidates = querySnapshot.docs.map(doc => {
+            return processDoc({
+                id: doc.id,
+                ...doc.data(),
+            }) as ApplicationData;
+        });
         return candidates;
     } catch (error) {
         console.error("Error getting documents: ", error);
@@ -79,10 +120,12 @@ export async function getNewHires(): Promise<ApplicationData[]> {
     try {
         const q = query(collection(db, "candidates"), where("status", "==", "new-hire"));
         const querySnapshot = await getDocs(q);
-        const candidates = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        } as ApplicationData));
+        const candidates = querySnapshot.docs.map(doc => {
+             return processDoc({
+                id: doc.id,
+                ...doc.data(),
+            }) as ApplicationData;
+        });
         return candidates;
     } catch (error) {
         console.error("Error getting new hires: ", error);
@@ -94,10 +137,12 @@ export async function getEmployees(): Promise<ApplicationData[]> {
     try {
         const q = query(collection(db, "candidates"), where("status", "==", "employee"));
         const querySnapshot = await getDocs(q);
-        const employees = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        } as ApplicationData));
+        const employees = querySnapshot.docs.map(doc => {
+             return processDoc({
+                id: doc.id,
+                ...doc.data(),
+            }) as ApplicationData;
+        });
         return employees;
     } catch (error) {
         console.error("Error getting employees: ", error);
@@ -109,10 +154,12 @@ export async function getPersonnel(): Promise<ApplicationData[]> {
     try {
         const q = query(collection(db, "candidates"), where("status", "in", ["new-hire", "employee"]));
         const querySnapshot = await getDocs(q);
-        const personnel = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        } as ApplicationData));
+        const personnel = querySnapshot.docs.map(doc => {
+             return processDoc({
+                id: doc.id,
+                ...doc.data(),
+            }) as ApplicationData;
+        });
         return personnel;
     } catch (error) {
         console.error("Error getting personnel: ", error);
@@ -127,7 +174,7 @@ export async function getCandidate(id: string): Promise<ApplicationData | null> 
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as ApplicationData;
+            return processDoc({ id: docSnap.id, ...docSnap.data() }) as ApplicationData;
         } else {
             console.log("No such document!");
             return null;
@@ -152,7 +199,7 @@ export async function updateCandidateWithDocuments(
 ) {
     try {
         const docRef = doc(db, "candidates", id);
-        const updates: { [key: string]: string | Date } = {};
+        const updates: { [key: string]: any } = {};
 
         if (documents.idCard) {
             updates.idCard = await uploadFileAndGetURL(id, documents.idCard, `idCard-${documents.idCard.name}`);
@@ -167,7 +214,7 @@ export async function updateCandidateWithDocuments(
             updates.driversLicenseName = metadata.driversLicenseName;
         }
         if (metadata.driversLicenseExpiration) {
-            updates.driversLicenseExpiration = metadata.driversLicenseExpiration;
+            updates.driversLicenseExpiration = Timestamp.fromDate(new Date(metadata.driversLicenseExpiration));
         }
 
 
@@ -257,7 +304,8 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
     
     return personnel.some(p => {
       if (!p.driversLicenseExpiration) return false;
-      const expiry = p.driversLicenseExpiration instanceof Date ? p.driversLicenseExpiration : new Date(p.driversLicenseExpiration);
+      const expiry = toDate(p.driversLicenseExpiration);
+      if (!expiry) return false;
       return isBefore(expiry, sixtyDaysFromNow);
     });
   } catch (error) {

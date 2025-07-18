@@ -12,7 +12,8 @@ import { format, parseISO } from "date-fns";
 function formatDisplayDate(dateValue: any): string {
     if (!dateValue) return 'N/A';
     try {
-        const date = typeof dateValue === 'string' ? parseISO(dateValue) : dateValue;
+        // The value can be a Date object or an ISO string
+        const date = dateValue instanceof Date ? dateValue : parseISO(dateValue);
         return format(date, "PPP");
     } catch (error) {
         // Fallback for invalid date formats
