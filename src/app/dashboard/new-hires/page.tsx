@@ -131,7 +131,7 @@ export default function NewHiresPage() {
                         </TableRow>
                       )
                     })}
-                </Body>
+                </TableBody>
             </Table>
         </CardContent>
       </Card>
