@@ -113,32 +113,20 @@ export function ApplicationForm() {
             return;
         }
 
-        const serializableData = {
-            ...data,
-            date: data.date ? format(data.date, 'yyyy-MM-dd') : "",
-            employmentHistory: data.employmentHistory.map(job => ({
-                ...job,
-                dateFrom: job.dateFrom ? format(job.dateFrom, 'yyyy-MM-dd') : "",
-                dateTo: job.dateTo ? format(job.dateTo, 'yyyy-MM-dd') : "",
-                startingPay: parseFloat(job.startingPay as any) || 0,
-            })),
-            resume: undefined, 
-        };
-
-        const result = await createCandidate(serializableData, resumeFile);
+        const result = await createCandidate(data, resumeFile);
         setIsSubmitting(false);
 
         if (result.success) {
             toast({
               title: "Application Submitted",
-              description: "Candidate data has been saved successfully.",
+              description: "Your application has been received.",
             });
             router.push('/application/success');
         } else {
             toast({
               variant: "destructive",
               title: "Submission Failed",
-              description: result.error || "An unknown error occurred.",
+              description: result.error || "An unknown error occurred. Please check your connection and try again.",
             });
         }
     }
@@ -694,5 +682,3 @@ export function ApplicationForm() {
     </Form>
   )
 }
-
-    

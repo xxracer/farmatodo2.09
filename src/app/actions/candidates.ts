@@ -3,24 +3,31 @@
 
 import { db, storage } from "@/lib/firebase";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy } from "firebase/firestore";
+import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
 import { format, add, isBefore } from "date-fns";
 
 async function uploadFileAndGetURL(candidateId: string, file: File, fileName: string): Promise<string> {
     const storageRef = ref(storage, `candidates/${candidateId}/${fileName}`);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
+    try {
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        return downloadURL;
+    } catch (error) {
+        console.error(`Error uploading file ${fileName} for candidate ${candidateId}:`, error);
+        throw new Error(`Failed to upload ${fileName}.`);
+    }
 }
 
 export async function createCandidate(data: ApplicationSchema, resume: File) {
+    let candidateId: string | null = null;
     try {
-        const docRef = await addDoc(collection(db, "candidates"), {
+        // Create the document in Firestore first without the resume URL
+        const docData = {
             ...data,
-            resume: undefined, // Will be handled separately
-            // Convert date strings from employment history to Date objects
+            resume: undefined, // Will be updated after upload
+            date: data.date ? new Date(data.date) : new Date(),
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
                 dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
@@ -28,19 +35,27 @@ export async function createCandidate(data: ApplicationSchema, resume: File) {
                 startingPay: parseFloat(job.startingPay as any) || 0,
             })),
             status: 'candidate',
-        });
-        
-        const candidateId = docRef.id;
+        };
+
+        const docRef = await addDoc(collection(db, "candidates"), docData);
+        candidateId = docRef.id;
+
+        // Now upload the resume file
         const resumeURL = await uploadFileAndGetURL(candidateId, resume, `resume-${resume.name}`);
         
+        // Update the document with the resume URL
         await updateDoc(docRef, { resume: resumeURL });
 
         revalidatePath('/dashboard/candidates');
         revalidatePath('/dashboard');
         return { success: true, id: candidateId };
     } catch (error) {
-        console.error("Error adding document: ", error);
-        return { success: false, error: "Failed to create candidate." };
+        console.error("Error creating candidate: ", error);
+        // If something fails (e.g., file upload), delete the created Firestore document
+        if (candidateId) {
+            await deleteDoc(doc(db, "candidates", candidateId));
+        }
+        return { success: false, error: (error as Error).message || "Failed to create candidate." };
     }
 }
 
@@ -167,7 +182,7 @@ export async function updateCandidateWithDocuments(
         return { success: true };
     } catch (error) {
         console.error("Error updating document: ", error);
-        return { success: false, error: "Failed to update candidate." };
+        return { success: false, error: (error as Error).message || "Failed to update candidate." };
     }
 }
 
