@@ -8,15 +8,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
-import { add, isBefore, format, parseISO } from "date-fns";
+import { add, isBefore, format } from "date-fns";
 import { AlertTriangle, FileClock, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const isLicenseExpiringSoon = (expirationDate: string | undefined): boolean => {
-  if (!expirationDate) return false;
+// Helper to convert Firestore Timestamp or string to JS Date
+function toDate(timestamp: any): Date | null {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
+  }
+  return null;
+}
+
+const isLicenseExpiringSoon = (expirationDate: any): boolean => {
+  const expiry = toDate(expirationDate);
+  if (!expiry) return false;
   // Documents expiring in the next 60 days or are already expired
   const sixtyDaysFromNow = add(new Date(), { days: 60 });
-  const expiry = typeof expirationDate === 'string' ? parseISO(expirationDate) : new Date(expirationDate);
   return isBefore(expiry, sixtyDaysFromNow);
 };
 
@@ -90,7 +104,8 @@ export default function ExpiringDocumentationPage() {
                 </TableHeader>
                 <TableBody>
                     {expiringPersonnel.map((person) => {
-                        const isExpired = person.driversLicenseExpiration ? isBefore(parseISO(person.driversLicenseExpiration), new Date()) : false;
+                        const expirationDate = toDate(person.driversLicenseExpiration);
+                        const isExpired = expirationDate ? isBefore(expirationDate, new Date()) : false;
                         return (
                           <TableRow key={person.id} className={isExpired ? "bg-destructive/10" : "bg-yellow-100/50 dark:bg-yellow-900/20"}>
                               <TableCell className="font-medium flex items-center gap-2">
@@ -99,7 +114,7 @@ export default function ExpiringDocumentationPage() {
                               </TableCell>
                               <TableCell className="capitalize">{person.status}</TableCell>
                               <TableCell>Driver's License</TableCell>
-                              <TableCell>{person.driversLicenseExpiration ? format(parseISO(person.driversLicenseExpiration), 'PPP') : 'N/A'}</TableCell>
+                              <TableCell>{expirationDate ? format(expirationDate, 'PPP') : 'N/A'}</TableCell>
                               <TableCell className="text-right space-x-2">
                                   <Button variant="secondary" size="sm" onClick={() => handleRenewLicense(person)}>
                                       <Mail className="mr-2 h-4 w-4" />
@@ -117,4 +132,3 @@ export default function ExpiringDocumentationPage() {
     </div>
   );
 }
-

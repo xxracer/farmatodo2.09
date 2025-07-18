@@ -8,14 +8,28 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
-import { add, isBefore, format, parseISO } from "date-fns";
-import { AlertTriangle, UserCheck, Mail, Copy } from "lucide-react";
+import { add, isBefore, format } from "date-fns";
+import { AlertTriangle, UserCheck, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const isLicenseExpiringSoon = (expirationDate: string | undefined): boolean => {
-  if (!expirationDate) return false;
+// Helper to convert Firestore Timestamp or string to JS Date
+function toDate(timestamp: any): Date | null {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
+  }
+  return null;
+}
+
+const isLicenseExpiringSoon = (expirationDate: any): boolean => {
+  const expiry = toDate(expirationDate);
+  if (!expiry) return false;
   const thirtyDaysFromNow = add(new Date(), { days: 30 });
-  const expiry = new Date(expirationDate);
   return isBefore(expiry, thirtyDaysFromNow);
 };
 
@@ -87,7 +101,10 @@ export default function NewHiresPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {newHires.map((candidate: ApplicationData) => (
+                    {newHires.map((candidate: ApplicationData) => {
+                      const appliedDate = toDate(candidate.date);
+                      const expiryDate = toDate(candidate.driversLicenseExpiration);
+                      return (
                         <TableRow key={candidate.id} className={isLicenseExpiringSoon(candidate.driversLicenseExpiration) ? "bg-yellow-100/50 dark:bg-yellow-900/20" : ""}>
                             <TableCell className="font-medium flex items-center gap-2">
                                 {isLicenseExpiringSoon(candidate.driversLicenseExpiration) && (
@@ -96,8 +113,8 @@ export default function NewHiresPage() {
                                 {candidate.firstName} {candidate.lastName}
                             </TableCell>
                             <TableCell>{candidate.applyingFor.join(', ')}</TableCell>
-                            <TableCell>{candidate.date ? format(parseISO(candidate.date as string), 'PPP') : 'N/A'}</TableCell>
-                            <TableCell>{candidate.driversLicenseExpiration ? format(parseISO(candidate.driversLicenseExpiration), 'PPP') : 'N/A'}</TableCell>
+                            <TableCell>{appliedDate ? format(appliedDate, 'PPP') : 'N/A'}</TableCell>
+                            <TableCell>{expiryDate ? format(expiryDate, 'PPP') : 'N/A'}</TableCell>
                             <TableCell className="text-right space-x-2">
                                {isLicenseExpiringSoon(candidate.driversLicenseExpiration) && (
                                  <Button variant="secondary" size="sm" onClick={() => handleRenewLicense(candidate)}>
@@ -108,7 +125,8 @@ export default function NewHiresPage() {
                                <CandidatesActions candidateId={candidate.id} />
                             </TableCell>
                         </TableRow>
-                    ))}
+                      )
+                    })}
                 </TableBody>
             </Table>
         </CardContent>

@@ -5,7 +5,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ApplicationData } from "@/lib/schemas";
 import { Briefcase } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+
+// Helper to convert Firestore Timestamp to JS Date
+function toDate(timestamp: any): Date | null {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  return null;
+}
 
 export default async function EmployeesPage() {
   const employees = await getEmployees();
@@ -39,16 +50,19 @@ export default async function EmployeesPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {employees.map((employee: ApplicationData) => (
-                        <TableRow key={employee.id}>
-                            <TableCell className="font-medium">{employee.firstName} {employee.lastName}</TableCell>
-                            <TableCell>{employee.position}</TableCell>
-                            <TableCell>{employee.date ? format(parseISO(employee.date as string), 'PPP') : 'N/A'}</TableCell>
-                            <TableCell className="text-right space-x-2">
-                               <CandidatesActions candidateId={employee.id} />
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                    {employees.map((employee: ApplicationData) => {
+                        const hiredDate = toDate(employee.date);
+                        return (
+                            <TableRow key={employee.id}>
+                                <TableCell className="font-medium">{employee.firstName} {employee.lastName}</TableCell>
+                                <TableCell>{employee.position}</TableCell>
+                                <TableCell>{hiredDate ? format(hiredDate, 'PPP') : 'N/A'}</TableCell>
+                                <TableCell className="text-right space-x-2">
+                                <CandidatesActions candidateId={employee.id} />
+                                </TableCell>
+                            </TableRow>
+                        )
+                    })}
                 </TableBody>
             </Table>
         </CardContent>

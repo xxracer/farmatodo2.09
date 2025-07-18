@@ -17,9 +17,17 @@ async function uploadFileAndGetURL(candidateId: string, file: File, fileName: st
 
 export async function createCandidate(data: ApplicationSchema, resume: File) {
     try {
-        const docRef = await addDoc(collection(db, "candidates"), {
+        const serializableData = {
             ...data,
-            resume: undefined,
+            resume: undefined, // Will be replaced by URL
+            employmentHistory: data.employmentHistory.map(job => ({
+                ...job,
+                startingPay: parseFloat(job.startingPay as any) || 0,
+            })),
+        };
+
+        const docRef = await addDoc(collection(db, "candidates"), {
+            ...serializableData,
             status: 'candidate',
         });
         
@@ -184,7 +192,8 @@ export async function updateCandidateStatus(id: string, status: 'new-hire' | 'em
 export async function deleteCandidate(id: string) {
     try {
         const candidateDocRef = doc(db, "candidates", id);
-        const candidateData = (await getDoc(candidateDocRef)).data() as ApplicationData | undefined;
+        const candidateSnap = await getDoc(candidateDocRef);
+        const candidateData = candidateSnap.data() as ApplicationData | undefined;
 
         await deleteDoc(candidateDocRef);
 
@@ -233,7 +242,7 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
     
     return personnel.some(p => {
       if (!p.driversLicenseExpiration) return false;
-      const expiry = new Date(p.driversLicenseExpiration);
+      const expiry = p.driversLicenseExpiration instanceof Date ? p.driversLicenseExpiration : new Date(p.driversLicenseExpiration);
       return isBefore(expiry, sixtyDaysFromNow);
     });
   } catch (error) {

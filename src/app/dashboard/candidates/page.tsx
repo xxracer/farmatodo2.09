@@ -5,7 +5,18 @@ import { type ApplicationData } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCandidates } from "@/app/actions/candidates";
 import { CandidatesActions } from "./_components/candidates-actions";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+
+// Helper to convert Firestore Timestamp to JS Date
+function toDate(timestamp: any): Date | null {
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  return null;
+}
 
 export default async function CandidatesPage() {
   const candidates = await getCandidates();
@@ -39,16 +50,19 @@ export default async function CandidatesPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {candidates.map((candidate) => (
-                        <TableRow key={candidate.id}>
-                            <TableCell className="font-medium">{candidate.firstName} {candidate.lastName}</TableCell>
-                            <TableCell>{candidate.applyingFor.join(', ')}</TableCell>
-                            <TableCell>{candidate.date ? format(parseISO(candidate.date as string), 'PPP') : 'N/A'}</TableCell>
-                            <TableCell className="text-right space-x-2">
-                               <CandidatesActions candidateId={candidate.id} />
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                    {candidates.map((candidate) => {
+                        const applicationDate = toDate(candidate.date);
+                        return (
+                          <TableRow key={candidate.id}>
+                              <TableCell className="font-medium">{candidate.firstName} {candidate.lastName}</TableCell>
+                              <TableCell>{candidate.applyingFor.join(', ')}</TableCell>
+                              <TableCell>{applicationDate ? format(applicationDate, 'PPP') : 'N/A'}</TableCell>
+                              <TableCell className="text-right space-x-2">
+                                <CandidatesActions candidateId={candidate.id} />
+                              </TableCell>
+                          </TableRow>
+                        )
+                    })}
                 </TableBody>
             </Table>
         </CardContent>

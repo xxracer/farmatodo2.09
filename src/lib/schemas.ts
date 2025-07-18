@@ -142,27 +142,27 @@ export const applicationSchema = z.object({
 
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
-// This is the type for the data that will be stored in localStorage
-export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory' | 'previouslyEmployed' | 'legallyEligible' | 'differentLastName' | 'currentlyEmployed' | 'reliableTransportation' | 'convictedOfCrime' | 'capableOfPerformingJob'> & {
+
+type FirebaseTimestamp = {
+    seconds: number;
+    nanoseconds: number;
+    toDate: () => Date;
+};
+
+// This is the type for the data that will be stored in Firestore
+export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'date' | 'employmentHistory'> & {
     id: string;
     resume?: string; // Storing the download URL as a string
-    date?: string;
-    previouslyEmployed?: "yes" | "no";
-    legallyEligible?: "yes" | "no";
-    differentLastName?: "yes" | "no";
-    currentlyEmployed?: "yes" | "no";
-    reliableTransportation?: "yes" | "no";
-    convictedOfCrime?: "yes" | "no";
-    capableOfPerformingJob?: "yes" | "no";
+    date?: Date | FirebaseTimestamp;
     employmentHistory: Array<Omit<z.infer<typeof employmentHistoryEntrySchema>, 'dateFrom' | 'dateTo'> & {
-        dateFrom?: string;
-        dateTo?: string;
+        dateFrom?: Date | FirebaseTimestamp;
+        dateTo?: Date | FirebaseTimestamp;
     }>;
     idCard?: string;
     proofOfAddress?: string;
     driversLicense?: string;
     driversLicenseName?: string;
-    driversLicenseExpiration?: string;
+    driversLicenseExpiration?: Date | FirebaseTimestamp | string;
 };
 
 export const interviewReviewSchema = z.object({
