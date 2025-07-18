@@ -1,15 +1,12 @@
 
-'use server';
+'use client';
 
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 
 // NOTE: Since we are using localStorage, these actions will be called from client components.
-// The 'use server' directive is kept for structural consistency, but the logic
-// within will effectively be client-side logic passed to the server action context.
 // In a real app, these would be true server-side database operations.
 
-// Client-side helpers for localStorage. These would be API calls in a real app.
 const getCandidatesFromStorage = (): ApplicationData[] => {
     if (typeof window === 'undefined') return [];
     const data = window.localStorage.getItem('candidates');
@@ -23,35 +20,32 @@ const saveCandidatesToStorage = (candidates: ApplicationData[]) => {
 
 export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | 'driversLicense'> & { resume: string; driversLicense: string }) {
     try {
-        if (typeof window !== 'undefined') {
-            const newCandidate: ApplicationData = {
-                id: crypto.randomUUID(),
-                ...data,
-                date: new Date(),
-                employmentHistory: data.employmentHistory.map(job => ({
-                    ...job,
-                    dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
-                    dateTo: job.dateTo ? new Date(job.dateTo) : undefined,
-                    startingPay: parseFloat(job.startingPay as any) || 0,
-                })),
-                driversLicenseExpiration: data.driversLicenseExpiration ? new Date(data.driversLicenseExpiration) : undefined,
-                status: 'candidate',
-            };
+        const newCandidate: ApplicationData = {
+            id: crypto.randomUUID(),
+            ...data,
+            date: new Date(),
+            employmentHistory: data.employmentHistory.map(job => ({
+                ...job,
+                dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
+                dateTo: job.dateTo ? new Date(job.dateTo) : undefined,
+                startingPay: parseFloat(job.startingPay as any) || 0,
+            })),
+            driversLicenseExpiration: data.driversLicenseExpiration ? new Date(data.driversLicenseExpiration) : undefined,
+            status: 'candidate',
+        };
 
-            const candidates = getCandidatesFromStorage();
-            candidates.unshift(newCandidate); // Add to the beginning
-            saveCandidatesToStorage(candidates);
-            
-            localStorage.setItem('candidateName', `${newCandidate.firstName} ${newCandidate.lastName}`);
-            localStorage.setItem('candidateCompany', newCandidate.applyingFor.join(', '));
-            window.dispatchEvent(new Event('storage'));
+        const candidates = getCandidatesFromStorage();
+        candidates.unshift(newCandidate); // Add to the beginning
+        saveCandidatesToStorage(candidates);
+        
+        localStorage.setItem('candidateName', `${newCandidate.firstName} ${newCandidate.lastName}`);
+        localStorage.setItem('candidateCompany', newCandidate.applyingFor.join(', '));
+        window.dispatchEvent(new Event('storage'));
 
-            revalidatePath('/dashboard/candidates');
-            revalidatePath('/dashboard');
-            return { success: true, id: newCandidate.id };
-        }
-        // This should not happen in a client-side scenario but is good practice.
-        return { success: false, error: "Window object not found." };
+        // revalidatePath is a server-side function and won't work here,
+        // but we keep the structure. The storage event will trigger re-renders.
+        
+        return { success: true, id: newCandidate.id };
     } catch (error) {
         console.error("Error creating candidate: ", error);
         return { success: false, error: (error as Error).message || "Failed to create candidate." };
@@ -112,10 +106,7 @@ export async function updateCandidateWithDocuments(
         candidates[candidateIndex] = candidate;
         saveCandidatesToStorage(candidates);
         
-        revalidatePath(`/dashboard/candidates/view`, 'page');
-        revalidatePath('/dashboard/candidates');
-        revalidatePath('/dashboard/new-hires');
-        revalidatePath('/dashboard/expiring-documentation');
+        window.dispatchEvent(new Event('storage'));
         return { success: true };
     } catch (error) {
         console.error("Error updating document: ", error);
@@ -135,11 +126,7 @@ export async function updateCandidateStatus(id: string, status: 'new-hire' | 'em
             throw new Error("Candidate not found");
         }
 
-        revalidatePath('/dashboard/candidates');
-        revalidatePath('/dashboard/candidates/view', 'page');
-        revalidatePath('/dashboard/new-hires');
-        revalidatePath('/dashboard/employees');
-        revalidatePath('/dashboard/expiring-documentation');
+        window.dispatchEvent(new Event('storage'));
         return { success: true };
     } catch (error) {
         console.error("Error updating status: ", error);
@@ -154,11 +141,7 @@ export async function deleteCandidate(id: string) {
         const updatedCandidates = candidates.filter(c => c.id !== id);
         saveCandidatesToStorage(updatedCandidates);
 
-        revalidatePath('/dashboard/candidates');
-        revalidatePath('/dashboard');
-        revalidatePath('/dashboard/new-hires');
-        revalidatePath('/dashboard/employees');
-        revalidatePath('/dashboard/expiring-documentation');
+        window.dispatchEvent(new Event('storage'));
         return { success: true };
     } catch (error) {
         console.error("Error deleting document: ", error);
