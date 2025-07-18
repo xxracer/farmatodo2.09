@@ -3,7 +3,7 @@
 
 import { db, storage } from "@/lib/firebase";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
 import { format, add, isBefore } from "date-fns";
@@ -17,17 +17,16 @@ async function uploadFileAndGetURL(candidateId: string, file: File, fileName: st
 
 export async function createCandidate(data: ApplicationSchema, resume: File) {
     try {
-        const serializableData = {
+        const docRef = await addDoc(collection(db, "candidates"), {
             ...data,
-            resume: undefined, // Will be replaced by URL
+            resume: undefined, // Will be handled separately
+            // Convert date strings from employment history to Date objects
             employmentHistory: data.employmentHistory.map(job => ({
                 ...job,
+                dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
+                dateTo: job.dateTo ? new Date(job.dateTo) : undefined,
                 startingPay: parseFloat(job.startingPay as any) || 0,
             })),
-        };
-
-        const docRef = await addDoc(collection(db, "candidates"), {
-            ...serializableData,
             status: 'candidate',
         });
         
@@ -44,6 +43,7 @@ export async function createCandidate(data: ApplicationSchema, resume: File) {
         return { success: false, error: "Failed to create candidate." };
     }
 }
+
 
 export async function getCandidates(): Promise<ApplicationData[]> {
     try {
