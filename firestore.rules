@@ -1,16 +1,8 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Rules for the 'candidates' collection
     match /candidates/{candidateId} {
-      // Allow anyone to create a candidate (submit an application)
-      allow create: if true;
-
-      // Allow read, update, delete only for authenticated users (your HR team)
-      // For the prototype, we'll allow reads for now.
-      allow read: if true;
-      allow update, delete: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
