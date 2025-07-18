@@ -16,11 +16,18 @@ import { CandidateName } from "./candidate-name";
 function CandidateDetails({ interviewCandidate }: { interviewCandidate: ApplicationData }) {
     if (!interviewCandidate) return null;
 
-    const [currentPhase, setCurrentPhase] = useState<"application" | "interview" | "documentation">("interview");
+    const [currentPhase, setCurrentPhase] = useState<"interview" | "documentation">("interview");
+    const [activeTab, setActiveTab] = useState<string>("interview");
 
     const handleInterviewSubmit = () => {
-        setCurrentPhase("documentation");
+        const nextPhase = "documentation";
+        setCurrentPhase(nextPhase);
+        setActiveTab(nextPhase);
     };
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+    }
 
     return (
         <div className="space-y-8">
@@ -34,7 +41,7 @@ function CandidateDetails({ interviewCandidate }: { interviewCandidate: Applicat
                 currentPhase={currentPhase}
             />
 
-            <Tabs defaultValue="interview" className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
                     <TabsTrigger value="interview">Phase 2: Interview</TabsTrigger>
                     <TabsTrigger value="documentation">Phase 3: Documentation</TabsTrigger>
