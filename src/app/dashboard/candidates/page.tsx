@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { type ApplicationData } from "@/lib/schemas";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getCandidates } from "@/app/actions/candidates";
+import { getCandidates } from "@/app/actions/client-actions";
 import { CandidatesActions } from "./_components/candidates-actions";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { deleteCandidate } from "@/app/actions/candidates";
+import { deleteCandidate } from "@/app/actions/client-actions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, View } from "lucide-react";

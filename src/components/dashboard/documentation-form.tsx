@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { documentationSchema, type DocumentationSchema } from "@/lib/schemas"
-import { updateCandidateWithDocuments } from "@/app/actions/candidates"
+import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 
 
 async function fileToDataURL(file: File): Promise<string> {

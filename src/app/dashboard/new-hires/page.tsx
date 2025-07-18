@@ -1,7 +1,7 @@
 
 'use client'
 
-import { getNewHires } from "@/app/actions/candidates";
+import { getNewHires } from "@/app/actions/client-actions";
 import { CandidatesActions } from "@/app/dashboard/candidates/_components/candidates-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -131,7 +131,7 @@ export default function NewHiresPage() {
                         </TableRow>
                       )
                     })}
-                </TableBody>
+                </Body>
             </Table>
         </CardContent>
       </Card>

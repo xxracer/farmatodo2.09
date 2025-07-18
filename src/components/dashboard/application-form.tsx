@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "../ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
-import { createCandidate } from "@/app/actions/candidates"
+import { createCandidate } from "@/app/actions/client-actions"
 import { Loader2 } from "lucide-react"
 
 const companies = [

@@ -28,7 +28,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import { checkForExpiringDocuments } from "@/app/actions/candidates";
+import { checkForExpiringDocuments } from "@/app/actions/client-actions";
 
 export function DashboardSidebar() {
   const pathname = usePathname();

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getCandidate, updateCandidateStatus } from "@/app/actions/candidates";
+import { getCandidate, updateCandidateStatus } from "@/app/actions/client-actions";
 import { ApplicationView } from "@/components/dashboard/application-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

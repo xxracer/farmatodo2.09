@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getEmployees } from "@/app/actions/candidates";
+import { getEmployees } from "@/app/actions/client-actions";
 import { CandidatesActions } from "@/app/dashboard/candidates/_components/candidates-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

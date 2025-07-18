@@ -9,7 +9,7 @@ import { detectMissingDocuments, DetectMissingDocumentsInput } from "@/ai/flows/
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CopyDocumentationLink } from "./copy-documentation-link";
-import { getCandidate } from "@/app/actions/candidates";
+import { getCandidate } from "@/app/actions/client-actions";
 import { ApplicationData } from "@/lib/schemas";
 
 

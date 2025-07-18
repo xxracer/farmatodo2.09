@@ -8,7 +8,7 @@ import { CopyApplicationLink } from "@/components/dashboard/copy-link";
 import { InterviewPhase } from "@/components/dashboard/interview-phase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ClipboardCheck, Users } from "lucide-react";
-import { getCandidates } from "@/app/actions/candidates";
+import { getCandidates } from "@/app/actions/client-actions";
 import { useEffect, useState, useCallback } from "react";
 import type { ApplicationData } from "@/lib/schemas";
 import { CandidateName } from "./candidate-name";
