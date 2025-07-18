@@ -59,6 +59,7 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
 
     const isCandidate = applicationData.status === 'candidate';
     const isNewHire = applicationData.status === 'new-hire';
+    const isEmployee = applicationData.status === 'employee';
 
     return (
         <div className="space-y-4">
@@ -84,7 +85,7 @@ export default async function ApplicationViewPage({ searchParams }: { searchPara
                         </form>
                     )}
                     <Button asChild variant="outline">
-                        <Link href="/dashboard/candidates">Back to Candidates</Link>
+                       {isEmployee ? <Link href="/dashboard/employees">Back to Employees</Link> : isNewHire ? <Link href="/dashboard/new-hires">Back to New Hires</Link> : <Link href="/dashboard/candidates">Back to Candidates</Link>}
                     </Button>
                 </div>
             </div>

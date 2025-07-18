@@ -23,12 +23,28 @@ import {
   FileClock,
   BookOpenCheck,
   Files,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { checkForExpiringDocuments } from "@/app/actions/candidates";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const [showAlert, setShowAlert] = useState(false);
+
+  useEffect(() => {
+    async function checkDocs() {
+      const hasExpiring = await checkForExpiringDocuments();
+      setShowAlert(hasExpiring);
+    }
+    checkDocs();
+    
+    // Optional: Poll for changes every few minutes
+    const interval = setInterval(checkDocs, 5 * 60 * 1000); // every 5 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Sidebar>
@@ -94,9 +110,12 @@ export function DashboardSidebar() {
               isActive={pathname.startsWith("/dashboard/expiring-documentation")}
               tooltip="Expiring Documentation"
             >
-              <Link href="/dashboard/expiring-documentation">
-                <FileClock />
-                <span>Expiring Docs</span>
+              <Link href="/dashboard/expiring-documentation" className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                    <FileClock />
+                    <span>Expiring Docs</span>
+                </div>
+                {showAlert && <AlertTriangle className="h-4 w-4 text-yellow-400 animate-pulse" />}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -3,10 +3,10 @@
 
 import { db, storage } from "@/lib/firebase";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy } from "firebase/firestore";
+import { addDoc, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { revalidatePath } from "next/cache";
-import { format } from "date-fns";
+import { format, add, isBefore } from "date-fns";
 
 async function uploadFileAndGetURL(candidateId: string, file: File, fileName: string): Promise<string> {
     const storageRef = ref(storage, `candidates/${candidateId}/${fileName}`);
@@ -82,6 +82,21 @@ export async function getEmployees(): Promise<ApplicationData[]> {
     }
 }
 
+export async function getPersonnel(): Promise<ApplicationData[]> {
+    try {
+        const q = query(collection(db, "candidates"), where("status", "in", ["new-hire", "employee"]));
+        const querySnapshot = await getDocs(q);
+        const personnel = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as ApplicationData));
+        return personnel;
+    } catch (error) {
+        console.error("Error getting personnel: ", error);
+        return [];
+    }
+}
+
 
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
     try {
@@ -114,7 +129,7 @@ export async function updateCandidateWithDocuments(
 ) {
     try {
         const docRef = doc(db, "candidates", id);
-        const updates: { [key: string]: string } = {};
+        const updates: { [key: string]: string | Date } = {};
 
         if (documents.idCard) {
             updates.idCard = await uploadFileAndGetURL(id, documents.idCard, `idCard-${documents.idCard.name}`);
@@ -129,7 +144,7 @@ export async function updateCandidateWithDocuments(
             updates.driversLicenseName = metadata.driversLicenseName;
         }
         if (metadata.driversLicenseExpiration) {
-            updates.driversLicenseExpiration = format(metadata.driversLicenseExpiration, 'yyyy-MM-dd');
+            updates.driversLicenseExpiration = metadata.driversLicenseExpiration;
         }
 
 
@@ -139,6 +154,8 @@ export async function updateCandidateWithDocuments(
         
         revalidatePath(`/dashboard/candidates/view`, 'page');
         revalidatePath('/dashboard/candidates');
+        revalidatePath('/dashboard/new-hires');
+        revalidatePath('/dashboard/expiring-documentation');
         return { success: true };
     } catch (error) {
         console.error("Error updating document: ", error);
@@ -155,6 +172,7 @@ export async function updateCandidateStatus(id: string, status: 'new-hire' | 'em
         revalidatePath('/dashboard/candidates/view', 'page');
         revalidatePath('/dashboard/new-hires');
         revalidatePath('/dashboard/employees');
+        revalidatePath('/dashboard/expiring-documentation');
         return { success: true };
     } catch (error) {
         console.error("Error updating status: ", error);
@@ -187,6 +205,9 @@ export async function deleteCandidate(id: string) {
 
         revalidatePath('/dashboard/candidates');
         revalidatePath('/dashboard');
+        revalidatePath('/dashboard/new-hires');
+        revalidatePath('/dashboard/employees');
+        revalidatePath('/dashboard/expiring-documentation');
         return { success: true };
     } catch (error) {
         console.error("Error deleting document: ", error);
@@ -203,4 +224,20 @@ export async function hasCandidates() {
         console.error("Error checking for candidates: ", error);
         return false;
     }
+}
+
+export async function checkForExpiringDocuments(): Promise<boolean> {
+  try {
+    const personnel = await getPersonnel();
+    const sixtyDaysFromNow = add(new Date(), { days: 60 });
+    
+    return personnel.some(p => {
+      if (!p.driversLicenseExpiration) return false;
+      const expiry = new Date(p.driversLicenseExpiration);
+      return isBefore(expiry, sixtyDaysFromNow);
+    });
+  } catch (error) {
+    console.error("Error checking for expiring documents:", error);
+    return false;
+  }
 }
