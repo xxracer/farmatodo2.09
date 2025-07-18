@@ -8,15 +8,15 @@ import { CopyApplicationLink } from "@/components/dashboard/copy-link";
 import { InterviewPhase } from "@/components/dashboard/interview-phase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ClipboardCheck, Users } from "lucide-react";
-import { getCandidates } from "@/app/actions/client-actions";
+import { getInterviewCandidates } from "@/app/actions/client-actions";
 import { useEffect, useState, useCallback } from "react";
 import type { ApplicationData } from "@/lib/schemas";
 import { CandidateName } from "./candidate-name";
 
-function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationData }) {
-    if (!latestCandidate) return null;
+function CandidateDetails({ interviewCandidate }: { interviewCandidate: ApplicationData }) {
+    if (!interviewCandidate) return null;
 
-    const [currentPhase, setCurrentPhase] = useState<"application" | "interview" | "documentation">("application");
+    const [currentPhase, setCurrentPhase] = useState<"application" | "interview" | "documentation">("interview");
 
     const handleInterviewSubmit = () => {
         setCurrentPhase("documentation");
@@ -30,7 +30,7 @@ function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationDat
             </div>
 
             <ProgressTracker 
-                candidateId={latestCandidate.id} 
+                candidateId={interviewCandidate.id} 
                 currentPhase={currentPhase}
             />
 
@@ -41,12 +41,12 @@ function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationDat
                 </TabsList>
                 <TabsContent value="interview" className="mt-6">
                     <InterviewPhase 
-                        candidateName={`${latestCandidate.firstName} ${latestCandidate.lastName}`}
+                        candidateName={`${interviewCandidate.firstName} ${interviewCandidate.lastName}`}
                         onReviewSubmit={handleInterviewSubmit}
                     />
                 </TabsContent>
                 <TabsContent value="documentation" className="mt-6">
-                    <DocumentationPhase candidateId={latestCandidate.id} candidateProfile="" submittedDocuments={[]} />
+                    <DocumentationPhase candidateId={interviewCandidate.id} candidateProfile="" submittedDocuments={[]} />
                 </TabsContent>
             </Tabs>
         </div>
@@ -55,13 +55,14 @@ function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationDat
 
 
 export function CandidateView() {
-    const [latestCandidate, setLatestCandidate] = useState<ApplicationData | null>(null);
+    const [interviewCandidate, setInterviewCandidate] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
 
     const loadData = useCallback(async () => {
         setLoading(true);
-        const candidates = await getCandidates();
-        setLatestCandidate(candidates[0] || null);
+        const candidates = await getInterviewCandidates();
+        // Display the most recent candidate set to interview
+        setInterviewCandidate(candidates[0] || null);
         setLoading(false);
     }, []);
 
@@ -84,7 +85,7 @@ export function CandidateView() {
         )
     }
 
-    if (!latestCandidate) {
+    if (!interviewCandidate) {
         return (
             <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -101,18 +102,18 @@ export function CandidateView() {
                         <div className="flex justify-center mb-4">
                             <ClipboardCheck className="h-16 w-16 text-muted-foreground" />
                         </div>
-                        <CardTitle className="font-headline text-2xl">No Active Candidate</CardTitle>
+                        <CardTitle className="font-headline text-2xl">No Active Candidate for Interview</CardTitle>
                         <CardDescription>
-                            Once a candidate submits an application, their details and progress will appear here.
+                            Once a candidate is set for an interview, their progress will appear here.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <p className="text-sm text-muted-foreground">Use the button above to copy and share the application link.</p>
+                       <p className="text-sm text-muted-foreground">Go to the 'Candidates' section to select one for an interview.</p>
                     </CardContent>
                 </Card>
             </div>
         )
     }
 
-    return <CandidateDetails latestCandidate={latestCandidate} />;
+    return <CandidateDetails interviewCandidate={interviewCandidate} />;
 }

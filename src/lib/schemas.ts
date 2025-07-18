@@ -127,7 +127,7 @@ export const applicationSchema = z.object({
     errorMap: () => ({ message: "You must certify to submit the application." }),
   }),
   signature: z.string().min(1, "Signature is required"),
-  status: z.string().optional(),
+  status: z.enum(['candidate', 'interview', 'new-hire', 'employee']).optional(),
 }).superRefine((data, ctx) => {
     if (data.differentLastName === 'yes' && !data.previousName) {
         ctx.addIssue({

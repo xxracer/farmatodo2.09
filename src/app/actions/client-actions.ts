@@ -57,6 +57,11 @@ export async function getCandidates(): Promise<ApplicationData[]> {
     return all.filter(c => c.status === 'candidate');
 }
 
+export async function getInterviewCandidates(): Promise<ApplicationData[]> {
+    const all = getCandidatesFromStorage();
+    return all.filter(c => c.status === 'interview');
+}
+
 export async function getNewHires(): Promise<ApplicationData[]> {
      const all = getCandidatesFromStorage();
     return all.filter(c => c.status === 'new-hire');
@@ -120,7 +125,7 @@ export async function updateCandidateWithDocuments(
 }
 
 
-export async function updateCandidateStatus(id: string, status: 'new-hire' | 'employee') {
+export async function updateCandidateStatus(id: string, status: 'interview' | 'new-hire' | 'employee') {
     if (typeof window === 'undefined') return { success: false, error: "Window object not found." };
     try {
         let candidates = getCandidatesFromStorage();

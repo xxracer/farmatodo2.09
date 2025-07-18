@@ -6,7 +6,7 @@ import { ApplicationView } from "@/components/dashboard/application-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ApplicationData } from "@/lib/schemas";
-import { Briefcase, Printer, UserCheck, UserSearch } from "lucide-react";
+import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -38,6 +38,14 @@ export default function ApplicationViewPage() {
           window.removeEventListener('storage', loadData);
         };
     }, [loadData]);
+
+    const handleSetToInterview = async (id: string) => {
+        const result = await updateCandidateStatus(id, 'interview');
+        if (result.success) {
+            router.push('/dashboard');
+        }
+        // Handle error case if needed
+    }
 
     const handleMarkAsNewHire = async (id: string) => {
         const result = await updateCandidateStatus(id, 'new-hire');
@@ -102,10 +110,16 @@ export default function ApplicationViewPage() {
                         Print
                     </Button>
                     {isCandidate && (
-                        <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Mark as New Hire
-                        </Button>
+                        <>
+                            <Button onClick={() => handleSetToInterview(applicationData.id)}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Set to Interview
+                            </Button>
+                            <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Mark as New Hire
+                            </Button>
+                        </>
                     )}
                     {isNewHire && (
                         <Button onClick={() => handleMarkAsEmployee(applicationData.id)}>
