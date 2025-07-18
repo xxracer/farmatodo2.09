@@ -32,7 +32,6 @@ function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationDat
             <ProgressTracker 
                 candidateId={latestCandidate.id} 
                 currentPhase={currentPhase}
-                setCurrentPhase={setCurrentPhase}
             />
 
             <Tabs defaultValue="interview" className="w-full">

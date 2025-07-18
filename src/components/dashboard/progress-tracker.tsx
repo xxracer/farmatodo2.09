@@ -4,18 +4,16 @@
 import { CheckCircle, FileText, FileUp, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Button } from "../ui/button";
 
 type Phase = "application" | "interview" | "documentation";
 
 type ProgressTrackerProps = {
     candidateId: string;
     currentPhase: Phase;
-    setCurrentPhase: (phase: Phase) => void;
 };
 
 
-export function ProgressTracker({ candidateId, currentPhase, setCurrentPhase }: ProgressTrackerProps) {
+export function ProgressTracker({ candidateId, currentPhase }: ProgressTrackerProps) {
 
   const phases = [
     {
@@ -70,12 +68,6 @@ export function ProgressTracker({ candidateId, currentPhase, setCurrentPhase }: 
                     )
                 })}
                 </ol>
-            </div>
-             {/* This is for demo purposes to show state changes */}
-             <div className="mt-6 flex gap-2">
-                <Button onClick={() => setCurrentPhase('application')} variant={currentPhase === 'application' ? 'default' : 'outline'} size="sm">Set to Application</Button>
-                <Button onClick={() => setCurrentPhase('interview')} variant={currentPhase === 'interview' ? 'default' : 'outline'} size="sm">Set to Interview</Button>
-                <Button onClick={() => setCurrentPhase('documentation')} variant={currentPhase === 'documentation' ? 'default' : 'outline'} size="sm">Set to Documentation</Button>
             </div>
         </CardContent>
     </Card>
