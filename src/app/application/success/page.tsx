@@ -11,15 +11,12 @@ export default function ApplicationSuccessPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                 <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-          <CardTitle className="font-headline text-2xl mt-4">Thank You for Applying!</CardTitle>
+          <CardTitle className="font-headline text-2xl mt-4">Thank you for your interest!</CardTitle>
           <CardDescription>
-            Your application has been successfully submitted. We appreciate your interest in our organization.
+            Someone from our company will contact you to schedule an interview in case your profile is selected. Goodbye.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            Our HR department will review your application. If your qualifications match our needs, we will contact you to schedule an interview.
-          </p>
           <Button asChild className="mt-6">
             <Link href="/">Return to Home</Link>
           </Button>
