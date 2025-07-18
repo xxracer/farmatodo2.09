@@ -28,7 +28,7 @@ const isLicenseExpiringSoon = (expirationDate: any): boolean => {
   if (!expiry) return false;
   // Documents expiring in the next 60 days
   const sixtyDaysFromNow = add(new Date(), { days: 60 });
-  return isBefore(expiry, sixtyDaysFromNow) && !isBefore(expiry, new Date());
+  return isBefore(expiry, sixtyDaysFromNow);
 };
 
 export default function NewHiresPage() {
@@ -109,7 +109,7 @@ export default function NewHiresPage() {
                     {newHires.map((candidate: ApplicationData) => {
                       const appliedDate = toDate(candidate.date);
                       const expiryDate = toDate(candidate.driversLicenseExpiration);
-                      const isExpiring = isLicenseExpiringSoon(candidate.driversLicenseExpiration);
+                      const isExpiring = expiryDate ? isLicenseExpiringSoon(expiryDate) : false;
                       const isExpired = expiryDate ? isBefore(expiryDate, new Date()) : false;
                       
                       let rowClass = "";

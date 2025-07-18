@@ -176,6 +176,7 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
         
         return personnel.some(p => {
           if (!p.driversLicenseExpiration) return false;
+          // When retrieving from localStorage, dates are strings, so they need to be converted back to Date objects.
           const expiry = new Date(p.driversLicenseExpiration);
           return expiry < sixtyDaysFromNow;
         });
