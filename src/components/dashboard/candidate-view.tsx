@@ -16,6 +16,12 @@ import { CandidateName } from "./candidate-name";
 function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationData }) {
     if (!latestCandidate) return null;
 
+    const [currentPhase, setCurrentPhase] = useState<"application" | "interview" | "documentation">("application");
+
+    const handleInterviewSubmit = () => {
+        setCurrentPhase("documentation");
+    };
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -23,7 +29,11 @@ function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationDat
                 <CopyApplicationLink />
             </div>
 
-            <ProgressTracker candidateId={latestCandidate.id} />
+            <ProgressTracker 
+                candidateId={latestCandidate.id} 
+                currentPhase={currentPhase}
+                setCurrentPhase={setCurrentPhase}
+            />
 
             <Tabs defaultValue="interview" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
@@ -31,7 +41,10 @@ function CandidateDetails({ latestCandidate }: { latestCandidate: ApplicationDat
                     <TabsTrigger value="documentation">Phase 3: Documentation</TabsTrigger>
                 </TabsList>
                 <TabsContent value="interview" className="mt-6">
-                    <InterviewPhase />
+                    <InterviewPhase 
+                        candidateName={`${latestCandidate.firstName} ${latestCandidate.lastName}`}
+                        onReviewSubmit={handleInterviewSubmit}
+                    />
                 </TabsContent>
                 <TabsContent value="documentation" className="mt-6">
                     <DocumentationPhase candidateId={latestCandidate.id} candidateProfile="" submittedDocuments={[]} />

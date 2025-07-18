@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useState } from "react";
 import { CheckCircle, FileText, FileUp, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -9,8 +8,14 @@ import { Button } from "../ui/button";
 
 type Phase = "application" | "interview" | "documentation";
 
-export function ProgressTracker({ candidateId }: { candidateId: string }) {
-  const [currentPhase, setCurrentPhase] = useState<Phase>("application");
+type ProgressTrackerProps = {
+    candidateId: string;
+    currentPhase: Phase;
+    setCurrentPhase: (phase: Phase) => void;
+};
+
+
+export function ProgressTracker({ candidateId, currentPhase, setCurrentPhase }: ProgressTrackerProps) {
 
   const phases = [
     {

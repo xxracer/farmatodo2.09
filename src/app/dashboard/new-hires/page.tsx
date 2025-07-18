@@ -26,8 +26,9 @@ function toDate(dateString: string | Date | undefined): Date | null {
 const isLicenseExpiringSoon = (expirationDate: any): boolean => {
   const expiry = toDate(expirationDate);
   if (!expiry) return false;
-  const thirtyDaysFromNow = add(new Date(), { days: 30 });
-  return isBefore(expiry, thirtyDaysFromNow);
+  // Documents expiring in the next 60 days
+  const sixtyDaysFromNow = add(new Date(), { days: 60 });
+  return isBefore(expiry, sixtyDaysFromNow) && !isBefore(expiry, new Date());
 };
 
 export default function NewHiresPage() {
@@ -108,11 +109,18 @@ export default function NewHiresPage() {
                     {newHires.map((candidate: ApplicationData) => {
                       const appliedDate = toDate(candidate.date);
                       const expiryDate = toDate(candidate.driversLicenseExpiration);
+                      const isExpiring = isLicenseExpiringSoon(candidate.driversLicenseExpiration);
+                      const isExpired = expiryDate ? isBefore(expiryDate, new Date()) : false;
+                      
+                      let rowClass = "";
+                      if (isExpired) rowClass = "bg-destructive/10";
+                      else if (isExpiring) rowClass = "bg-yellow-100/50 dark:bg-yellow-900/20";
+
                       return (
-                        <TableRow key={candidate.id} className={isLicenseExpiringSoon(candidate.driversLicenseExpiration) ? "bg-yellow-100/50 dark:bg-yellow-900/20" : ""}>
+                        <TableRow key={candidate.id} className={rowClass}>
                             <TableCell className="font-medium flex items-center gap-2">
-                                {isLicenseExpiringSoon(candidate.driversLicenseExpiration) && (
-                                    <AlertTriangle className="h-5 w-5 text-yellow-500" title="License expires soon!" />
+                                {(isExpiring || isExpired) && (
+                                    <AlertTriangle className={`h-5 w-5 ${isExpired ? 'text-destructive' : 'text-yellow-500'}`} title={isExpired ? "License Expired!" : "License expires soon!"} />
                                 )}
                                 {candidate.firstName} {candidate.lastName}
                             </TableCell>
@@ -120,7 +128,7 @@ export default function NewHiresPage() {
                             <TableCell>{appliedDate ? format(appliedDate, 'PPP') : 'N/A'}</TableCell>
                             <TableCell>{expiryDate ? format(expiryDate, 'PPP') : 'N/A'}</TableCell>
                             <TableCell className="text-right space-x-2">
-                               {isLicenseExpiringSoon(candidate.driversLicenseExpiration) && (
+                               {(isExpiring || isExpired) && (
                                  <Button variant="secondary" size="sm" onClick={() => handleRenewLicense(candidate)}>
                                     <Mail className="mr-2 h-4 w-4" />
                                     Renew License

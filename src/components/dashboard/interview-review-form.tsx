@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,6 +36,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "../ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
+import { useEffect } from "react";
 
 const daysOfWeek = [
   { id: "M", label: "M" },
@@ -46,7 +48,13 @@ const daysOfWeek = [
   { id: "Su", label: "Su" },
 ];
 
-export function InterviewReviewForm() {
+type InterviewReviewFormProps = {
+    candidateName: string;
+    onReviewSubmit: () => void;
+};
+
+
+export function InterviewReviewForm({ candidateName, onReviewSubmit }: InterviewReviewFormProps) {
   const { toast } = useToast();
 
   const form = useForm<InterviewReviewSchema>({
@@ -59,12 +67,19 @@ export function InterviewReviewForm() {
     },
   });
 
+  useEffect(() => {
+    if (candidateName) {
+        form.setValue("applicantName", candidateName);
+    }
+  }, [candidateName, form]);
+
   function onSubmit(data: InterviewReviewSchema) {
     toast({
       title: "Interview Review Submitted",
       description: "The review has been saved successfully.",
     });
     console.log(data);
+    onReviewSubmit();
   }
 
   const renderRadioGroup = (name: keyof InterviewReviewSchema, options: string[]) => (
@@ -188,7 +203,7 @@ export function InterviewReviewForm() {
                                 checked={field.value?.includes(item.id)}
                                 onCheckedChange={(checked) => {
                                   return checked
-                                    ? field.onChange([...field.value, item.id])
+                                    ? field.onChange([...(field.value || []), item.id])
                                     : field.onChange(
                                         field.value?.filter(
                                           (value) => value !== item.id

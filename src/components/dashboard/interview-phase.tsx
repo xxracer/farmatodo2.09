@@ -1,5 +1,10 @@
 import { InterviewReviewForm } from "./interview-review-form";
 
-export function InterviewPhase() {
-  return <InterviewReviewForm />;
+type InterviewPhaseProps = {
+    candidateName: string;
+    onReviewSubmit: () => void;
+}
+
+export function InterviewPhase({ candidateName, onReviewSubmit }: InterviewPhaseProps) {
+  return <InterviewReviewForm candidateName={candidateName} onReviewSubmit={onReviewSubmit} />;
 }

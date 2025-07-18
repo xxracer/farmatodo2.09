@@ -6,7 +6,7 @@ import { ApplicationView } from "@/components/dashboard/application-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ApplicationData } from "@/lib/schemas";
-import { Briefcase, UserCheck, UserSearch } from "lucide-react";
+import { Briefcase, Printer, UserCheck, UserSearch } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -97,6 +97,10 @@ export default function ApplicationViewPage() {
                     Viewing Application: {applicationData.firstName} {applicationData.lastName}
                 </h1>
                 <div className="flex gap-2">
+                     <Button variant="outline">
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
                     {isCandidate && (
                         <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
                             <UserCheck className="mr-2 h-4 w-4" />
