@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Upload, Save, FileText } from "lucide-react";
+import { Settings, Building, Upload, Save, FileText, Image as ImageIcon, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -72,11 +72,65 @@ export default function SettingsPage() {
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Application Form Customization (Phase 1)
+            </CardTitle>
+            <CardDescription>
+              Supply images for the application sections. You can also use the system's predefined template.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+             <div className="space-y-2">
+              <Label htmlFor="application-header">Application Header Image</Label>
+               <div className="flex items-center gap-4">
+                  <Input id="application-header" type="file" className="max-w-xs" />
+                  <Button variant="outline" type="button">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This image will appear at the top of the candidate application form.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Interview Phase Customization (Phase 2)
+            </CardTitle>
+            <CardDescription>
+              Personalize the interview review section with a custom image.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+             <div className="space-y-2">
+              <Label htmlFor="interview-image">Interview Header Image</Label>
+               <div className="flex items-center gap-4">
+                  <Input id="interview-image" type="file" className="max-w-xs" />
+                  <Button variant="outline" type="button">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </Button>
+              </div>
+               <p className="text-sm text-muted-foreground">
+                This image will be displayed in the background of the interview review form.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Required Documentation (Phase 3)
             </CardTitle>
             <CardDescription>
-              Define the list of documents that candidates must upload in the final phase.
+              Define the list of documents and images that candidates must upload in the final phase.
             </CardDescription>
           </CardHeader>
           <CardContent>
