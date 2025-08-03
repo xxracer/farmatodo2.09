@@ -16,6 +16,8 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [phase1Images, setPhase1Images] = useState<string[]>(['']);
+  const [companyType, setCompanyType] = useState('one');
+  const [companies, setCompanies] = useState([{ name: '', logo: null }]);
 
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +39,28 @@ export default function SettingsPage() {
     const newImages = phase1Images.filter((_, i) => i !== index);
     setPhase1Images(newImages);
   }
+
+  const addCompany = () => {
+    setCompanies([...companies, { name: '', logo: null }]);
+  }
+
+  const removeCompany = (index: number) => {
+    const newCompanies = companies.filter((_, i) => i !== index);
+    setCompanies(newCompanies);
+  }
+
+  const handleCompanyNameChange = (index: number, name: string) => {
+    const newCompanies = [...companies];
+    newCompanies[index].name = name;
+    setCompanies(newCompanies);
+  }
+
+  const handleCompanyLogoChange = (index: number, logo: any) => {
+    const newCompanies = [...companies];
+    newCompanies[index].logo = logo;
+    setCompanies(newCompanies);
+  }
+
 
   return (
     <div className="space-y-6">
@@ -60,7 +84,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label>Will you manage one or multiple companies?</Label>
-              <RadioGroup defaultValue="one" className="flex gap-4">
+              <RadioGroup value={companyType} onValueChange={setCompanyType} className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="one" id="one" />
                     <Label htmlFor="one">Just One</Label>
@@ -71,23 +95,60 @@ export default function SettingsPage() {
                   </div>
               </RadioGroup>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-name">Company Name</Label>
-              <Input id="company-name" placeholder="e.g., Noble Health" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-logo">Company Logo</Label>
-              <div className="flex items-center gap-4">
-                <Input id="company-logo" type="file" className="max-w-xs" />
-                <Button variant="outline" type="button">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Upload a logo to be displayed on the application and documentation pages.
-              </p>
-            </div>
+            
+            {companyType === 'one' ? (
+                <>
+                    <div className="space-y-2">
+                        <Label htmlFor="company-name">Company Name</Label>
+                        <Input id="company-name" placeholder="e.g., Noble Health" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="company-logo">Company Logo</Label>
+                        <div className="flex items-center gap-4">
+                            <Input id="company-logo" type="file" className="max-w-xs" />
+                            <Button variant="outline" type="button">
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload
+                            </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            Upload a logo to be displayed on the application and documentation pages.
+                        </p>
+                    </div>
+                </>
+            ) : (
+                <div className="space-y-4">
+                    {companies.map((company, index) => (
+                        <div key={index} className="p-4 border rounded-md space-y-4 relative">
+                             <h4 className="font-semibold text-md">Company #{index + 1}</h4>
+                             <div className="space-y-2">
+                                <Label htmlFor={`company-name-${index}`}>Company Name</Label>
+                                <Input id={`company-name-${index}`} placeholder="e.g., Noble Health" value={company.name} onChange={(e) => handleCompanyNameChange(index, e.target.value)} />
+                             </div>
+                             <div className="space-y-2">
+                                <Label htmlFor={`company-logo-${index}`}>Company Logo</Label>
+                                <div className="flex items-center gap-4">
+                                    <Input id={`company-logo-${index}`} type="file" className="max-w-xs" onChange={(e) => handleCompanyLogoChange(index, e.target.files?.[0])} />
+                                    <Button variant="outline" type="button">
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Upload
+                                    </Button>
+                                </div>
+                             </div>
+                             {companies.length > 1 && (
+                                <Button variant="ghost" size="icon" type="button" className="absolute top-2 right-2" onClick={() => removeCompany(index)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                             )}
+                        </div>
+                    ))}
+                    <Button variant="outline" size="sm" type="button" onClick={addCompany}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Company
+                    </Button>
+                </div>
+            )}
+
           </CardContent>
         </Card>
         
