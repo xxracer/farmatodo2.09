@@ -1,20 +1,22 @@
 
 'use client';
 
-import { getCandidate, updateCandidateStatus } from "@/app/actions/client-actions";
+import { getCandidate, updateCandidateStatus, deleteCandidate } from "@/app/actions/client-actions";
 import { ApplicationView } from "@/components/dashboard/application-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
-import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare } from "lucide-react";
+import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare, UserX } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 
-export default function ApplicationViewPage() {
+function ApplicationViewContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const candidateId = searchParams.get('id');
+    const { toast } = useToast();
 
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -43,24 +45,40 @@ export default function ApplicationViewPage() {
         const result = await updateCandidateStatus(id, 'interview');
         if (result.success) {
             router.push('/dashboard');
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.error });
         }
-        // Handle error case if needed
+    }
+
+    const handleRejectCandidate = async (id: string) => {
+        const confirmed = window.confirm("Are you sure you want to reject this candidate? This will permanently delete their application.");
+        if (confirmed) {
+            const result = await deleteCandidate(id);
+            if (result.success) {
+                toast({ title: "Candidate Rejected", description: `An email has been simulated to ${applicationData?.firstName} informing them of the decision.`});
+                router.push('/dashboard/candidates');
+            } else {
+                 toast({ variant: "destructive", title: "Error", description: result.error });
+            }
+        }
     }
 
     const handleMarkAsNewHire = async (id: string) => {
         const result = await updateCandidateStatus(id, 'new-hire');
         if (result.success) {
             router.push('/dashboard/new-hires');
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.error });
         }
-        // Handle error case if needed
     }
 
     const handleMarkAsEmployee = async (id: string) => {
         const result = await updateCandidateStatus(id, 'employee');
         if (result.success) {
             router.push('/dashboard/employees');
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.error });
         }
-        // Handle error case if needed
     }
 
     if (loading) {
@@ -97,6 +115,7 @@ export default function ApplicationViewPage() {
     const isCandidate = applicationData.status === 'candidate';
     const isNewHire = applicationData.status === 'new-hire';
     const isEmployee = applicationData.status === 'employee';
+    const isInterview = applicationData.status === 'interview';
 
     return (
         <div className="space-y-4">
@@ -104,22 +123,28 @@ export default function ApplicationViewPage() {
                  <h1 className="text-3xl font-headline font-bold text-foreground">
                     Viewing Application: {applicationData.firstName} {applicationData.lastName}
                 </h1>
-                <div className="flex gap-2">
-                     <Button variant="outline">
+                <div className="flex flex-wrap gap-2">
+                     <Button variant="outline" onClick={() => window.print()}>
                         <Printer className="mr-2 h-4 w-4" />
                         Print
                     </Button>
                     {isCandidate && (
                         <>
+                            <Button variant="destructive" onClick={() => handleRejectCandidate(applicationData.id)}>
+                                <UserX className="mr-2 h-4 w-4" />
+                                Reject
+                            </Button>
                             <Button onClick={() => handleSetToInterview(applicationData.id)}>
                                 <MessageSquare className="mr-2 h-4 w-4" />
                                 Set to Interview
                             </Button>
-                            <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Mark as New Hire
-                            </Button>
                         </>
+                    )}
+                    {(isCandidate || isInterview) && (
+                        <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            Mark as New Hire
+                        </Button>
                     )}
                     {isNewHire && (
                         <Button onClick={() => handleMarkAsEmployee(applicationData.id)}>
@@ -135,4 +160,13 @@ export default function ApplicationViewPage() {
             <ApplicationView data={applicationData} />
         </div>
     );
+}
+
+
+export default function ApplicationViewPage() {
+    return (
+        <Suspense fallback={<div className="flex flex-1 items-center justify-center"><UserSearch className="h-12 w-12 text-muted-foreground animate-pulse" /></div>}>
+            <ApplicationViewContent />
+        </Suspense>
+    )
 }

@@ -17,7 +17,9 @@ function toDate(dateString: string | Date | undefined): Date | null {
   if (!dateString) return null;
   if (dateString instanceof Date) return dateString;
   try {
-    return new Date(dateString);
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    return date;
   } catch (e) {
     return null;
   }
