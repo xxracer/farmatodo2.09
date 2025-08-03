@@ -34,10 +34,9 @@ const professionalReferenceSchema = z.object({
 });
 
 export const applicationSchema = z.object({
-  // Company Selection
-  applyingFor: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one company.",
-  }),
+  // This field is no longer displayed but kept for schema compatibility for now.
+  // It should be populated on the backend based on the portal's company.
+  applyingFor: z.array(z.string()).optional(),
 
   // Personal Information
   lastName: z.string().min(1, "Last name is required"),
@@ -156,7 +155,7 @@ export const applicationSchema = z.object({
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
 
-// This is the type for the data that will be stored in localStorage
+// This is the type for the data that will be stored
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
     resume?: string; // Storing as a data URL string

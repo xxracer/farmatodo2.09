@@ -34,13 +34,6 @@ import { Textarea } from "../ui/textarea"
 import { createCandidate } from "@/app/actions/client-actions"
 import { Loader2 } from "lucide-react"
 
-const companies = [
-  { id: "Central Home Texas", label: "Central Home Texas" },
-  { id: "Noble Health", label: "Noble Health" },
-  { id: "Lifecare", label: "Lifecare" },
-] as const;
-
-
 // Helper to convert a File to a base64 data URI
 async function fileToDataURL(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -60,7 +53,7 @@ export function ApplicationForm() {
     const form = useForm<ApplicationSchema>({
         resolver: zodResolver(applicationSchema),
         defaultValues: {
-            applyingFor: [],
+            applyingFor: [], // This is kept for schema validation but not shown in UI
             lastName: "",
             firstName: "",
             middleName: "",
@@ -137,6 +130,8 @@ export function ApplicationForm() {
 
             const result = await createCandidate({
                 ...data,
+                // The company name would be dynamically fetched based on the portal
+                applyingFor: ["Default Company"],
                 resume: resumeURL,
                 driversLicense: driversLicenseURL,
             });
@@ -174,54 +169,6 @@ export function ApplicationForm() {
             <CardDescription>All information provided herein will be kept confidential.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-             <FormField
-                control={form.control}
-                name="applyingFor"
-                render={() => (
-                    <FormItem>
-                    <div className="mb-4">
-                        <FormLabel className="text-base font-semibold">Applying for Company</FormLabel>
-                        <FormDescription>
-                        Select the company or companies you are applying to.
-                        </FormDescription>
-                    </div>
-                    {companies.map((item) => (
-                        <FormField
-                        key={item.id}
-                        control={form.control}
-                        name="applyingFor"
-                        render={({ field }) => {
-                            return (
-                            <FormItem
-                                key={item.id}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                                <FormControl>
-                                <Checkbox
-                                    checked={field.value?.includes(item.id)}
-                                    onCheckedChange={(checked) => {
-                                    return checked
-                                        ? field.onChange([...(field.value || []), item.id])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                            (value) => value !== item.id
-                                            )
-                                        )
-                                    }}
-                                />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                {item.label}
-                                </FormLabel>
-                            </FormItem>
-                            )
-                        }}
-                        />
-                    ))}
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <FormField control={form.control} name="lastName" render={({ field }) => (
                   <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>

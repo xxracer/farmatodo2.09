@@ -1,23 +1,16 @@
 import { DocumentationForm } from "@/components/dashboard/documentation-form";
 import Image from "next/image";
 
-type CompanyInfo = {
-  name: string;
-  logo: string;
-  hint: string;
+// Company details will eventually be fetched from settings.
+const company = {
+  name: "Company",
+  logo: "https://placehold.co/150x50.png",
+  hint: "company logo"
 };
 
-const companyDetails: Record<string, CompanyInfo> = {
-  "central-home-texas": { name: "Central Home Texas", logo: "https://static.wixstatic.com/media/c5947c_6d477e7f7f0d4e78af2b7d14a7013825~mv2.jpg", hint: "company logo" },
-  lifecare: { name: "Lifecare", logo: "https://static.wixstatic.com/media/c5947c_63b4f7e57d284143872826e9176b0448~mv2.jpg", hint: "healthcare logo" },
-  "noble-health": { name: "Noble Health", logo: "https://static.wixstatic.com/media/c5947c_b368149f9fad4a548d3266fd4e26cae9~mv2.jpg", hint: "health logo" },
-  default: { name: "Onboard Panel", logo: "https://placehold.co/150x50.png", hint: "generic logo" },
-};
 
-export default function DocumentationPage({ searchParams }: { searchParams: { company?: string, candidateId?: string } }) {
-  const companyKey = searchParams.company || "default";
+export default function DocumentationPage({ searchParams }: { searchParams: { candidateId?: string } }) {
   const candidateId = searchParams.candidateId;
-  const company = companyDetails[companyKey] || companyDetails.default;
   
   return (
     <div className="flex min-h-screen flex-col items-center bg-background p-4">

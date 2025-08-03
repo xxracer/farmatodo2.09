@@ -8,18 +8,25 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real app, this would save the settings to Supabase.
-    // For now, we just simulate it with a toast.
+    // For now, we simulate it by saving to localStorage.
+    localStorage.setItem('companySettings', JSON.stringify({ configured: true }));
+    
     toast({
       title: "Settings Saved",
       description: "Your company settings have been updated.",
     });
+
+    // Redirect to dashboard after saving
+    router.push('/dashboard');
   };
 
   return (
