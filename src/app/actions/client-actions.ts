@@ -1,50 +1,69 @@
 
-'use client';
+'use server';
 
+import { supabase } from "@/lib/supabaseClient";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
 
-// NOTE: Since we are using localStorage, these actions are client-side.
-// In a real app, these would be true server-side database operations.
+// Helper function to decode a base64 data URI and convert it to a File-like object for Supabase
+function dataUriToBuffer(dataUri: string): { buffer: Buffer, mimeType: string, extension: string } {
+    const regex = /^data:(.+);base64,(.*)$/;
+    const matches = dataUri.match(regex);
+    if (!matches || matches.length !== 3) {
+        throw new Error("Invalid data URI");
+    }
 
-const getCandidatesFromStorage = (): ApplicationData[] => {
-    if (typeof window === 'undefined') return [];
-    const data = window.localStorage.getItem('candidates');
-    return data ? JSON.parse(data) : [];
-};
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+    const extension = mimeType.split('/')[1];
 
-const saveCandidatesToStorage = (candidates: ApplicationData[]) => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem('candidates', JSON.stringify(candidates));
-};
+    return { buffer, mimeType, extension };
+}
+
 
 export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | 'driversLicense'> & { resume: string; driversLicense: string }) {
-    if (typeof window === 'undefined') {
-        return { success: false, error: "Window object not found." };
-    }
     try {
-        const newCandidate: ApplicationData = {
-            id: crypto.randomUUID(),
+        // 1. Upload Resume
+        const { buffer: resumeBuffer, mimeType: resumeMimeType, extension: resumeExtension } = dataUriToBuffer(data.resume);
+        const resumeFileName = `resume_${crypto.randomUUID()}.${resumeExtension}`;
+        const { data: resumeUploadData, error: resumeUploadError } = await supabase.storage
+            .from('resumes')
+            .upload(resumeFileName, resumeBuffer, { contentType: resumeMimeType, upsert: true });
+
+        if (resumeUploadError) throw resumeUploadError;
+
+        const { data: { publicUrl: resumePublicUrl } } = supabase.storage.from('resumes').getPublicUrl(resumeFileName);
+
+
+        // 2. Upload Driver's License
+        const { buffer: licenseBuffer, mimeType: licenseMimeType, extension: licenseExtension } = dataUriToBuffer(data.driversLicense);
+        const licenseFileName = `license_${crypto.randomUUID()}.${licenseExtension}`;
+        const { data: licenseUploadData, error: licenseUploadError } = await supabase.storage
+            .from('licenses')
+            .upload(licenseFileName, licenseBuffer, { contentType: licenseMimeType, upsert: true });
+            
+        if (licenseUploadError) throw licenseUploadError;
+
+        const { data: { publicUrl: licensePublicUrl } } = supabase.storage.from('licenses').getPublicUrl(licenseFileName);
+        
+        
+        // 3. Insert candidate data into the database
+        const newCandidate: Omit<ApplicationData, 'id'> = {
             ...data,
-            date: new Date(),
-            employmentHistory: data.employmentHistory.map(job => ({
-                ...job,
-                dateFrom: job.dateFrom ? new Date(job.dateFrom) : undefined,
-                dateTo: job.dateTo ? new Date(job.dateTo) : undefined,
-                startingPay: parseFloat(job.startingPay as any) || 0,
-            })),
-            driversLicenseExpiration: data.driversLicenseExpiration ? new Date(data.driversLicenseExpiration) : undefined,
+            resume: resumePublicUrl,
+            driversLicense: licensePublicUrl,
             status: 'candidate',
         };
 
-        const candidates = getCandidatesFromStorage();
-        candidates.unshift(newCandidate); // Add to the beginning
-        saveCandidatesToStorage(candidates);
+        const { data: insertedData, error: insertError } = await supabase
+            .from('candidates')
+            .insert([newCandidate])
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
         
-        localStorage.setItem('candidateName', `${newCandidate.firstName} ${newCandidate.lastName}`);
-        localStorage.setItem('candidateCompany', newCandidate.applyingFor.join(', '));
-        window.dispatchEvent(new Event('storage'));
-        
-        return { success: true, id: newCandidate.id };
+        return { success: true, id: insertedData.id };
     } catch (error) {
         console.error("Error creating candidate: ", error);
         return { success: false, error: (error as Error).message || "Failed to create candidate." };
@@ -53,39 +72,87 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
 
 
 export async function getCandidates(): Promise<ApplicationData[]> {
-    const all = getCandidatesFromStorage();
-    return all.filter(c => c.status === 'candidate');
+    const { data, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('status', 'candidate')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching candidates:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getInterviewCandidates(): Promise<ApplicationData[]> {
-    const all = getCandidatesFromStorage();
-    return all.filter(c => c.status === 'interview');
+    const { data, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('status', 'interview')
+        .order('created_at', { ascending: false });
+        
+    if (error) {
+        console.error("Error fetching interview candidates:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getNewHires(): Promise<ApplicationData[]> {
-     const all = getCandidatesFromStorage();
-    return all.filter(c => c.status === 'new-hire');
+     const { data, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('status', 'new-hire')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching new hires:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getEmployees(): Promise<ApplicationData[]> {
-     const all = getCandidatesFromStorage();
-    return all.filter(c => c.status === 'employee');
+     const { data, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('status', 'employee')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching employees:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getPersonnel(): Promise<ApplicationData[]> {
-     const all = getCandidatesFromStorage();
-    return all.filter(p => p.status === 'new-hire' || p.status === 'employee');
+     const { data, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .in('status', ['new-hire', 'employee'])
+        .order('created_at', { ascending: false });
+        
+    if (error) {
+        console.error("Error fetching personnel:", error);
+        return [];
+    }
+    return data;
 }
 
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
-    const candidates = getCandidatesFromStorage();
-    const candidate = candidates.find(c => c.id === id) || null;
-    // We need to re-serialize and deserialize to avoid passing a reference
-    // that could be mutated, and to handle date objects correctly.
-    if (candidate) {
-      return JSON.parse(JSON.stringify(candidate));
+    const { data, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('id', id)
+        .single();
+    
+    if (error) {
+        console.error("Error fetching candidate:", error);
+        return null;
     }
-    return null;
+    return data;
 }
 
 export async function updateCandidateWithDocuments(
@@ -95,28 +162,30 @@ export async function updateCandidateWithDocuments(
         proofOfAddress?: string, 
     }
 ) {
-    if (typeof window === 'undefined') return { success: false, error: "Window object not found." };
     try {
-        let candidates = getCandidatesFromStorage();
-        const candidateIndex = candidates.findIndex(c => c.id === id);
-
-        if (candidateIndex === -1) {
-            throw new Error("Candidate not found");
-        }
+        const updates: { idCard?: string; proofOfAddress?: string } = {};
         
-        const candidate = candidates[candidateIndex];
-
         if (documents.idCard) {
-            candidate.idCard = documents.idCard;
-        }
-        if (documents.proofOfAddress) {
-            candidate.proofOfAddress = documents.proofOfAddress;
+             const { buffer, mimeType, extension } = dataUriToBuffer(documents.idCard);
+             const fileName = `idcard_${id}.${extension}`;
+             const { error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
+             if (error) throw error;
+             updates.idCard = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl;
         }
 
-        candidates[candidateIndex] = candidate;
-        saveCandidatesToStorage(candidates);
+        if (documents.proofOfAddress) {
+             const { buffer, mimeType, extension } = dataUriToBuffer(documents.proofOfAddress);
+             const fileName = `address_proof_${id}.${extension}`;
+             const { error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
+             if (error) throw error;
+             updates.proofOfAddress = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            const { error: updateError } = await supabase.from('candidates').update(updates).eq('id', id);
+            if (updateError) throw updateError;
+        }
         
-        window.dispatchEvent(new Event('storage'));
         return { success: true };
     } catch (error) {
         console.error("Error updating document: ", error);
@@ -126,49 +195,45 @@ export async function updateCandidateWithDocuments(
 
 
 export async function updateCandidateStatus(id: string, status: 'interview' | 'new-hire' | 'employee') {
-    if (typeof window === 'undefined') return { success: false, error: "Window object not found." };
-    try {
-        let candidates = getCandidatesFromStorage();
-        const candidateIndex = candidates.findIndex(c => c.id === id);
-        if (candidateIndex > -1) {
-            candidates[candidateIndex].status = status;
-            saveCandidatesToStorage(candidates);
-        } else {
-            throw new Error("Candidate not found");
-        }
+    const { error } = await supabase
+        .from('candidates')
+        .update({ status: status })
+        .eq('id', id);
 
-        window.dispatchEvent(new Event('storage'));
-        return { success: true };
-    } catch (error) {
+    if (error) {
         console.error("Error updating status: ", error);
         return { success: false, error: "Failed to update candidate status." };
     }
+    return { success: true };
 }
 
 
 export async function deleteCandidate(id: string) {
-    if (typeof window === 'undefined') return { success: false, error: "Window object not found." };
-    try {
-        let candidates = getCandidatesFromStorage();
-        const updatedCandidates = candidates.filter(c => c.id !== id);
-        saveCandidatesToStorage(updatedCandidates);
+    const { error } = await supabase
+        .from('candidates')
+        .delete()
+        .eq('id', id);
 
-        window.dispatchEvent(new Event('storage'));
-        return { success: true };
-    } catch (error) {
+    if (error) {
         console.error("Error deleting document: ", error);
         return { success: false, error: "Failed to delete candidate." };
     }
+    return { success: true };
 }
 
 export async function hasCandidates(): Promise<boolean> {
-    const candidates = await getCandidates();
-    return candidates.length > 0;
+    const { count, error } = await supabase
+        .from('candidates')
+        .select('*', { count: 'exact', head: true });
+
+    if (error) {
+        console.error("Error checking for candidates:", error);
+        return false;
+    }
+    return (count || 0) > 0;
 }
 
 export async function checkForExpiringDocuments(): Promise<boolean> {
-    if (typeof window === 'undefined') return false;
-    
     try {
         const personnel = await getPersonnel();
         const sixtyDaysFromNow = new Date();
@@ -176,7 +241,6 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
         
         return personnel.some(p => {
           if (!p.driversLicenseExpiration) return false;
-          // When retrieving from localStorage, dates are strings, so they need to be converted back to Date objects.
           const expiry = new Date(p.driversLicenseExpiration);
           return expiry < sixtyDaysFromNow;
         });
