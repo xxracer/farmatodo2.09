@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, PlusCircle, MoreHorizontal, LogOut } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import { useState } from "react";
 
 type ClientStatus = "Active" | "Inactive" | "Trial";
 type ClientPlan = "Basic" | "Medium" | "Full";
+type PaymentStatus = "yes" | "no";
 
 type Client = {
     id: number;
@@ -22,6 +24,7 @@ type Client = {
     plan: ClientPlan;
     status: ClientStatus;
     endDate: string;
+    paymentProcessed: PaymentStatus;
 };
 
 const initialClients: Client[] = [
@@ -31,6 +34,7 @@ const initialClients: Client[] = [
         plan: "Medium",
         status: "Active",
         endDate: "2024-12-31",
+        paymentProcessed: "yes",
     },
     {
         id: 2,
@@ -38,6 +42,7 @@ const initialClients: Client[] = [
         plan: "Full",
         status: "Active",
         endDate: "2025-06-30",
+        paymentProcessed: "yes",
     },
     {
         id: 3,
@@ -45,6 +50,7 @@ const initialClients: Client[] = [
         plan: "Basic",
         status: "Trial",
         endDate: "2024-08-15",
+        paymentProcessed: "no",
     },
     {
         id: 4,
@@ -52,6 +58,7 @@ const initialClients: Client[] = [
         plan: "Full",
         status: "Inactive",
         endDate: "2024-05-31",
+        paymentProcessed: "yes",
     },
 ];
 
@@ -60,6 +67,7 @@ export default function SuperAdminPage() {
     const [newClientName, setNewClientName] = useState("");
     const [newClientPlan, setNewClientPlan] = useState<ClientPlan>("Basic");
     const [newClientEndDate, setNewClientEndDate] = useState("");
+    const [newClientPaymentProcessed, setNewClientPaymentProcessed] = useState<PaymentStatus>("no");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const handlePlanChange = (clientId: number, newPlan: ClientPlan) => {
@@ -87,6 +95,7 @@ export default function SuperAdminPage() {
             plan: newClientPlan,
             status: "Active",
             endDate: newClientEndDate,
+            paymentProcessed: newClientPaymentProcessed,
         };
 
         setClients([...clients, newClient]);
@@ -95,6 +104,7 @@ export default function SuperAdminPage() {
         setNewClientName("");
         setNewClientPlan("Basic");
         setNewClientEndDate("");
+        setNewClientPaymentProcessed("no");
         setIsDialogOpen(false);
     };
 
@@ -170,6 +180,25 @@ export default function SuperAdminPage() {
                               onChange={(e) => setNewClientEndDate(e.target.value)}
                               className="col-span-3"
                             />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right">
+                              Payment
+                            </Label>
+                             <RadioGroup
+                                value={newClientPaymentProcessed}
+                                onValueChange={(value: any) => setNewClientPaymentProcessed(value)}
+                                className="col-span-3 flex items-center gap-4"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="yes" id="r-yes" />
+                                  <Label htmlFor="r-yes">Yes</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="no" id="r-no" />
+                                  <Label htmlFor="r-no">No</Label>
+                                </div>
+                              </RadioGroup>
                           </div>
                         </div>
                         <DialogFooter>
