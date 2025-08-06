@@ -20,12 +20,16 @@ export function LoginForm() {
 
     const isSuperAdmin = email === "Maijel@ipltecnologies.com" && password === "millionares2025";
     
-    // For this prototype, we check for super admin, or simply if fields are filled.
-    // In a real app, you would have actual authentication logic here.
-    if (isSuperAdmin || (email && password)) {
+    if (isSuperAdmin) {
       toast({
         title: "Login Successful",
-        description: isSuperAdmin ? "Welcome, Super Admin!" : "Welcome back!",
+        description: "Welcome, Super Admin!",
+      });
+      router.push("/super-admin");
+    } else if (email && password) {
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
       });
       router.push("/dashboard");
     } else {
