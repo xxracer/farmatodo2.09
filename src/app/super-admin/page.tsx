@@ -4,7 +4,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, PlusCircle, MoreHorizontal, LogOut } from "lucide-react";
 import Link from "next/link";
@@ -54,6 +57,10 @@ const initialClients: Client[] = [
 
 export default function SuperAdminPage() {
     const [clients, setClients] = useState<Client[]>(initialClients);
+    const [newClientName, setNewClientName] = useState("");
+    const [newClientPlan, setNewClientPlan] = useState<ClientPlan>("Basic");
+    const [newClientEndDate, setNewClientEndDate] = useState("");
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const handlePlanChange = (clientId: number, newPlan: ClientPlan) => {
         setClients(clients.map(client => 
@@ -65,6 +72,30 @@ export default function SuperAdminPage() {
         setClients(clients.map(client => 
             client.id === clientId ? { ...client, status: newStatus } : client
         ));
+    };
+
+    const handleAddClient = () => {
+        if (!newClientName || !newClientEndDate) {
+            // Basic validation
+            alert("Please fill out all fields.");
+            return;
+        }
+
+        const newClient: Client = {
+            id: clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1,
+            name: newClientName,
+            plan: newClientPlan,
+            status: "Active",
+            endDate: newClientEndDate,
+        };
+
+        setClients([...clients, newClient]);
+
+        // Reset form and close dialog
+        setNewClientName("");
+        setNewClientPlan("Basic");
+        setNewClientEndDate("");
+        setIsDialogOpen(false);
     };
 
     return (
@@ -86,12 +117,69 @@ export default function SuperAdminPage() {
             <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                  <div className="flex items-center">
                     <div className="ml-auto flex items-center gap-2">
-                    <Button size="sm" className="h-8 gap-1">
-                        <PlusCircle className="h-3.5 w-3.5" />
-                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="h-8 gap-1">
+                          <PlusCircle className="h-3.5 w-3.5" />
+                          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                             Add Client
-                        </span>
-                    </Button>
+                          </span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Add New Client</DialogTitle>
+                          <DialogDescription>
+                            Fill in the details for the new client account.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">
+                              Company Name
+                            </Label>
+                            <Input
+                              id="name"
+                              value={newClientName}
+                              onChange={(e) => setNewClientName(e.target.value)}
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="plan" className="text-right">
+                                Plan
+                              </Label>
+                              {/* Using a simple text input for now, can be a select later */}
+                              <Input
+                                  id="plan"
+                                  value={newClientPlan}
+                                  // @ts-ignore
+                                  onChange={(e) => setNewClientPlan(e.target.value)}
+                                  className="col-span-3"
+                                  placeholder="Basic, Medium, or Full"
+                              />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="endDate" className="text-right">
+                              Contract End
+                            </Label>
+                            <Input
+                              id="endDate"
+                              type="date"
+                              value={newClientEndDate}
+                              onChange={(e) => setNewClientEndDate(e.target.value)}
+                              className="col-span-3"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                              <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button type="submit" onClick={handleAddClient}>Save Client</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                     </div>
                 </div>
                 <Card>
