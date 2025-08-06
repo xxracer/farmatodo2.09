@@ -176,7 +176,7 @@ export function DashboardSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Logout">
-              <Link href="/">
+              <Link href="/login">
                 <LogOut />
                 <span>Logout</span>
               </Link>

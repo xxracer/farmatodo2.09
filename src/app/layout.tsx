@@ -1,9 +1,10 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Onboard Panel',
+  title: 'Clear Comply HR',
   description: 'Streamline your candidate onboarding process.',
 };
 
