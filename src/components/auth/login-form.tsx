@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -16,20 +17,22 @@ export function LoginForm() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const isSuperAdmin = email === "Maijel@ipltecnologies.com" && password === "millionares2025";
     
-    // For this prototype, we simply check if fields are filled and then redirect.
+    // For this prototype, we check for super admin, or simply if fields are filled.
     // In a real app, you would have actual authentication logic here.
-    if (email && password) {
+    if (isSuperAdmin || (email && password)) {
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: isSuperAdmin ? "Welcome, Super Admin!" : "Welcome back!",
       });
       router.push("/dashboard");
     } else {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Please enter both email and password.",
+        description: "Please enter a valid email and password.",
       });
     }
   };

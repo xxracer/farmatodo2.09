@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Bot, FileClock, Workflow, ClipboardCheck } from "lucide-react";
+import { Workflow, Bot, FileClock, ClipboardCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -37,7 +37,7 @@ export default function HomePage() {
               <Link href="/login">HR Login</Link>
             </Button>
             <Button asChild>
-                <Link href="/login">Get Started</Link>
+                <Link href="/get-started">Get Started</Link>
             </Button>
           </nav>
         </div>
@@ -57,7 +57,7 @@ export default function HomePage() {
                     </p>
                     <div className="flex justify-center md:justify-start gap-4">
                       <Button asChild size="lg">
-                        <Link href="/login">Request a Demo</Link>
+                        <Link href="/get-started">Request a Demo</Link>
                       </Button>
                     </div>
                 </div>
@@ -112,7 +112,7 @@ export default function HomePage() {
                     Create a trial account and see how Clear Comply HR can transform your company.
                 </p>
                 <Button asChild size="lg">
-                    <Link href="/login">Get Started for Free</Link>
+                    <Link href="/get-started">Get Started for Free</Link>
                 </Button>
             </div>
         </section>
