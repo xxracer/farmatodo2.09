@@ -11,7 +11,6 @@ import { ClipboardCheck, Users } from "lucide-react";
 import { getInterviewCandidates } from "@/app/actions/client-actions";
 import { useEffect, useState, useCallback } from "react";
 import type { ApplicationData } from "@/lib/schemas";
-import { CandidateName } from "./candidate-name";
 
 function CandidateDetails({ interviewCandidate }: { interviewCandidate: ApplicationData }) {
     if (!interviewCandidate) return null;
@@ -32,7 +31,9 @@ function CandidateDetails({ interviewCandidate }: { interviewCandidate: Applicat
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-               <CandidateName />
+                <h1 className="text-3xl font-headline font-bold text-foreground">
+                  New Candidate for {interviewCandidate.applyingFor.join(', ')}: {interviewCandidate.firstName} {interviewCandidate.lastName}
+                </h1>
                 <CopyApplicationLink />
             </div>
 
