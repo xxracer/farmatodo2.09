@@ -31,8 +31,6 @@ export default function GetStartedPage() {
         companyName: formData.get("companyName"),
       };
       
-      console.log("Lead Info:", lead);
-
       toast({
         title: "Lead Sent!",
         description: "The registration request has been sent to our team.",

@@ -1,9 +1,12 @@
 
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Workflow, Bot, FileClock, ClipboardCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const features = [
     {
@@ -24,6 +27,12 @@ const features = [
 ];
 
 export default function HomePage() {
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
@@ -120,7 +129,7 @@ export default function HomePage() {
 
       <footer className="border-t">
         <div className="container mx-auto flex items-center justify-between p-4 md:px-6">
-            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Clear Comply HR. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">&copy; {year} Clear Comply HR. All rights reserved.</p>
             <div className="flex gap-4">
                 <Link href="#" className="text-sm hover:underline">Privacy Policy</Link>
                  <Link href="#" className="text-sm hover:underline">Terms of Service</Link>
