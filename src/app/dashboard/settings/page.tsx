@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Upload, Save, FileText, Image as ImageIcon, ClipboardList, PlusCircle, Trash2 } from "lucide-react";
+import { Settings, Building, Upload, Save, FileText, Image as ImageIcon, ClipboardList, PlusCircle, Trash2, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -203,35 +203,49 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               )}
+               <div className="flex justify-end pt-4 border-t">
+                    <Button variant="ghost" type="button" onClick={() => alert('Preview functionality coming soon!')}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Application Form
+                    </Button>
+                </div>
           </CardContent>
         </Card>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
-              Interview Phase Customization (Phase 2)
-            </CardTitle>
-            <CardDescription>
-              Personalize the interview review section with a custom image, or use the system default.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-             <div className="space-y-2">
-              <Label htmlFor="interview-image">Interview Header Image</Label>
-               <div className="flex items-center gap-4">
-                  <Input id="interview-image" type="file" className="max-w-xs" />
-                  <Button variant="outline" type="button">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload
-                  </Button>
-              </div>
-               <p className="text-sm text-muted-foreground">
-                This image will be displayed in the background of the interview review form.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {formCustomization === 'custom' && (
+            <Card className="mt-6">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Interview Phase Customization (Phase 2)
+                </CardTitle>
+                <CardDescription>
+                Personalize the interview review section with a custom image, or use the system default.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                <Label htmlFor="interview-image">Interview Header Image</Label>
+                <div className="flex items-center gap-4">
+                    <Input id="interview-image" type="file" className="max-w-xs" />
+                    <Button variant="outline" type="button">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                    </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                    This image will be displayed in the background of the interview review form.
+                </p>
+                </div>
+                <div className="flex justify-end pt-4 border-t">
+                    <Button variant="ghost" type="button" onClick={() => alert('Preview functionality coming soon!')}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Interview Section
+                    </Button>
+                </div>
+            </CardContent>
+            </Card>
+        )}
 
         <Card className="mt-6">
           <CardHeader>
