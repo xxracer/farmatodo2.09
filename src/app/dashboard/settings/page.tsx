@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -204,9 +205,11 @@ export default function SettingsPage() {
                 </div>
               )}
                <div className="flex justify-end pt-4 border-t">
-                    <Button variant="ghost" type="button" onClick={() => alert('Preview functionality coming soon!')}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Application Form
+                    <Button asChild variant="ghost">
+                        <Link href="/dashboard/settings/preview/application" target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview Application Form
+                        </Link>
                     </Button>
                 </div>
           </CardContent>
@@ -238,9 +241,11 @@ export default function SettingsPage() {
                 </p>
                 </div>
                 <div className="flex justify-end pt-4 border-t">
-                    <Button variant="ghost" type="button" onClick={() => alert('Preview functionality coming soon!')}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Interview Section
+                     <Button asChild variant="ghost">
+                        <Link href="/dashboard/settings/preview/interview" target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview Interview Section
+                        </Link>
                     </Button>
                 </div>
             </CardContent>
