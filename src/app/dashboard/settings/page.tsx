@@ -18,6 +18,7 @@ export default function SettingsPage() {
   const [phase1Images, setPhase1Images] = useState<string[]>(['']);
   const [companyType, setCompanyType] = useState('one');
   const [companies, setCompanies] = useState([{ name: '', logo: null }]);
+  const [formCustomization, setFormCustomization] = useState('template');
 
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,31 +160,49 @@ export default function SettingsPage() {
               Application Form Customization (Phase 1)
             </CardTitle>
             <CardDescription>
-              Supply images for the application sections (e.g., one image per page of your form). You can also use the system's predefined template.
+              Choose between a predefined template or upload your own images for the application form.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-             {phase1Images.map((image, index) => (
-                <div key={index} className="space-y-2">
-                    <Label htmlFor={`application-header-${index}`}>Application Form Image #{index + 1}</Label>
-                    <div className="flex items-center gap-4">
-                        <Input id={`application-header-${index}`} type="file" className="max-w-xs" />
-                        <Button variant="outline" type="button">
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload
-                        </Button>
-                        {phase1Images.length > 1 && (
-                            <Button variant="ghost" size="icon" type="button" onClick={() => removePhase1Image(index)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                        )}
-                    </div>
+              <RadioGroup value={formCustomization} onValueChange={setFormCustomization} className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="template" id="template" />
+                    <Label htmlFor="template">Use Predefined Template</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="custom" id="custom" />
+                    <Label htmlFor="custom">Upload Custom Images</Label>
+                  </div>
+              </RadioGroup>
+
+              {formCustomization === 'custom' && (
+                <div className="space-y-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Supply images for the application sections (e.g., one image per page of your form).
+                  </p>
+                  {phase1Images.map((image, index) => (
+                      <div key={index} className="space-y-2">
+                          <Label htmlFor={`application-header-${index}`}>Application Form Image #{index + 1}</Label>
+                          <div className="flex items-center gap-4">
+                              <Input id={`application-header-${index}`} type="file" className="max-w-xs" />
+                              <Button variant="outline" type="button">
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload
+                              </Button>
+                              {phase1Images.length > 1 && (
+                                  <Button variant="ghost" size="icon" type="button" onClick={() => removePhase1Image(index)}>
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                              )}
+                          </div>
+                      </div>
+                  ))}
+                  <Button variant="outline" size="sm" type="button" onClick={addPhase1Image}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add another image
+                  </Button>
                 </div>
-             ))}
-              <Button variant="outline" size="sm" type="button" onClick={addPhase1Image}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add another image
-              </Button>
+              )}
           </CardContent>
         </Card>
 
