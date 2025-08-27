@@ -215,42 +215,42 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {formCustomization === 'custom' && (
-            <Card className="mt-6">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="h-5 w-5" />
-                Interview Phase Customization (Phase 2)
-                </CardTitle>
-                <CardDescription>
-                Personalize the interview review section with a custom image, or use the system default.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Interview Phase Customization (Phase 2)
+            </CardTitle>
+            <CardDescription>
+              Personalize the interview review section with a custom background image. This is optional.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {formCustomization === 'custom' && (
                 <div className="space-y-2">
-                <Label htmlFor="interview-image">Interview Header Image</Label>
-                <div className="flex items-center gap-4">
-                    <Input id="interview-image" type="file" className="max-w-xs" />
-                    <Button variant="outline" type="button">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload
-                    </Button>
+                    <Label htmlFor="interview-image">Interview Header Image</Label>
+                    <div className="flex items-center gap-4">
+                        <Input id="interview-image" type="file" className="max-w-xs" />
+                        <Button variant="outline" type="button">
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload
+                        </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        This image will be displayed in the background of the interview review form.
+                    </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                    This image will be displayed in the background of the interview review form.
-                </p>
-                </div>
-                <div className="flex justify-end pt-4 border-t">
-                     <Button asChild variant="ghost">
-                        <Link href="/dashboard/settings/preview/interview" target="_blank">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Preview Interview Section
-                        </Link>
-                    </Button>
-                </div>
-            </CardContent>
-            </Card>
-        )}
+            )}
+            <div className="flex justify-end pt-4 border-t">
+                  <Button asChild variant="ghost">
+                    <Link href="/dashboard/settings/preview/interview" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Interview Section
+                    </Link>
+                </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="mt-6">
           <CardHeader>
