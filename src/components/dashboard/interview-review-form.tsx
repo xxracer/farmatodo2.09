@@ -78,7 +78,6 @@ export function InterviewReviewForm({ candidateName, onReviewSubmit }: Interview
       title: "Interview Review Submitted",
       description: "The review has been saved successfully.",
     });
-    console.log(data);
     onReviewSubmit();
   }
 

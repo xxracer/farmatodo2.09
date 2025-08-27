@@ -5,12 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentationPhase } from "@/components/dashboard/documentation-phase";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { CopyApplicationLink } from "@/components/dashboard/copy-link";
-import { InterviewPhase } from "@/components/dashboard/interview-phase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ClipboardCheck, Users } from "lucide-react";
 import { getInterviewCandidates } from "@/app/actions/client-actions";
 import { useEffect, useState, useCallback } from "react";
 import type { ApplicationData } from "@/lib/schemas";
+import { InterviewReviewForm } from "./interview-review-form";
 
 function CandidateDetails({ interviewCandidate }: { interviewCandidate: ApplicationData }) {
     if (!interviewCandidate) return null;
@@ -48,7 +48,7 @@ function CandidateDetails({ interviewCandidate }: { interviewCandidate: Applicat
                     <TabsTrigger value="documentation">Phase 3: Documentation</TabsTrigger>
                 </TabsList>
                 <TabsContent value="interview" className="mt-6">
-                    <InterviewPhase 
+                    <InterviewReviewForm 
                         candidateName={`${interviewCandidate.firstName} ${interviewCandidate.lastName}`}
                         onReviewSubmit={handleInterviewSubmit}
                     />
