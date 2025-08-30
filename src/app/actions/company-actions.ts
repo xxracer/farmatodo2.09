@@ -40,11 +40,7 @@ export async function getCompany(id: string): Promise<Company | null> {
 }
 
 export async function createOrUpdateCompany(companyData: Partial<Company>) {
-    // Ensure we have an ID for upserting, generate if it's a new company without one
-    const id = companyData.id || crypto.randomUUID();
-    const validatedData = companySchema.partial().parse({ ...companyData, id });
-    
-    let logoUrl = validatedData.logo;
+    let logoUrl = companyData.logo;
 
     // Handle logo upload if it's a new base64 image
     if (logoUrl && logoUrl.startsWith('data:image')) {
@@ -60,21 +56,41 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
             throw new Error("Failed to upload logo.");
         }
         
-        // Since logos bucket can be public, we get the public URL
         const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(uploadData.path);
         logoUrl = publicUrlData.publicUrl;
     }
 
-    const dataToUpsert = { ...validatedData, logo: logoUrl, id };
+    const dataToSave = { ...companyData, logo: logoUrl };
 
-    const { data, error } = await supabase
-        .from('companies')
-        .upsert(dataToUpsert)
-        .select()
-        .single();
+    let error;
+    let data;
+
+    if (dataToSave.id) {
+        // UPDATE existing company
+        const validatedData = companySchema.partial().parse(dataToSave);
+        const { data: updateData, error: updateError } = await supabase
+            .from('companies')
+            .update(validatedData)
+            .eq('id', validatedData.id!)
+            .select()
+            .single();
+        data = updateData;
+        error = updateError;
+    } else {
+        // INSERT new company, let Supabase generate the ID
+        const { id, ...insertData } = dataToSave; // Exclude null/undefined id
+        const validatedData = companySchema.omit({ id: true, created_at: true }).partial().parse(insertData);
+        const { data: insertDataResult, error: insertError } = await supabase
+            .from('companies')
+            .insert(validatedData)
+            .select()
+            .single();
+        data = insertDataResult;
+        error = insertError;
+    }
     
     if (error) {
-        console.error("Error upserting company:", error);
+        console.error("Error saving company:", error);
         throw new Error("Failed to save company settings.");
     }
     
