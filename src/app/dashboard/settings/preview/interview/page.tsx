@@ -1,9 +1,25 @@
 
+"use client";
+
 import { InterviewReviewForm } from "@/components/dashboard/interview-review-form";
-import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 
+// This is a new Client Component that wraps the form.
+// It can safely handle client-side logic and pass function props.
+function InterviewPreview() {
+  return (
+    <div className="w-full max-w-4xl z-10">
+      <div className="pointer-events-none opacity-70">
+        {/* The form is now rendered within a Client Component, and we can pass the function */}
+        <InterviewReviewForm candidateName="John Doe (Sample)" onReviewSubmit={() => {}} />
+      </div>
+    </div>
+  );
+}
 
+
+// This remains the main page component (a Server Component by default).
+// It no longer passes any functions as props.
 export default function InterviewPreviewPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 relative">
@@ -21,11 +37,8 @@ export default function InterviewPreviewPage() {
             />
              <div className="absolute inset-0 bg-background/80" />
         </div>
-        <div className="w-full max-w-4xl z-10">
-            <div className="pointer-events-none opacity-70">
-                <InterviewReviewForm candidateName="John Doe (Sample)" onReviewSubmit={() => {}} />
-            </div>
-        </div>
+        {/* It now renders the client component wrapper */}
+        <InterviewPreview />
     </div>
   );
 }
