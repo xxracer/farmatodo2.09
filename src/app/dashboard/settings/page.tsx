@@ -80,7 +80,7 @@ export default function SettingsPage() {
         }
         toast({
             title: "Settings Saved",
-            description: "Your company settings have been updated in Supabase.",
+            description: "Your company settings have been updated.",
         });
     });
   };
@@ -145,7 +145,7 @@ export default function SettingsPage() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-        <p className="ml-4">Loading settings from Supabase...</p>
+        <p className="ml-4">Loading settings...</p>
       </div>
     );
   }
@@ -157,7 +157,7 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-headline font-bold text-foreground">Company Settings</h1>
       </div>
       <p className="text-muted-foreground">
-        Customize the application portal for your company. These settings are saved in Supabase.
+        Customize the application portal for your company. These settings are saved in a secure database.
       </p>
 
       <form onSubmit={handleSaveChanges}>

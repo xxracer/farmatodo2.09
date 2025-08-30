@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useState, useEffect, useTransition } from "react";
 import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
 import { Company } from "@/lib/company-schemas";
+import Image from "next/image";
 
 export default function SuperAdminPage() {
     const [clients, setClients] = useState<Company[]>([]);
@@ -37,7 +38,7 @@ export default function SuperAdminPage() {
         return (
             <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Loading clients from Supabase...</p>
+                <p className="mt-4 text-muted-foreground">Loading clients...</p>
             </div>
         )
     }
@@ -68,7 +69,7 @@ export default function SuperAdminPage() {
                     <CardHeader>
                         <CardTitle>Clients</CardTitle>
                         <CardDescription>
-                            A list of all clients managed in the system, fetched from Supabase.
+                            A list of all clients managed in the system, fetched from the database.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
