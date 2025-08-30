@@ -40,11 +40,11 @@ export async function getCompany(id: string): Promise<Company | null> {
 }
 
 export async function createOrUpdateCompany(companyData: Partial<Company>) {
-    let logoUrl = companyData.logo;
+    let logoPath = companyData.logo;
 
     // Handle logo upload if it's a new base64 image
-    if (logoUrl && logoUrl.startsWith('data:image')) {
-        const { buffer, mimeType, extension } = dataUriToBuffer(logoUrl);
+    if (logoPath && logoPath.startsWith('data:image')) {
+        const { buffer, mimeType, extension } = dataUriToBuffer(logoPath);
         const logoFileName = `logo_${Date.now()}.${extension}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -56,11 +56,20 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
             throw new Error("Failed to upload logo.");
         }
         
-        const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(uploadData.path);
-        logoUrl = publicUrlData.publicUrl;
+        // Store the path, not the public URL.
+        logoPath = uploadData.path;
     }
 
-    const dataToSave = { ...companyData, logo: logoUrl };
+    // Now, get public URL for the stored path to be saved in DB
+    let publicLogoUrl = null;
+    if (logoPath) {
+        const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(logoPath);
+        if(publicUrlData) {
+            publicLogoUrl = publicUrlData.publicUrl;
+        }
+    }
+    
+    const dataToSave = { ...companyData, logo: publicLogoUrl };
 
     let error;
     let data;
