@@ -42,7 +42,7 @@ export async function getCompany(id: string): Promise<Company | null> {
 export async function createOrUpdateCompany(companyData: Partial<Company>) {
     // Ensure we have an ID for upserting, generate if it's a new company without one
     const id = companyData.id || crypto.randomUUID();
-    const validatedData = companySchema.parse({ ...companyData, id });
+    const validatedData = companySchema.partial().parse({ ...companyData, id });
     
     let logoUrl = validatedData.logo;
 
@@ -61,10 +61,11 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
         }
         
         // Since logos bucket can be public, we get the public URL
-        logoUrl = supabase.storage.from('logos').getPublicUrl(uploadData.path).data.publicUrl;
+        const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(uploadData.path);
+        logoUrl = publicUrlData.publicUrl;
     }
 
-    const dataToUpsert = { ...validatedData, logo: logoUrl };
+    const dataToUpsert = { ...validatedData, logo: logoUrl, id };
 
     const { data, error } = await supabase
         .from('companies')
