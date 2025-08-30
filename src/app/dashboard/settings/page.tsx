@@ -2,17 +2,18 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Upload, Save, FileText, Image as ImageIcon, ClipboardList, PlusCircle, Trash2, Eye } from "lucide-react";
+import { Settings, Building, Save, FileText, Image as ImageIcon, ClipboardList, PlusCircle, Trash2, Eye, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import Image from "next/image";
+import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
+import { type Company } from "@/lib/company-schemas";
 
 // Helper to convert file to Base64
 const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -22,58 +23,68 @@ const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) 
     reader.onerror = error => reject(error);
 });
 
-type Company = {
-  name: string;
-  logo: string | null;
-};
+type EditableCompany = Partial<Company>;
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Main state for all settings
   const [companyType, setCompanyType] = useState('one');
-  const [companies, setCompanies] = useState<Company[]>([{ name: '', logo: null }]);
+  const [companies, setCompanies] = useState<EditableCompany[]>([{ name: '', logo: null }]);
   const [formCustomization, setFormCustomization] = useState('template');
   const [phase1Images, setPhase1Images] = useState<(string | null)[]>([]);
   const [interviewImage, setInterviewImage] = useState<string | null>(null);
   const [requiredDocs, setRequiredDocs] = useState('');
 
-  // Load settings from localStorage on component mount
+  // Load companies from Supabase on component mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem('companySettings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setCompanyType(settings.companyType || 'one');
-      setCompanies(settings.companies || [{ name: '', logo: null }]);
-      setFormCustomization(settings.formCustomization || 'template');
-      setPhase1Images(settings.phase1Images || []);
-      setInterviewImage(settings.interviewImage || null);
-      setRequiredDocs(settings.requiredDocs || '');
-    }
+    setIsLoading(true);
+    getCompanies().then(data => {
+      if (data && data.length > 0) {
+        setCompanies(data);
+        if (data.length > 1) {
+            setCompanyType('multiple');
+        }
+        // Load settings from the first company for now
+        const firstCompany = data[0];
+        setFormCustomization(firstCompany.formCustomization || 'template');
+        setPhase1Images(firstCompany.phase1Images || []);
+        setInterviewImage(firstCompany.interviewImage || null);
+        setRequiredDocs(firstCompany.requiredDocs || '');
+      } else {
+        setCompanies([{ name: '', logo: null }]);
+      }
+      setIsLoading(false);
+    });
   }, []);
 
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
-    const settingsToSave = {
-      companyType,
-      companies,
-      formCustomization,
-      phase1Images,
-      interviewImage,
-      requiredDocs,
-      configured: true,
-    };
-    localStorage.setItem('companySettings', JSON.stringify(settingsToSave));
-    
-    toast({
-      title: "Settings Saved",
-      description: "Your company settings have been updated.",
+    startTransition(async () => {
+        for (const company of companies) {
+            if (!company.name) {
+                toast({ variant: "destructive", title: "Validation Error", description: "Company name is required."});
+                return;
+            }
+            // Attach shared settings to each company
+            const companyToSave: Partial<Company> = {
+                ...company,
+                formCustomization,
+                phase1Images,
+                interviewImage,
+                requiredDocs,
+            };
+            await createOrUpdateCompany(companyToSave);
+        }
+        toast({
+            title: "Settings Saved",
+            description: "Your company settings have been updated in Supabase.",
+        });
     });
-
-    router.push('/dashboard');
   };
-
+  
   const handleLogoChange = async (index: number, file: File | null) => {
     if (file) {
         const base64Logo = await toBase64(file);
@@ -88,8 +99,15 @@ export default function SettingsPage() {
   };
 
   const removeCompany = (index: number) => {
-    const newCompanies = companies.filter((_, i) => i !== index);
-    setCompanies(newCompanies);
+    startTransition(async () => {
+        const companyToRemove = companies[index];
+        if (companyToRemove.id) {
+            await deleteCompany(companyToRemove.id);
+        }
+        const newCompanies = companies.filter((_, i) => i !== index);
+        setCompanies(newCompanies);
+        toast({ title: "Company Removed" });
+    });
   };
 
   const handleCompanyNameChange = (index: number, name: string) => {
@@ -123,6 +141,15 @@ export default function SettingsPage() {
     };
 
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
+        <p className="ml-4">Loading settings from Supabase...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -130,7 +157,7 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-headline font-bold text-foreground">Company Settings</h1>
       </div>
       <p className="text-muted-foreground">
-        Customize the application portal for your company. These settings will be reflected in the application forms and communications.
+        Customize the application portal for your company. These settings are saved in Supabase.
       </p>
 
       <form onSubmit={handleSaveChanges}>
@@ -157,52 +184,33 @@ export default function SettingsPage() {
               </RadioGroup>
             </div>
             
-            {companyType === 'one' ? (
-                <>
-                    <div className="space-y-2">
-                        <Label htmlFor="company-name">Company Name</Label>
-                        <Input id="company-name" placeholder="e.g., Noble Health" value={companies[0]?.name || ''} onChange={(e) => handleCompanyNameChange(0, e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="company-logo">Company Logo</Label>
+            {(companyType === 'one' ? companies.slice(0, 1) : companies).map((company, index) => (
+                <div key={company.id || index} className="p-4 border rounded-md space-y-4 relative">
+                     {companyType === 'multiple' && <h4 className="font-semibold text-md">Company #{index + 1}</h4>}
+                     <div className="space-y-2">
+                        <Label htmlFor={`company-name-${index}`}>Company Name</Label>
+                        <Input id={`company-name-${index}`} placeholder="e.g., Noble Health" value={company.name || ''} onChange={(e) => handleCompanyNameChange(index, e.target.value)} />
+                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor={`company-logo-${index}`}>Company Logo</Label>
                         <div className="flex items-center gap-4">
-                            <Input id="company-logo" type="file" className="max-w-xs" onChange={(e) => handleLogoChange(0, e.target.files?.[0] || null)} accept="image/*" />
-                            {companies[0]?.logo && <Image src={companies[0].logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
+                            <Input id={`company-logo-${index}`} type="file" className="max-w-xs" onChange={(e) => handleLogoChange(index, e.target.files?.[0] || null)} accept="image/*" />
+                            {company.logo && <Image src={company.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                            Upload a logo to be displayed on the application and documentation pages.
-                        </p>
-                    </div>
-                </>
-            ) : (
-                <div className="space-y-4">
-                    {companies.map((company, index) => (
-                        <div key={index} className="p-4 border rounded-md space-y-4 relative">
-                             <h4 className="font-semibold text-md">Company #{index + 1}</h4>
-                             <div className="space-y-2">
-                                <Label htmlFor={`company-name-${index}`}>Company Name</Label>
-                                <Input id={`company-name-${index}`} placeholder="e.g., Noble Health" value={company.name} onChange={(e) => handleCompanyNameChange(index, e.target.value)} />
-                             </div>
-                             <div className="space-y-2">
-                                <Label htmlFor={`company-logo-${index}`}>Company Logo</Label>
-                                <div className="flex items-center gap-4">
-                                    <Input id={`company-logo-${index}`} type="file" className="max-w-xs" onChange={(e) => handleLogoChange(index, e.target.files?.[0] || null)} accept="image/*" />
-                                    {company.logo && <Image src={company.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
-                                </div>
-                             </div>
-                             {companies.length > 1 && (
-                                <Button variant="ghost" size="icon" type="button" className="absolute top-2 right-2" onClick={() => removeCompany(index)}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                             )}
-                        </div>
-                    ))}
-                    <Button variant="outline" size="sm" type="button" onClick={addCompany}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Company
-                    </Button>
+                     </div>
+                     {companyType === 'multiple' && companies.length > 1 && (
+                        <Button variant="ghost" size="icon" type="button" className="absolute top-2 right-2" onClick={() => removeCompany(index)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                     )}
                 </div>
-            )}
+            ))}
+             {companyType === 'multiple' && (
+                 <Button variant="outline" size="sm" type="button" onClick={addCompany}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Company
+                </Button>
+             )}
 
           </CardContent>
         </Card>
@@ -327,8 +335,8 @@ export default function SettingsPage() {
         </Card>
 
         <div className="mt-8 flex justify-end">
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" />
+          <Button type="submit" disabled={isPending}>
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save Changes
           </Button>
         </div>

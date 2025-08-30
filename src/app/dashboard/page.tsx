@@ -8,6 +8,8 @@ import { Settings, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { getCompanies } from '../actions/company-actions';
+
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -15,13 +17,15 @@ export default function DashboardPage() {
   const [isConfigured, setIsConfigured] = useState(false);
 
   useEffect(() => {
-    // In a real multi-tenant app, you'd fetch company settings from a database.
-    // We simulate this by checking localStorage.
-    const settings = localStorage.getItem('companySettings');
-    if (settings) {
-      setIsConfigured(true);
+    // Check if any company is configured in Supabase.
+    async function checkConfiguration() {
+        const companies = await getCompanies();
+        if (companies && companies.length > 0) {
+            setIsConfigured(true);
+        }
+        setLoading(false);
     }
-    setLoading(false);
+    checkConfiguration();
   }, []);
 
   if (loading) {

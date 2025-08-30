@@ -39,8 +39,11 @@ export async function getCompany(id: string): Promise<Company | null> {
     return data;
 }
 
-export async function createOrUpdateCompany(companyData: Company) {
-    const validatedData = companySchema.parse(companyData);
+export async function createOrUpdateCompany(companyData: Partial<Company>) {
+    // Ensure we have an ID for upserting, generate if it's a new company without one
+    const id = companyData.id || crypto.randomUUID();
+    const validatedData = companySchema.parse({ ...companyData, id });
+    
     let logoUrl = validatedData.logo;
 
     // Handle logo upload if it's a new base64 image
@@ -61,7 +64,7 @@ export async function createOrUpdateCompany(companyData: Company) {
         logoUrl = supabase.storage.from('logos').getPublicUrl(uploadData.path).data.publicUrl;
     }
 
-    const dataToUpsert = { ...validatedData, id: validatedData.id || undefined, logo: logoUrl };
+    const dataToUpsert = { ...validatedData, logo: logoUrl };
 
     const { data, error } = await supabase
         .from('companies')
