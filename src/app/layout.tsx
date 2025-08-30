@@ -22,12 +22,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
       </head>
-      <ClientOnly>
-        <body className="font-body antialiased">
+      <body className="font-body antialiased">
+        <ClientOnly>
           {children}
           <Toaster />
-        </body>
-      </ClientOnly>
+        </ClientOnly>
+      </body>
     </html>
   );
 }
