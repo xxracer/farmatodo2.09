@@ -41,9 +41,19 @@ export default function SettingsPage() {
   // Load companies from Supabase on component mount
   useEffect(() => {
     setIsLoading(true);
-    getCompanies().then(data => {
+    getCompanies().then(async (data) => {
       if (data && data.length > 0) {
-        setCompanies(data);
+        // Since getCompanies might not return signed URLs, we fetch them now.
+        const companiesWithSignedUrls = await Promise.all(data.map(async (c) => {
+            if (c.logo && !c.logo.startsWith('http')) {
+                 const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(c.logo, 3600);
+                 return { ...c, logo: signedUrlData?.signedUrl || c.logo };
+            }
+            return c;
+        }));
+
+        setCompanies(companiesWithSignedUrls);
+
         if (data.length > 1) {
             setCompanyType('multiple');
         }
@@ -63,9 +73,11 @@ export default function SettingsPage() {
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-        for (const company of companies) {
+      try {
+        for (let i = 0; i < companies.length; i++) {
+            const company = companies[i];
             if (!company.name) {
-                toast({ variant: "destructive", title: "Validation Error", description: "Company name is required."});
+                toast({ variant: "destructive", title: "Validation Error", description: `Company name for item #${i+1} is required.`});
                 return;
             }
             // Attach shared settings to each company
@@ -76,12 +88,29 @@ export default function SettingsPage() {
                 interviewImage,
                 requiredDocs,
             };
-            await createOrUpdateCompany(companyToSave);
+            
+            const result = await createOrUpdateCompany(companyToSave);
+
+            if (result.success && result.company) {
+                // Update the local state with the returned data, which includes the new temporary signed URL for the logo
+                const newCompanies = [...companies];
+                newCompanies[i] = result.company;
+                setCompanies(newCompanies);
+            } else {
+                throw new Error("Failed to save one of the companies.");
+            }
         }
         toast({
             title: "Settings Saved",
             description: "Your company settings have been updated.",
         });
+      } catch (error) {
+           toast({
+              variant: "destructive",
+              title: "Save Failed",
+              description: (error as Error).message || "An unexpected error occurred.",
+            });
+      }
     });
   };
   

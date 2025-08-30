@@ -10,6 +10,7 @@ import { User, MoreHorizontal, LogOut, Loader2, AlertCircle } from "lucide-react
 import Link from "next/link";
 import { useState, useEffect, useTransition } from "react";
 import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
+import { supabase } from "@/lib/supabaseClient";
 import { Company } from "@/lib/company-schemas";
 import Image from "next/image";
 
@@ -19,8 +20,16 @@ export default function SuperAdminPage() {
     const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
-        getCompanies().then(data => {
-            setClients(data);
+        getCompanies().then(async (data) => {
+            // Since getCompanies returns paths for private buckets, we need to generate signed URLs to display them.
+             const companiesWithSignedUrls = await Promise.all(data.map(async (c) => {
+                if (c.logo && !c.logo.startsWith('http')) {
+                    const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(c.logo, 3600); // 1 hour expiry
+                    return { ...c, logo: signedUrlData?.signedUrl || c.logo };
+                }
+                return c;
+            }));
+            setClients(companiesWithSignedUrls);
             setLoading(false);
         });
     }, []);

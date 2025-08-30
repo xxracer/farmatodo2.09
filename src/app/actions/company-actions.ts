@@ -40,11 +40,11 @@ export async function getCompany(id: string): Promise<Company | null> {
 }
 
 export async function createOrUpdateCompany(companyData: Partial<Company>) {
-    let logoPath = companyData.logo;
+    let logoToSave = companyData.logo;
 
     // Handle logo upload if it's a new base64 image
-    if (logoPath && logoPath.startsWith('data:image')) {
-        const { buffer, mimeType, extension } = dataUriToBuffer(logoPath);
+    if (logoToSave && logoToSave.startsWith('data:image')) {
+        const { buffer, mimeType, extension } = dataUriToBuffer(logoToSave);
         const logoFileName = `logo_${Date.now()}.${extension}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -56,45 +56,39 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
             throw new Error("Failed to upload logo.");
         }
         
-        // Store the path, not the public URL.
-        logoPath = uploadData.path;
+        // **FIX:** We store the path from the upload, not the original base64 string.
+        logoToSave = uploadData.path;
     }
 
-    // Now, get public URL for the stored path to be saved in DB
-    let publicLogoUrl = null;
-    if (logoPath) {
-        const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(logoPath);
-        if(publicUrlData) {
-            publicLogoUrl = publicUrlData.publicUrl;
-        }
-    }
-    
-    const dataToSave = { ...companyData, logo: publicLogoUrl };
+    // Prepare data for saving. The logo field now contains either the new path or the existing path/URL.
+    const dataToSave = { ...companyData, logo: logoToSave };
 
     let error;
     let data;
 
     if (dataToSave.id) {
         // UPDATE existing company
-        const validatedData = companySchema.partial().parse(dataToSave);
-        const { data: updateData, error: updateError } = await supabase
+        // Ensure we don't try to update created_at
+        const { created_at, ...updateData } = dataToSave;
+        const validatedData = companySchema.partial().parse(updateData);
+        const { data: updateResult, error: updateError } = await supabase
             .from('companies')
             .update(validatedData)
             .eq('id', validatedData.id!)
             .select()
             .single();
-        data = updateData;
+        data = updateResult;
         error = updateError;
     } else {
-        // INSERT new company, let Supabase generate the ID
+        // INSERT new company
         const { id, ...insertData } = dataToSave; // Exclude null/undefined id
         const validatedData = companySchema.omit({ id: true, created_at: true }).partial().parse(insertData);
-        const { data: insertDataResult, error: insertError } = await supabase
+        const { data: insertResult, error: insertError } = await supabase
             .from('companies')
             .insert(validatedData)
             .select()
             .single();
-        data = insertDataResult;
+        data = insertResult;
         error = insertError;
     }
     
@@ -106,7 +100,24 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     revalidatePath('/dashboard/settings');
     revalidatePath('/super-admin');
 
-    return { success: true, company: data };
+    // **FIX:** Now, after saving, get a temporary signed URL for the logo path to return to the client.
+    // This allows displaying the logo from a private bucket.
+    let finalLogoUrl = data.logo;
+    if (data.logo && !data.logo.startsWith('http')) {
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+            .from('logos')
+            .createSignedUrl(data.logo, 60 * 60); // 1-hour expiry
+        
+        if (signedUrlError) {
+             console.error("Error creating signed URL for logo:", signedUrlError);
+             // We don't throw here, just return the data without the temporary URL
+        } else {
+            finalLogoUrl = signedUrlData.signedUrl;
+        }
+    }
+    
+    // Return the company data with a temporary, usable logo URL
+    return { success: true, company: { ...data, logo: finalLogoUrl } };
 }
 
 
