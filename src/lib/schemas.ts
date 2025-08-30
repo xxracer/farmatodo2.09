@@ -158,10 +158,11 @@ export type ApplicationSchema = z.infer<typeof applicationSchema>;
 // This is the type for the data that will be stored
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
-    resume?: string; // Storing as a data URL string
-    driversLicense?: string; // Storing as a data URL string
-    idCard?: string; // Storing as a data URL string
-    proofOfAddress?: string; // Storing as a data URL string
+    // We now store the path to the file in Supabase Storage, not a data URL
+    resume?: string;
+    driversLicense?: string;
+    idCard?: string;
+    proofOfAddress?: string;
 };
 
 export const interviewReviewSchema = z.object({

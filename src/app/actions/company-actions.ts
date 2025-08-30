@@ -27,7 +27,7 @@ export async function getCompanies(): Promise<Company[]> {
         console.error("Error fetching companies:", error);
         return [];
     }
-    return data;
+    return data || [];
 }
 
 export async function getCompany(id: string): Promise<Company | null> {
@@ -48,7 +48,7 @@ export async function createOrUpdateCompany(companyData: Company) {
         const { buffer, mimeType, extension } = dataUriToBuffer(logoUrl);
         const logoFileName = `logo_${Date.now()}.${extension}`;
         
-        const { error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
             .from('logos')
             .upload(logoFileName, buffer, { contentType: mimeType, upsert: true });
 
@@ -57,10 +57,11 @@ export async function createOrUpdateCompany(companyData: Company) {
             throw new Error("Failed to upload logo.");
         }
         
-        logoUrl = supabase.storage.from('logos').getPublicUrl(logoFileName).data.publicUrl;
+        // Since logos bucket can be public, we get the public URL
+        logoUrl = supabase.storage.from('logos').getPublicUrl(uploadData.path).data.publicUrl;
     }
 
-    const dataToUpsert = { ...validatedData, logo: logoUrl };
+    const dataToUpsert = { ...validatedData, id: validatedData.id || undefined, logo: logoUrl };
 
     const { data, error } = await supabase
         .from('companies')

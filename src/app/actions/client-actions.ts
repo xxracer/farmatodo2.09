@@ -23,7 +23,7 @@ function dataUriToBuffer(dataUri: string): { buffer: Buffer, mimeType: string, e
 
 export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | 'driversLicense'> & { resume: string; driversLicense: string }) {
     try {
-        // 1. Upload Resume
+        // 1. Upload Resume (to a private bucket)
         const { buffer: resumeBuffer, mimeType: resumeMimeType, extension: resumeExtension } = dataUriToBuffer(data.resume);
         const resumeFileName = `resume_${crypto.randomUUID()}.${resumeExtension}`;
         const { data: resumeUploadData, error: resumeUploadError } = await supabase.storage
@@ -31,11 +31,11 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
             .upload(resumeFileName, resumeBuffer, { contentType: resumeMimeType, upsert: true });
 
         if (resumeUploadError) throw resumeUploadError;
+        // NOTE: We no longer get a public URL. We store the path and will generate signed URLs when needed.
+        const resumePath = resumeUploadData.path;
 
-        const { data: { publicUrl: resumePublicUrl } } = supabase.storage.from('resumes').getPublicUrl(resumeFileName);
 
-
-        // 2. Upload Driver's License
+        // 2. Upload Driver's License (to a private bucket)
         const { buffer: licenseBuffer, mimeType: licenseMimeType, extension: licenseExtension } = dataUriToBuffer(data.driversLicense);
         const licenseFileName = `license_${crypto.randomUUID()}.${licenseExtension}`;
         const { data: licenseUploadData, error: licenseUploadError } = await supabase.storage
@@ -43,15 +43,15 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
             .upload(licenseFileName, licenseBuffer, { contentType: licenseMimeType, upsert: true });
             
         if (licenseUploadError) throw licenseUploadError;
-
-        const { data: { publicUrl: licensePublicUrl } } = supabase.storage.from('licenses').getPublicUrl(licenseFileName);
+        // NOTE: We no longer get a public URL. We store the path.
+        const licensePath = licenseUploadData.path;
         
         
         // 3. Insert candidate data into the database
         const newCandidate: Omit<ApplicationData, 'id'> = {
             ...data,
-            resume: resumePublicUrl,
-            driversLicense: licensePublicUrl,
+            resume: resumePath,
+            driversLicense: licensePath,
             status: 'candidate',
         };
 
@@ -168,17 +168,17 @@ export async function updateCandidateWithDocuments(
         if (documents.idCard) {
              const { buffer, mimeType, extension } = dataUriToBuffer(documents.idCard);
              const fileName = `idcard_${id}.${extension}`;
-             const { error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
+             const { data: uploadData, error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
              if (error) throw error;
-             updates.idCard = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl;
+             updates.idCard = uploadData.path;
         }
 
         if (documents.proofOfAddress) {
              const { buffer, mimeType, extension } = dataUriToBuffer(documents.proofOfAddress);
              const fileName = `address_proof_${id}.${extension}`;
-             const { error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
+             const { data: uploadData, error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
              if (error) throw error;
-             updates.proofOfAddress = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl;
+             updates.proofOfAddress = uploadData.path;
         }
 
         if (Object.keys(updates).length > 0) {
