@@ -14,6 +14,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
 import { type Company } from "@/lib/company-schemas";
+import { supabase } from "@/lib/supabaseClient";
 
 // Helper to convert file to Base64
 const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -64,7 +65,7 @@ export default function SettingsPage() {
         setInterviewImage(firstCompany.interviewImage || null);
         setRequiredDocs(firstCompany.requiredDocs || '');
       } else {
-        setCompanies([{ name: '', logo: null }]);
+        setCompanies([{}]); // Start with a clean slate if no companies exist
       }
       setIsLoading(false);
     });
@@ -74,8 +75,10 @@ export default function SettingsPage() {
     e.preventDefault();
     startTransition(async () => {
       try {
-        for (let i = 0; i < companies.length; i++) {
-            const company = companies[i];
+        const companiesToSave = companyType === 'one' ? companies.slice(0, 1) : companies;
+
+        for (let i = 0; i < companiesToSave.length; i++) {
+            const company = companiesToSave[i];
             if (!company.name) {
                 toast({ variant: "destructive", title: "Validation Error", description: `Company name for item #${i+1} is required.`});
                 return;

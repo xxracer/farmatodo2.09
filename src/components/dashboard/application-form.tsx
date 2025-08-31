@@ -45,7 +45,7 @@ async function fileToDataURL(file: File): Promise<string> {
 }
 
 
-export function ApplicationForm() {
+export function ApplicationForm({ companyName }: { companyName: string }) {
     const { toast } = useToast()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,7 +53,7 @@ export function ApplicationForm() {
     const form = useForm<ApplicationSchema>({
         resolver: zodResolver(applicationSchema),
         defaultValues: {
-            applyingFor: [], // This is kept for schema validation but not shown in UI
+            applyingFor: [companyName],
             lastName: "",
             firstName: "",
             middleName: "",
@@ -130,8 +130,8 @@ export function ApplicationForm() {
 
             const result = await createCandidate({
                 ...data,
-                // The company name would be dynamically fetched based on the portal
-                applyingFor: ["Default Company"],
+                // The company name is now passed as a prop
+                applyingFor: [companyName],
                 resume: resumeURL,
                 driversLicense: driversLicenseURL,
             });

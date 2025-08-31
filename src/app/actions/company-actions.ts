@@ -45,7 +45,8 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     // Handle logo upload if it's a new base64 image
     if (logoToSave && logoToSave.startsWith('data:image')) {
         const { buffer, mimeType, extension } = dataUriToBuffer(logoToSave);
-        const logoFileName = `logo_${Date.now()}.${extension}`;
+        const companyNameSlug = companyData.name?.toLowerCase().replace(/\s+/g, '_') || 'company';
+        const logoFileName = `${companyNameSlug}_logo.${extension}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('logos')
@@ -56,7 +57,7 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
             throw new Error("Failed to upload logo.");
         }
         
-        // **FIX:** We store the path from the upload, not the original base64 string.
+        // We store the path from the upload, not the original base64 string.
         logoToSave = uploadData.path;
     }
 
@@ -100,7 +101,7 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     revalidatePath('/dashboard/settings');
     revalidatePath('/super-admin');
 
-    // **FIX:** Now, after saving, get a temporary signed URL for the logo path to return to the client.
+    // After saving, get a temporary signed URL for the logo path to return to the client.
     // This allows displaying the logo from a private bucket.
     let finalLogoUrl = data.logo;
     if (data.logo && !data.logo.startsWith('http')) {
