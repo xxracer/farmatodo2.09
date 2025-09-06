@@ -70,10 +70,11 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     if (dataToSave.id) {
         // UPDATE existing company
         const { created_at, ...updateData } = dataToSave;
-        // Ensure requiredDocs is valid JSON or null before saving
+        
         const validatedData = {
             ...updateData,
-            requiredDocs: updateData.requiredDocs ? JSON.parse(JSON.stringify(updateData.requiredDocs)) : null,
+            // Only parse requiredDocs if it's a string (from form), otherwise assume it's already a valid object or null
+            requiredDocs: typeof updateData.requiredDocs === 'string' ? JSON.parse(updateData.requiredDocs) : updateData.requiredDocs,
         };
 
         const { data: updateResult, error: updateError } = await supabase
@@ -87,7 +88,7 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     } else {
         // INSERT new company
         const { id, ...insertData } = dataToSave; // Exclude null/undefined id
-        const validatedData = {
+         const validatedData = {
             ...insertData,
             requiredDocs: insertData.requiredDocs ? JSON.parse(JSON.stringify(insertData.requiredDocs)) : null,
         };

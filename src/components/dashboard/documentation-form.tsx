@@ -42,10 +42,10 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
         shape[doc.id] = z.any().optional(); 
     });
     
-    // Add specific schema for I-9 form fields if it's required as "digital"
     if (requiredDocs.some(d => d.id === 'i9' && d.type === 'digital')) {
         shape.i9_lastName = z.string().optional();
         shape.i9_firstName = z.string().optional();
+        shape.i9_middleInitial = z.string().optional();
         // Add all other I-9 fields here as needed
     }
 
@@ -71,27 +71,30 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
                         height={2588}
                         priority
                         className="w-full h-auto select-none pointer-events-none"
+                        data-ai-hint="document form"
                     />
                     
                     {/* Section 1 Overlays */}
                     <FormField control={form.control} name="i9_lastName" render={({ field }) => (
-                         <Input {...field} placeholder="Last Name" className="absolute" style={{ top: '15.5%', left: '11.5%', width: '30%' }}/>
+                         <Input {...field} placeholder="Last Name (Family Name)" className="absolute bg-transparent" style={{ top: '15.5%', left: '11.5%', width: '30%' }}/>
                     )} />
                      <FormField control={form.control} name="i9_firstName" render={({ field }) => (
-                         <Input {...field} placeholder="First Name" className="absolute" style={{ top: '15.5%', left: '42.5%', width: '30%' }}/>
+                         <Input {...field} placeholder="First Name (Given Name)" className="absolute bg-transparent" style={{ top: '15.5%', left: '42.5%', width: '30%' }}/>
                     )} />
                      <FormField control={form.control} name="i9_middleInitial" render={({ field }) => (
-                         <Input {...field} placeholder="MI" className="absolute" style={{ top: '15.5%', left: '73.5%', width: '10%' }}/>
+                         <Input {...field} placeholder="MI" className="absolute bg-transparent" style={{ top: '15.5%', left: '73.5%', width: '10%' }}/>
                     )} />
                     {/* Add more overlays for all of Section 1 as needed */}
 
 
                     {/* Section 2 - Pre-filled Data */}
                     <div className="absolute" style={{ top: '73.4%', left: '11.5%', width: '45%' }}>
-                        <Input readOnly value={companyData?.name || ''} className="bg-muted" />
+                        <Input readOnly value={companyData?.name || ''} className="bg-blue-100/50" />
+                         <p className="text-xs text-muted-foreground mt-1 -ml-1">Employer's Business or Organization Name</p>
                     </div>
                      <div className="absolute" style={{ top: '73.4%', left: '58.5%', width: '38%' }}>
-                        <Input readOnly value={companyData?.address || ''} className="bg-muted" />
+                        <Input readOnly value={companyData?.address || ''} className="bg-blue-100/50" />
+                        <p className="text-xs text-muted-foreground mt-1 -ml-1">Employer's Business or Organization Address</p>
                     </div>
                 </div>
             </CardContent>

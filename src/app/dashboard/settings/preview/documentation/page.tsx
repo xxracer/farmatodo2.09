@@ -16,7 +16,7 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
             <CardHeader>
                 <CardTitle className="font-headline">Form I-9: Employment Eligibility Verification</CardTitle>
                 <CardDescription>
-                    This is a preview of the system-generated form. The candidate will be able to fill out the fields directly.
+                    This is a preview of the system-generated form. The candidate will be able to fill out the fields directly. The employer information below is pre-filled based on your settings.
                 </CardDescription>
             </CardHeader>
             <CardContent>

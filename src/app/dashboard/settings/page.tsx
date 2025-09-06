@@ -39,14 +39,14 @@ export default function SettingsPage() {
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Main state for all settings
+  // State for company identity
   const [companyType, setCompanyType] = useState('one');
   const [companies, setCompanies] = useState<EditableCompany[]>([{}]);
+  
+  // State for customization settings, tied to the first company for now
   const [formCustomization, setFormCustomization] = useState('template');
   const [phase1Images, setPhase1Images] = useState<(string | null)[]>([]);
   const [interviewImage, setInterviewImage] = useState<string | null>(null);
-  
-  // State for new structured required documents
   const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
   const [customDocLabel, setCustomDocLabel] = useState("");
 
@@ -56,7 +56,6 @@ export default function SettingsPage() {
     setIsLoading(true);
     getCompanies().then(async (data) => {
       if (data && data.length > 0) {
-        // Since getCompanies might not return signed URLs, we fetch them now.
         const companiesWithSignedUrls = await Promise.all(data.map(async (c) => {
             if (c.logo && !c.logo.startsWith('http')) {
                  const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(c.logo, 3600);
@@ -68,7 +67,6 @@ export default function SettingsPage() {
         setCompanies(companiesWithSignedUrls);
         setCompanyType(data.length > 1 ? 'multiple' : 'one');
         
-        // Load shared settings from the first company
         const firstCompany = companiesWithSignedUrls[0];
         setFormCustomization(firstCompany.formCustomization || 'template');
         setPhase1Images(firstCompany.phase1Images || []);
@@ -76,71 +74,70 @@ export default function SettingsPage() {
         setRequiredDocs(firstCompany.requiredDocs || []);
 
       } else {
-        setCompanies([{}]); // Start with a clean slate if no companies exist
+        setCompanies([{}]);
       }
       setIsLoading(false);
     });
   }, []);
 
-  const handleSaveChanges = (e: React.FormEvent) => {
+  const handleSaveIdentity = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-        if (!companies.length || !companies[0].name) {
-            toast({ variant: "destructive", title: "Validation Error", description: `A company name is required.`});
-            return;
-        }
-
         const companiesToSave = companyType === 'one' ? companies.slice(0, 1) : companies;
-
-        for (const company of companiesToSave) {
+        
+        for (const [index, company] of companiesToSave.entries()) {
+             if (!company.name) {
+                toast({ variant: "destructive", title: "Validation Error", description: `Company name is required for Company #${index + 1}.`});
+                return;
+            }
+            
             try {
-                if (!company.name) {
-                    toast({ variant: "destructive", title: "Validation Error", description: `Company name is required for all companies.`});
-                    return;
-                }
+                const result = await createOrUpdateCompany(company);
+                if (!result.success || !result.company) throw new Error("Failed to save company identity.");
                 
-                const companyToSave: Partial<Company> = {
-                    ...company,
-                    formCustomization,
-                    phase1Images,
-                    interviewImage,
-                    requiredDocs,
-                };
-                
-                const result = await createOrUpdateCompany(companyToSave);
-
-                if (!result.success || !result.company) {
-                    throw new Error("Failed to save company settings.");
-                }
-
-                // Update local state with returned data, including new temporary logo URL
                  setCompanies(prevCompanies => {
                     const newCompanies = [...prevCompanies];
-                    const index = newCompanies.findIndex(c => c.id === result.company!.id || (!c.id && c.name === result.company!.name));
-                    if (index !== -1) {
-                        newCompanies[index] = result.company!;
-                    } else {
-                        newCompanies[0] = result.company!;
-                    }
+                    const foundIndex = newCompanies.findIndex(c => c.id === result.company!.id || (!c.id && c.name === result.company!.name));
+                    newCompanies[foundIndex !== -1 ? foundIndex : index] = result.company!;
                     return newCompanies;
                  });
 
             } catch (error) {
-                toast({
-                    variant: "destructive",
-                    title: "Save Failed",
-                    description: (error as Error).message,
-                });
-                return; // Stop on first error
+                 toast({ variant: "destructive", title: "Save Failed", description: (error as Error).message });
+                 return;
             }
         }
-
-        toast({
-            title: "Settings Saved",
-            description: "Your company settings have been updated.",
-        });
+        toast({ title: "Company Identity Saved", description: "Your company details have been updated." });
     });
   };
+
+  const handleSaveCustomization = (e: React.FormEvent) => {
+      e.preventDefault();
+      startTransition(async () => {
+        if (!companies.length || !companies[0].id) {
+            toast({ variant: "destructive", title: "Save Company First", description: "Please save company identity before customizing." });
+            return;
+        }
+
+        const firstCompany = companies[0];
+        const customizationData: Partial<Company> = {
+            id: firstCompany.id,
+            formCustomization,
+            phase1Images,
+            interviewImage,
+            requiredDocs,
+        };
+
+        try {
+            const result = await createOrUpdateCompany(customizationData);
+            if (!result.success) throw new Error("Failed to save customizations.");
+            toast({ title: "Customizations Saved", description: "Your application settings have been updated." });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Save Failed", description: (error as Error).message });
+        }
+      });
+  };
+
   
   const handleLogoChange = async (index: number, file: File | null) => {
     if (file) {
@@ -193,10 +190,8 @@ export default function SettingsPage() {
     
     const handleStandardDocChange = (doc: Omit<RequiredDoc, 'type'>, checked: boolean) => {
         if (checked) {
-            // Add with default type 'digital' when first checked
             setRequiredDocs([...requiredDocs, { ...doc, type: 'digital' }]);
         } else {
-            // Remove when unchecked
             setRequiredDocs(requiredDocs.filter(d => d.id !== doc.id));
         }
     };
@@ -210,7 +205,7 @@ export default function SettingsPage() {
             const newDoc: RequiredDoc = {
                 id: `custom_${Date.now()}`,
                 label: customDocLabel.trim(),
-                type: 'upload', // Custom docs default to upload
+                type: 'upload', 
             };
             setRequiredDocs([...requiredDocs, newDoc]);
             setCustomDocLabel("");
@@ -238,17 +233,17 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-headline font-bold text-foreground">Company Settings</h1>
       </div>
       <p className="text-muted-foreground">
-        Customize the application portal for your company. These settings are saved in a secure database.
+        Customize the application portal for your company. Each section saves independently.
       </p>
 
-      <form onSubmit={handleSaveChanges}>
+      <form onSubmit={handleSaveIdentity}>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building className="h-5 w-5" />
               Company Identity
             </CardTitle>
-            <CardDescription>Set your company's name and logo that candidates will see.</CardDescription>
+            <CardDescription>Set your company's name, logo, and contact information. This is shared across all application materials.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -299,10 +294,17 @@ export default function SettingsPage() {
              {companyType === 'multiple' && (
                  <Button variant="outline" size="sm" type="button" onClick={addCompany}><PlusCircle className="mr-2 h-4 w-4" />Add Company</Button>
              )}
-
+            <div className="mt-6 flex justify-end">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Identity
+              </Button>
+            </div>
           </CardContent>
         </Card>
-        
+      </form>
+      
+      <form onSubmit={handleSaveCustomization}>
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5" />Application Form Customization (Phase 1)</CardTitle>
@@ -442,7 +444,7 @@ export default function SettingsPage() {
         <div className="mt-8 flex justify-end">
           <Button type="submit" disabled={isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save Changes
+            Save All Customizations
           </Button>
         </div>
       </form>
