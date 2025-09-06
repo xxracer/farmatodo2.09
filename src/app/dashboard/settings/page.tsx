@@ -111,16 +111,20 @@ export default function SettingsPage() {
                 const result = await createOrUpdateCompany(companyToSave);
 
                 if (!result.success || !result.company) {
-                    throw new Error(result.error || "Failed to save one of the companies.");
+                    throw new Error("Failed to save company settings.");
                 }
 
                 // Update local state with returned data, including new temporary logo URL
-                 setCompanies(prevCompanies => prevCompanies.map(c => {
-                    if (c.id === result.company!.id || c.name === result.company!.name) {
-                        return result.company!;
+                 setCompanies(prevCompanies => {
+                    const newCompanies = [...prevCompanies];
+                    const index = newCompanies.findIndex(c => c.id === result.company!.id || (!c.id && c.name === result.company!.name));
+                    if (index !== -1) {
+                        newCompanies[index] = result.company!;
+                    } else {
+                        newCompanies[0] = result.company!;
                     }
-                    return c;
-                }));
+                    return newCompanies;
+                 });
 
             } catch (error) {
                 toast({
@@ -362,6 +366,7 @@ export default function SettingsPage() {
                     <Label className="font-semibold">Standard Documents</Label>
                     {standardDocs.map(doc => {
                         const isChecked = requiredDocs.some(d => d.id === doc.id);
+                        const docType = requiredDocs.find(d => d.id === doc.id)?.type;
                         return (
                             <div key={doc.id} className="p-4 border rounded-md space-y-4">
                                 <div className="flex items-center">
@@ -375,31 +380,38 @@ export default function SettingsPage() {
                                 {isChecked && (
                                     <RadioGroup
                                         className="pl-7 pt-4 border-t mt-4"
-                                        value={requiredDocs.find(d => d.id === doc.id)?.type}
+                                        value={docType}
                                         onValueChange={(type: 'digital' | 'upload') => handleDocTypeChange(doc.id, type)}
                                     >
-                                        <FormItem>
-                                            <div className="flex items-center space-x-3">
-                                                <RadioGroupItem value="digital" id={`${doc.id}-digital`} />
-                                                <div className="grid gap-1.5 leading-none">
-                                                    <Label htmlFor={`${doc.id}-digital`} className="font-normal">System-Generated Form</Label>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      The system will generate a digital form for the applicant to fill out via the provided link.
-                                                    </p>
+                                        <div className="flex flex-col gap-4">
+                                            <FormItem>
+                                                <div className="flex items-center space-x-3">
+                                                    <RadioGroupItem value="digital" id={`${doc.id}-digital`} />
+                                                    <div className="grid gap-1.5 leading-none flex-1">
+                                                        <Label htmlFor={`${doc.id}-digital`} className="font-normal">System-Generated Form</Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                          The applicant will fill out the form directly in the portal.
+                                                        </p>
+                                                    </div>
+                                                    {docType === 'digital' && (
+                                                        <Button asChild variant="secondary" size="sm">
+                                                            <Link href="/dashboard/settings/preview/documentation" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview</Link>
+                                                        </Button>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        </FormItem>
-                                        <FormItem>
-                                             <div className="flex items-center space-x-3">
-                                                <RadioGroupItem value="upload" id={`${doc.id}-upload`} />
-                                                <div className="grid gap-1.5 leading-none">
-                                                    <Label htmlFor={`${doc.id}-upload`} className="font-normal">Applicant Upload</Label>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        The applicant will be required to upload their own pre-filled document.
-                                                    </p>
+                                            </FormItem>
+                                            <FormItem>
+                                                 <div className="flex items-center space-x-3">
+                                                    <RadioGroupItem value="upload" id={`${doc.id}-upload`} />
+                                                    <div className="grid gap-1.5 leading-none">
+                                                        <Label htmlFor={`${doc.id}-upload`} className="font-normal">Applicant Upload</Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            The applicant will be required to upload their own pre-filled document.
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </FormItem>
+                                            </FormItem>
+                                        </div>
                                     </RadioGroup>
                                 )}
                             </div>
@@ -438,5 +450,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
