@@ -15,7 +15,6 @@ import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/action
 import { type Company, type RequiredDoc } from "@/lib/company-schemas";
 import { supabase } from "@/lib/supabaseClient";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { FormItem } from "@/components/ui/form";
 
 // Helper to convert file to Base64
@@ -450,3 +449,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

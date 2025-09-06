@@ -15,7 +15,7 @@ interface I9FormProps {
 }
 
 export function I9Form({ form, companyData }: I9FormProps) {
-  // This is a simplified representation of Form I-9, Section 1
+  // This is a more faithful representation of Form I-9
   return (
     <Card className="border-2 border-dashed">
       <CardHeader>
@@ -82,7 +82,7 @@ export function I9Form({ form, companyData }: I9FormProps) {
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <FormField
                 control={form.control}
                 name="i9.aptNumber"
@@ -132,7 +132,7 @@ export function I9Form({ form, companyData }: I9FormProps) {
             name="i9.citizenshipStatus"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Attestation of Citizenship or Immigration Status</FormLabel>
+                    <FormLabel className="font-semibold">Attestation of Citizenship or Immigration Status</FormLabel>
                     <FormDescription>I attest, under penalty of perjury, that I am (Check one of the following):</FormDescription>
                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-2 pt-2">
                         <FormItem className="flex items-center space-x-3 space-y-0">
@@ -157,17 +157,17 @@ export function I9Form({ form, companyData }: I9FormProps) {
             )}
         />
         
-         <div className="border-t pt-4">
-            <Label className="font-semibold">Section 2: Employer Review and Verification</Label>
-            <FormDescription>This section is to be completed by the employer.</FormDescription>
+         <div className="border-t pt-4 mt-6 space-y-4">
+            <h3 className="font-headline font-semibold text-lg">Section 2: Employer Review and Verification</h3>
+            <p className="text-sm text-muted-foreground">To be completed and signed by employer.</p>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="employerName">Employer's Business or Organization Name</Label>
-                    <Input id="employerName" value={companyData?.name || 'Loading...'} readOnly disabled />
+                    <Input id="employerName" value={companyData?.name || 'Your Company Name'} readOnly disabled className="bg-muted/50" />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="employerAddress">Employer's Business or Organization Address</Label>
-                    <Input id="employerAddress" value={companyData?.address || 'Loading...'} readOnly disabled />
+                    <Input id="employerAddress" value={companyData?.address || 'Your Company Address'} readOnly disabled className="bg-muted/50" />
                 </div>
             </div>
         </div>

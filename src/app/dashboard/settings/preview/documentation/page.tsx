@@ -23,6 +23,9 @@ export default function DocumentationPreviewPage() {
       const companies = await getCompanies();
       if (companies && companies.length > 0) {
         setCompany(companies[0]);
+      } else {
+        // Provide a default object for the preview if no company is configured
+        setCompany({ name: "Your Company Name", address: "Your Company Address" });
       }
       setLoading(false);
     }
@@ -54,3 +57,5 @@ export default function DocumentationPreviewPage() {
     </div>
   );
 }
+
+    
