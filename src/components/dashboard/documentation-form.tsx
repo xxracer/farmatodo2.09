@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 import { Company, RequiredDoc } from "@/lib/company-schemas"
+import { supabase } from "@/lib/supabaseClient"
 
 
 async function fileToDataURL(file: File): Promise<string> {
@@ -53,6 +54,12 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
 
 
 function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial<Company> | null }) {
+    
+    const { data: { publicUrl: i9FormUrl } } = supabase
+        .storage
+        .from('templates')
+        .getPublicUrl('i-9.png');
+    
     return (
         <Card className="border-2 border-dashed">
             <CardHeader>
@@ -64,7 +71,7 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
             <CardContent>
                  <div className="relative w-full">
                     <Image
-                        src="https://static.wixstatic.com/media/d9b54b_6c6ba388315247b59187e19a4e3751e7~mv2.png"
+                        src={i9FormUrl}
                         alt="Form I-9"
                         width={2000}
                         height={2588}

@@ -9,11 +9,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { FormProvider, useForm } from "react-hook-form";
+import { supabase } from "@/lib/supabaseClient";
 
 
 function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }) {
     const form = useForm();
     
+    // Construct the URL to the I-9 template in Supabase Storage
+    const { data: { publicUrl: i9FormUrl } } = supabase
+        .storage
+        .from('templates')
+        .getPublicUrl('i-9.png');
+
     return (
         <FormProvider {...form}>
             <Card className="border">
@@ -26,7 +33,7 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                 <CardContent>
                     <div className="relative w-full">
                         <Image
-                            src="https://static.wixstatic.com/media/d9b54b_6c6ba388315247b59187e19a4e3751e7~mv2.png"
+                            src={i9FormUrl}
                             alt="Form I-9"
                             width={2000}
                             height={2588}
