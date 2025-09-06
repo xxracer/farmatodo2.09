@@ -148,7 +148,7 @@ export default function SettingsPage() {
   };
 
   const addCompany = () => {
-    setCompanies([...companies, { name: '', logo: null }]);
+    setCompanies([...companies, { name: '', logo: null, address: '', phone: '', fax: '' }]);
   };
 
   const removeCompany = (index: number) => {
@@ -163,9 +163,9 @@ export default function SettingsPage() {
     });
   };
 
-  const handleCompanyNameChange = (index: number, name: string) => {
+  const handleCompanyFieldChange = (index: number, field: keyof EditableCompany, value: string) => {
     const newCompanies = [...companies];
-    newCompanies[index].name = name;
+    (newCompanies[index] as any)[field] = value;
     setCompanies(newCompanies);
   };
   
@@ -256,16 +256,32 @@ export default function SettingsPage() {
             {(companyType === 'one' ? companies.slice(0, 1) : companies).map((company, index) => (
                 <div key={company.id || index} className="p-4 border rounded-md space-y-4 relative">
                      {companyType === 'multiple' && <h4 className="font-semibold text-md">Company #{index + 1}</h4>}
-                     <div className="space-y-2">
-                        <Label htmlFor={`company-name-${index}`}>Company Name</Label>
-                        <Input id={`company-name-${index}`} placeholder="e.g., Noble Health" value={company.name || ''} onChange={(e) => handleCompanyNameChange(index, e.target.value)} />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor={`company-name-${index}`}>Company Name</Label>
+                            <Input id={`company-name-${index}`} placeholder="e.g., Noble Health" value={company.name || ''} onChange={(e) => handleCompanyFieldChange(index, 'name', e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor={`company-logo-${index}`}>Company Logo</Label>
+                            <div className="flex items-center gap-4">
+                                <Input id={`company-logo-${index}`} type="file" className="max-w-xs" onChange={(e) => handleLogoChange(index, e.target.files?.[0] || null)} accept="image/*" />
+                                {company.logo && <Image src={company.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
+                            </div>
+                        </div>
                      </div>
                      <div className="space-y-2">
-                        <Label htmlFor={`company-logo-${index}`}>Company Logo</Label>
-                        <div className="flex items-center gap-4">
-                            <Input id={`company-logo-${index}`} type="file" className="max-w-xs" onChange={(e) => handleLogoChange(index, e.target.files?.[0] || null)} accept="image/*" />
-                            {company.logo && <Image src={company.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
-                        </div>
+                        <Label htmlFor={`company-address-${index}`}>Address</Label>
+                        <Input id={`company-address-${index}`} placeholder="123 Health St, Suite 100" value={company.address || ''} onChange={(e) => handleCompanyFieldChange(index, 'address', e.target.value)} />
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                            <Label htmlFor={`company-phone-${index}`}>Phone Number</Label>
+                            <Input id={`company-phone-${index}`} placeholder="(555) 123-4567" value={company.phone || ''} onChange={(e) => handleCompanyFieldChange(index, 'phone', e.target.value)} />
+                         </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`company-fax-${index}`}>Fax Number</Label>
+                            <Input id={`company-fax-${index}`} placeholder="(555) 123-4568" value={company.fax || ''} onChange={(e) => handleCompanyFieldChange(index, 'fax', e.target.value)} />
+                         </div>
                      </div>
                      {companyType === 'multiple' && companies.length > 1 && (
                         <Button variant="ghost" size="icon" type="button" className="absolute top-2 right-2" onClick={() => removeCompany(index)}>
@@ -351,12 +367,14 @@ export default function SettingsPage() {
                             <Label htmlFor={doc.id} className="flex-1">{doc.label}</Label>
                             {requiredDocs.some(d => d.id === doc.id) && (
                                 <div className="flex items-center gap-2">
-                                    <Label htmlFor={`${doc.id}-type`} className="text-sm">Digital Form</Label>
+                                    <Label htmlFor={`${doc.id}-type`} className="text-sm">Candidate Fills Online</Label>
                                     <Switch 
                                         id={`${doc.id}-type`}
                                         checked={requiredDocs.find(d => d.id === doc.id)?.type === 'digital'}
                                         onCheckedChange={(isDigital) => handleDocTypeChange(doc.id, isDigital)}
+                                        aria-label="Toggle between digital form and file upload"
                                     />
+                                     <Label htmlFor={`${doc.id}-type`} className="text-sm">Candidate Uploads File</Label>
                                 </div>
                             )}
                         </div>
@@ -369,12 +387,13 @@ export default function SettingsPage() {
                         <div key={doc.id} className="flex items-center gap-4 p-2 border rounded-md">
                            <span className="flex-1">{doc.label}</span>
                            <div className="flex items-center gap-2">
-                                <Label htmlFor={`${doc.id}-type`} className="text-sm">Digital Form</Label>
+                                <Label htmlFor={`${doc.id}-type`} className="text-sm">Fill Online</Label>
                                 <Switch 
                                     id={`${doc.id}-type`}
                                     checked={doc.type === 'digital'}
                                     onCheckedChange={(isDigital) => handleDocTypeChange(doc.id, isDigital)}
                                 />
+                                <Label htmlFor={`${doc.id}-type`} className="text-sm">Upload</Label>
                             </div>
                            <Button variant="ghost" size="icon" onClick={() => removeDoc(doc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </div>
