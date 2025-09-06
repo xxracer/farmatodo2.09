@@ -85,15 +85,20 @@ export default function SettingsPage() {
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
+        if (!companies.length || !companies[0].name) {
+            toast({ variant: "destructive", title: "Validation Error", description: `A company name is required.`});
+            return;
+        }
+
         const companiesToSave = companyType === 'one' ? companies.slice(0, 1) : companies;
 
         for (const company of companiesToSave) {
             try {
                 if (!company.name) {
-                    toast({ variant: "destructive", title: "Validation Error", description: `Company name is required.`});
+                    toast({ variant: "destructive", title: "Validation Error", description: `Company name is required for all companies.`});
                     return;
                 }
-                // Attach shared settings to each company
+                
                 const companyToSave: Partial<Company> = {
                     ...company,
                     formCustomization,
@@ -108,8 +113,13 @@ export default function SettingsPage() {
                     throw new Error(result.error || "Failed to save one of the companies.");
                 }
 
-                // Update the local state with the returned data, which includes the new temporary signed URL for the logo
-                setCompanies(prevCompanies => prevCompanies.map(c => c.id === result.company!.id ? result.company : c));
+                // Update local state with returned data, including new temporary logo URL
+                 setCompanies(prevCompanies => prevCompanies.map(c => {
+                    if (c.id === result.company!.id || c.name === result.company!.name) {
+                        return result.company!;
+                    }
+                    return c;
+                }));
 
             } catch (error) {
                 toast({

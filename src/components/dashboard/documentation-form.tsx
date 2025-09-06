@@ -24,6 +24,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 import { RequiredDoc } from "@/lib/company-schemas"
+import { I9Form } from "./i9-form" // Import the new I-9 form component
 
 
 async function fileToDataURL(file: File): Promise<string> {
@@ -46,7 +47,7 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
 };
 
 
-export function DocumentationForm({ companyName, candidateId, requiredDocs }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[] }) {
+export function DocumentationForm({ companyName, candidateId, requiredDocs, companyData }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[], companyData?: any }) {
     const { toast } = useToast()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -132,7 +133,9 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs }: { 
                 {requiredDocs.length > 0 ? (
                     requiredDocs.map(doc => (
                         <div key={doc.id}>
-                            {doc.type === 'digital' ? (
+                           {doc.type === 'digital' && doc.id === 'i9' ? (
+                                <I9Form form={form} companyData={companyData} />
+                           ) : doc.type === 'digital' ? (
                                 <div className="flex items-center justify-between p-4 border rounded-md">
                                     <div>
                                         <FormLabel className="font-semibold">{doc.label}</FormLabel>

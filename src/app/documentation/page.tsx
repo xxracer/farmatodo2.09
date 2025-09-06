@@ -79,11 +79,16 @@ function DocumentationPageContent() {
                     />
                     )}
                 <h1 className="font-headline text-3xl font-bold text-center">Detailed Documentation</h1>
-                <p className="text-muted-foreground text-center">Please upload the required documents for {company?.name}.</p>
+                <p className="text-muted-foreground text-center">Please upload or fill out the required documents for {company?.name}.</p>
                 </div>
                 
                 {candidateId ? (
-                <DocumentationForm companyName={company?.name || ''} candidateId={candidateId} requiredDocs={requiredDocs} />
+                <DocumentationForm 
+                    companyName={company?.name || ''} 
+                    candidateId={candidateId} 
+                    requiredDocs={requiredDocs}
+                    companyData={company} 
+                />
                 ) : (
                 <Card className="w-full max-w-lg mx-auto text-center">
                     <CardHeader>
