@@ -7,7 +7,7 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getCompanies } from "@/app/actions/company-actions";
 import { supabase } from "@/lib/supabaseClient";
-import { Company } from "@/lib/company-schemas";
+import { Company, RequiredDoc } from "@/lib/company-schemas";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 
@@ -21,7 +21,8 @@ async function getSignedUrl(path: string | null | undefined) {
 
 function DocumentationPageContent() {
     const searchParams = useSearchParams();
-    const candidateId = searchParams.get('candidateId');
+    // We will use a dummy candidateId for this simulation
+    const candidateId = searchParams.get('candidateId') || 'simulated-candidate-123';
     const companyId = searchParams.get('company');
 
     const [company, setCompany] = useState<Partial<Company> | null>(null);
@@ -29,19 +30,19 @@ function DocumentationPageContent() {
 
     useEffect(() => {
         async function getCompanyForDocumentation(): Promise<Partial<Company>> {
-            // In a multi-company setup, we'd find the specific one by `companyId`. For now, we get the first.
-            const companies = await getCompanies();
-            const foundCompany = companies.length > 0 ? companies[0] : null;
+            // --- SIMULATION ---
+            // Instead of fetching from DB, we are hardcoding the requested company data.
+            const simulatedCompany: Partial<Company> = {
+                name: "licoreria",
+                address: "antimano",
+                logo: "https://placehold.co/150x50.png",
+                // We force the required documents to ensure the I-9 is shown.
+                requiredDocs: [
+                    { id: "i9", label: "Form I-9", type: "digital" }
+                ]
+            };
             
-            if (foundCompany) {
-                if (foundCompany.logo) {
-                    const signedUrl = await getSignedUrl(foundCompany.logo);
-                    return { ...foundCompany, logo: signedUrl || null };
-                }
-                return foundCompany;
-            }
-            
-            return { name: "Company", logo: "https://placehold.co/150x50.png", requiredDocs: [] };
+            return simulatedCompany;
         }
 
         async function loadData() {
