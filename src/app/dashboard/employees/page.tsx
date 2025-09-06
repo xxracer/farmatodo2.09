@@ -41,15 +41,20 @@ export default function EmployeesPage() {
   useEffect(() => {
     loadData();
 
-    window.addEventListener('storage', loadData);
+    // Listen for custom event to reload data
+    const handleReload = () => loadData();
+    window.addEventListener('data-changed', handleReload);
+
     return () => {
-      window.removeEventListener('storage', loadData);
+      window.removeEventListener('data-changed', handleReload);
     };
   }, []);
   
   const onEmployeeAdded = () => {
     setIsFormOpen(false);
     loadData();
+    // Dispatch a custom event to notify other components (like the sidebar) to refresh
+    window.dispatchEvent(new CustomEvent('data-changed'));
   }
 
 

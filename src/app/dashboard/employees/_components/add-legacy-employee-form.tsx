@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, File, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { extractEmployeeDataFromPdf } from "@/ai/flows/extract-employee-data";
 import { createLegacyEmployee } from "@/app/actions/client-actions";
 import { ExtractEmployeeDataOutput } from "@/lib/schemas";
@@ -70,6 +70,9 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
         if (!extractedData || !hireDate) return;
         setIsLoading(true);
         
+        // The AI returns the date as a "YYYY-MM-DD" string. Parse it into a Date object.
+        const expirationDate = parse(extractedData.driversLicenseExpiration, 'yyyy-MM-dd', new Date());
+
         const employeeData = {
             firstName: extractedData.firstName,
             lastName: extractedData.lastName,
@@ -77,7 +80,7 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
             city: extractedData.city,
             state: extractedData.state,
             zipCode: extractedData.zipCode,
-            driversLicenseExpiration: new Date(extractedData.driversLicenseExpiration),
+            driversLicenseExpiration: isNaN(expirationDate.getTime()) ? null : expirationDate,
             date: hireDate, // Using 'date' field to store hire date as it's used elsewhere for hire/application date
             position: extractedData.position,
             homePhone: extractedData.homePhone,

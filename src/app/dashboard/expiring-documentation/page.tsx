@@ -49,9 +49,12 @@ export default function ExpiringDocumentationPage() {
   useEffect(() => {
     fetchPersonnel();
     
-    window.addEventListener('storage', fetchPersonnel);
+    // Listen for custom event to reload data
+    const handleReload = () => fetchPersonnel();
+    window.addEventListener('data-changed', handleReload);
+
     return () => {
-      window.removeEventListener('storage', fetchPersonnel);
+      window.removeEventListener('data-changed', handleReload);
     };
   }, [fetchPersonnel]);
 
@@ -61,7 +64,7 @@ export default function ExpiringDocumentationPage() {
       description: `An email has been sent to ${candidate.firstName} with a link to renew their license documentation.`,
     });
 
-    const companyId = candidate.applyingFor[0]?.toLowerCase().replace(/\s+/g, '-') || 'default';
+    const companyId = candidate.applyingFor?.[0]?.toLowerCase().replace(/\s+/g, '-') || 'default';
     const renewalLink = `${window.location.origin}/documentation?company=${companyId}&candidateId=${candidate.id}`;
     navigator.clipboard.writeText(renewalLink);
     
@@ -81,7 +84,7 @@ export default function ExpiringDocumentationPage() {
 
   if (expiringPersonnel.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+      <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full">
         <div className="flex flex-col items-center gap-2 text-center">
           <FileClock className="h-12 w-12 text-muted-foreground" />
           <h3 className="text-2xl font-bold tracking-tight">No Expiring Documents</h3>
