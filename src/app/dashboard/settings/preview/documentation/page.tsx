@@ -7,13 +7,15 @@ import { Company } from "@/lib/company-schemas";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { Form } from "@/components/ui/form";
 
 
 export default function DocumentationPreviewPage() {
   const [company, setCompany] = useState<Partial<Company> | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Create a dummy form instance for preview
+  // Create a dummy form instance for preview purposes.
+  // This is required to provide context to the form components inside I9Form.
   const form = useForm();
 
   useEffect(() => {
@@ -43,7 +45,11 @@ export default function DocumentationPreviewPage() {
         <div className="w-full max-w-4xl z-10 pointer-events-none opacity-70 mt-12">
             <h1 className="text-2xl font-bold text-center mb-4">Form I-9 Preview</h1>
             <p className="text-muted-foreground text-center mb-8">This is what the candidate will see when asked to fill out the form digitally.</p>
-            <I9Form form={form} companyData={company} />
+            <Form {...form}>
+                <form>
+                    <I9Form form={form} companyData={company} />
+                </form>
+            </Form>
         </div>
     </div>
   );
