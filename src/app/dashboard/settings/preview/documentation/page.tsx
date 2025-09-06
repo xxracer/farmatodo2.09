@@ -8,66 +8,72 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
+import { Form, FormProvider, useForm } from "react-hook-form";
 
 
 function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }) {
+    // Dummy form for preview purposes to satisfy the FormProvider context
+    const form = useForm();
+    
     return (
-        <Card className="border">
-            <CardHeader>
-                <CardTitle className="font-headline">Form I-9: Employment Eligibility Verification</CardTitle>
-                <CardDescription>
-                    This is a preview of the system-generated form. The candidate will be able to fill out the fields directly. The employer information below is pre-filled based on your settings.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="relative w-full">
-                    {/* Using a static image of the form as a background */}
-                    <Image
-                        src="https://www.uscis.gov/sites/default/files/document/forms/i-9-paper-version.png"
-                        alt="Form I-9"
-                        width={2000}
-                        height={2588}
-                        priority
-                        className="w-full h-auto"
-                        data-ai-hint="document form"
-                    />
-                    
-                    {/* Overlay for Employer's Business Name */}
-                    <div
-                        className="absolute"
-                        style={{
-                            top: '73.4%', 
-                            left: '11.5%',
-                            width: '45%',
-                        }}
-                    >
-                        <Input
-                            className="bg-blue-100/50 border-blue-300 text-sm"
-                            readOnly
-                            value={companyData?.name || "Your Company Name"}
+        <FormProvider {...form}>
+            <Card className="border">
+                <CardHeader>
+                    <CardTitle className="font-headline">Form I-9: Employment Eligibility Verification</CardTitle>
+                    <CardDescription>
+                        This is a preview of the system-generated form. The candidate will be able to fill out the fields directly. The employer information below is pre-filled based on your settings.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="relative w-full">
+                        {/* Using a static image of the form as a background */}
+                        <Image
+                            src="https://www.uscis.gov/sites/default/files/document/forms/i-9-paper-version.png"
+                            alt="Form I-9"
+                            width={2000}
+                            height={2588}
+                            priority
+                            className="w-full h-auto"
+                            data-ai-hint="document form"
                         />
-                         <p className="text-xs text-muted-foreground mt-1">Employer's Business or Organization Name</p>
-                    </div>
+                        
+                        {/* Overlay for Employer's Business Name */}
+                        <div
+                            className="absolute"
+                            style={{
+                                top: '73.2%', 
+                                left: '11.8%',
+                                width: '45.5%',
+                                height: '2.5%'
+                            }}
+                        >
+                            <Input
+                                className="bg-blue-100/50 border-blue-300 text-sm h-full"
+                                readOnly
+                                value={companyData?.name || "Your Company Name"}
+                            />
+                        </div>
 
-                     {/* Overlay for Employer's Address */}
-                     <div
-                        className="absolute"
-                        style={{
-                            top: '73.4%', 
-                            left: '58.5%',
-                            width: '38%',
-                        }}
-                    >
-                        <Input
-                            className="bg-blue-100/50 border-blue-300 text-sm"
-                            readOnly
-                            value={companyData?.address || "Your Company Address"}
-                        />
-                         <p className="text-xs text-muted-foreground mt-1">Employer's Business or Organization Address</p>
+                        {/* Overlay for Employer's Address */}
+                        <div
+                            className="absolute"
+                            style={{
+                                top: '73.2%',
+                                left: '58.8%',
+                                width: '38.2%',
+                                height: '2.5%'
+                            }}
+                        >
+                            <Input
+                                className="bg-blue-100/50 border-blue-300 text-sm h-full"
+                                readOnly
+                                value={companyData?.address || "Your Company Address"}
+                            />
+                        </div>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </FormProvider>
     );
 }
 

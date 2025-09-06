@@ -75,26 +75,30 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
                     />
                     
                     {/* Section 1 Overlays */}
-                    <FormField control={form.control} name="i9_lastName" render={({ field }) => (
-                         <Input {...field} placeholder="Last Name (Family Name)" className="absolute bg-transparent" style={{ top: '15.5%', left: '11.5%', width: '30%' }}/>
-                    )} />
-                     <FormField control={form.control} name="i9_firstName" render={({ field }) => (
-                         <Input {...field} placeholder="First Name (Given Name)" className="absolute bg-transparent" style={{ top: '15.5%', left: '42.5%', width: '30%' }}/>
-                    )} />
-                     <FormField control={form.control} name="i9_middleInitial" render={({ field }) => (
-                         <Input {...field} placeholder="MI" className="absolute bg-transparent" style={{ top: '15.5%', left: '73.5%', width: '10%' }}/>
-                    )} />
+                    <div className="absolute" style={{ top: '15.4%', left: '11.8%', width: '30%', height: '2.5%' }}>
+                        <FormField control={form.control} name="i9_lastName" render={({ field }) => (
+                            <Input {...field} placeholder="Last Name (Family Name)" className="absolute bg-transparent h-full" />
+                        )} />
+                    </div>
+                     <div className="absolute" style={{ top: '15.4%', left: '42.9%', width: '30%', height: '2.5%' }}>
+                        <FormField control={form.control} name="i9_firstName" render={({ field }) => (
+                            <Input {...field} placeholder="First Name (Given Name)" className="absolute bg-transparent h-full" />
+                        )} />
+                    </div>
+                     <div className="absolute" style={{ top: '15.4%', left: '74%', width: '10%', height: '2.5%' }}>
+                        <FormField control={form.control} name="i9_middleInitial" render={({ field }) => (
+                            <Input {...field} placeholder="MI" className="absolute bg-transparent h-full"/>
+                        )} />
+                    </div>
                     {/* Add more overlays for all of Section 1 as needed */}
 
 
                     {/* Section 2 - Pre-filled Data */}
-                    <div className="absolute" style={{ top: '73.4%', left: '11.5%', width: '45%' }}>
-                        <Input readOnly value={companyData?.name || ''} className="bg-blue-100/50" />
-                         <p className="text-xs text-muted-foreground mt-1 -ml-1">Employer's Business or Organization Name</p>
+                    <div className="absolute" style={{ top: '73.2%', left: '11.8%', width: '45.5%', height: '2.5%' }}>
+                        <Input readOnly value={companyData?.name || ''} className="bg-blue-100/50 h-full" />
                     </div>
-                     <div className="absolute" style={{ top: '73.4%', left: '58.5%', width: '38%' }}>
-                        <Input readOnly value={companyData?.address || ''} className="bg-blue-100/50" />
-                        <p className="text-xs text-muted-foreground mt-1 -ml-1">Employer's Business or Organization Address</p>
+                     <div className="absolute" style={{ top: '73.2%', left: '58.8%', width: '38.2%', height: '2.5%' }}>
+                        <Input readOnly value={companyData?.address || ''} className="bg-blue-100/50 h-full" />
                     </div>
                 </div>
             </CardContent>
