@@ -78,13 +78,20 @@ export default function DocumentationPreviewPage() {
 
   useEffect(() => {
     async function loadSettings() {
-      const companies = await getCompanies();
-      if (companies && companies.length > 0) {
-        setCompany(companies[0]);
-      } else {
+      setLoading(true);
+      try {
+        const companies = await getCompanies();
+        if (companies && companies.length > 0) {
+          setCompany(companies[0]);
+        } else {
+          setCompany({ name: "Your Company Name", address: "Your Company Address" });
+        }
+      } catch (error) {
+        console.error("Failed to load company settings:", error);
         setCompany({ name: "Your Company Name", address: "Your Company Address" });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadSettings();
   }, []);
