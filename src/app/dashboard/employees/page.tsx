@@ -3,15 +3,15 @@
 
 import { getEmployees } from "@/app/actions/client-actions";
 import { CandidatesActions } from "@/app/dashboard/candidates/_components/candidates-actions";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApplicationData } from "@/lib/schemas";
-import { Briefcase, UserPlus } from "lucide-react";
-import { format } from "date-fns";
+import { Briefcase, UserPlus, Folder, Calendar as CalendarIcon, User } from "lucide-react";
+import { format, getMonth, getYear } from "date-fns";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddLegacyEmployeeForm } from "./_components/add-legacy-employee-form";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 // Helper to convert string to JS Date
@@ -23,6 +23,31 @@ function toDate(dateString: string | Date | undefined): Date | null {
   } catch (e) {
     return null;
   }
+}
+
+// Group employees by year and month
+type GroupedEmployees = {
+  [year: number]: {
+    [month: string]: ApplicationData[];
+  };
+};
+
+function groupEmployees(employees: ApplicationData[]): GroupedEmployees {
+  return employees.reduce((acc, employee) => {
+    const hireDate = toDate(employee.date);
+    if (hireDate) {
+      const year = getYear(hireDate);
+      const month = format(hireDate, 'MMMM');
+      if (!acc[year]) {
+        acc[year] = {};
+      }
+      if (!acc[year][month]) {
+        acc[year][month] = [];
+      }
+      acc[year][month].push(employee);
+    }
+    return acc;
+  }, {} as GroupedEmployees);
 }
 
 
@@ -41,7 +66,6 @@ export default function EmployeesPage() {
   useEffect(() => {
     loadData();
 
-    // Listen for custom event to reload data
     const handleReload = () => loadData();
     window.addEventListener('data-changed', handleReload);
 
@@ -53,10 +77,8 @@ export default function EmployeesPage() {
   const onEmployeeAdded = () => {
     setIsFormOpen(false);
     loadData();
-    // Dispatch a custom event to notify other components (like the sidebar) to refresh
     window.dispatchEvent(new CustomEvent('data-changed'));
   }
-
 
   if (loading) {
     return (
@@ -65,6 +87,9 @@ export default function EmployeesPage() {
         </div>
     )
   }
+  
+  const groupedEmployees = groupEmployees(employees);
+  const sortedYears = Object.keys(groupedEmployees).map(Number).sort((a, b) => b - a);
 
   return (
     <div className="space-y-4">
@@ -99,32 +124,49 @@ export default function EmployeesPage() {
           </div>
       ) : (
         <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Position</TableHead>
-                            <TableHead>Date Hired</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {employees.map((employee: ApplicationData) => {
-                            const hiredDate = toDate(employee.date);
-                            return (
-                                <TableRow key={employee.id}>
-                                    <TableCell className="font-medium">{employee.firstName} {employee.lastName}</TableCell>
-                                    <TableCell>{employee.position}</TableCell>
-                                    <TableCell>{hiredDate ? format(hiredDate, 'PPP') : 'N/A'}</TableCell>
-                                    <TableCell className="text-right space-x-2">
-                                    <CandidatesActions candidateId={employee.id} />
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
+            <CardContent className="p-4">
+               <Accordion type="multiple" className="w-full">
+                  {sortedYears.map(year => (
+                    <AccordionItem key={year} value={`year-${year}`}>
+                      <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Folder className="h-6 w-6 text-primary" />
+                          {year}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-6">
+                        <Accordion type="multiple" className="w-full">
+                          {Object.keys(groupedEmployees[year]).map(month => (
+                             <AccordionItem key={month} value={`month-${year}-${month}`}>
+                                <AccordionTrigger className="hover:no-underline">
+                                   <div className="flex items-center gap-2">
+                                     <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                                     {month}
+                                   </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pl-8 pt-2">
+                                  <div className="space-y-2">
+                                    {groupedEmployees[year][month].map(employee => (
+                                      <div key={employee.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
+                                        <div className="flex items-center gap-2">
+                                          <User className="h-4 w-4" />
+                                          <span>{employee.firstName} {employee.lastName}</span>
+                                          <span className="text-xs text-muted-foreground">- {employee.position}</span>
+                                        </div>
+                                        <div className="space-x-2">
+                                          <CandidatesActions candidateId={employee.id} />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </AccordionContent>
+                             </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+               </Accordion>
             </CardContent>
         </Card>
       )}
