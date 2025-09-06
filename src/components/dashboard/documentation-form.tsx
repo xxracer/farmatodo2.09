@@ -2,10 +2,12 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, File, FileText, Pencil } from "lucide-react"
+import { z } from "zod"
+
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,7 +22,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { documentationSchema, type DocumentationSchema } from "@/lib/schemas"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 
 
@@ -33,18 +34,28 @@ async function fileToDataURL(file: File): Promise<string> {
     });
 }
 
+// Dynamically create a Zod schema based on the required documents
+const createDocumentationSchema = (requiredDocs: string[]) => {
+    const shape: Record<string, any> = {};
+    requiredDocs.forEach(doc => {
+        // We can just use z.any() for the file and handle validation elsewhere if needed
+        shape[doc] = z.any().optional(); 
+    });
+    return z.object(shape);
+};
 
-export function DocumentationForm({ company, candidateId }: { company: string, candidateId?: string | null }) {
+
+export function DocumentationForm({ companyName, candidateId, requiredDocs }: { companyName: string, candidateId?: string | null, requiredDocs: string[] }) {
     const { toast } = useToast()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [_, setFileNames] = useState<Record<string, string>>({});
+
+    const documentationSchema = createDocumentationSchema(requiredDocs);
+    type DocumentationSchema = z.infer<typeof documentationSchema>;
 
     const form = useForm<DocumentationSchema>({
         resolver: zodResolver(documentationSchema),
-        defaultValues: {
-            idCard: undefined,
-            proofOfAddress: undefined,
-        },
     });
 
     async function onSubmit(data: DocumentationSchema) {
@@ -59,15 +70,25 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
 
         setIsSubmitting(true);
         try {
+            const documentsToUpload: Record<string, string> = {};
+            
+            for (const docName of requiredDocs) {
+                const file = data[docName as keyof typeof data];
+                if (file instanceof File) {
+                    documentsToUpload[docName] = await fileToDataURL(file);
+                }
+            }
 
-            const idCardURL = data.idCard ? await fileToDataURL(data.idCard) : undefined;
-            const proofOfAddressURL = data.proofOfAddress ? await fileToDataURL(data.proofOfAddress) : undefined;
-
+            // This needs to be adapted if the server expects specific keys
+            // For now, let's assume a generic `documents` object can be sent
+            // In a real scenario, you'd likely have specific columns in your db
+            // like `idCard`, `proofOfAddress`, etc. and map to them here.
+            // Let's use the existing server action for now which expects idCard and proofOfAddress
             const result = await updateCandidateWithDocuments(
                 candidateId, 
                 {
-                    idCard: idCardURL,
-                    proofOfAddress: proofOfAddressURL,
+                    idCard: documentsToUpload["Proof of Identity"] || documentsToUpload["Government-issued ID"],
+                    proofOfAddress: documentsToUpload["Proof of Address"],
                 }
             );
 
@@ -94,49 +115,92 @@ export function DocumentationForm({ company, candidateId }: { company: string, c
             setIsSubmitting(false);
         }
     }
+    
+    const handleFileNameChange = (docName: string, file: File | undefined) => {
+        setFileNames(prev => ({...prev, [docName]: file?.name || "" }));
+    }
+
+    const handleFillForm = (docName: string) => {
+        toast({
+            title: `Simulating Digital Form`,
+            description: `Opening a secure portal to fill out ${docName}.`,
+        });
+    }
+
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
-          <CardContent className="pt-6 space-y-6">
-                <FormField
-                    control={form.control}
-                    name="idCard"
-                    render={({ field: { onChange, ...fieldProps } }) => {
+            <CardContent className="pt-6 space-y-6">
+                {requiredDocs.length > 0 ? (
+                    requiredDocs.map(docName => {
+                        const isDigital = docName.toLowerCase().includes('(digital)');
+                        const cleanDocName = docName.replace(/\(digital\)/i, '').trim();
+
                         return (
-                            <FormItem>
-                                <FormLabel>Government-issued ID</FormLabel>
-                                <FormControl>
-                                    <Input type="file" accept="image/*,.pdf" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} value={undefined} />
-                                </FormControl>
-                                <FormDescription>Please upload a clear copy of your ID (e.g., Driver's License, Passport).</FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        );
-                    }}
-                />
-                 <FormField
-                    control={form.control}
-                    name="proofOfAddress"
-                    render={({ field: { onChange, ...fieldProps } }) => {
-                        return (
-                            <FormItem>
-                                <FormLabel>Proof of Address</FormLabel>
-                                <FormControl>
-                                    <Input type="file" accept="image/*,.pdf" {...fieldProps} onChange={(e) => onChange(e.target.files?.[0])} value={undefined} />
-                                </FormControl>
-                                <FormDescription>Please upload a recent utility bill or bank statement.</FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        );
-                    }}
-                />
+                            <div key={docName}>
+                                {isDigital ? (
+                                    <div className="flex items-center justify-between p-4 border rounded-md">
+                                        <div>
+                                            <FormLabel className="font-semibold">{cleanDocName}</FormLabel>
+                                            <FormDescription>This form must be completed digitally.</FormDescription>
+                                        </div>
+                                        <Button type="button" variant="secondary" onClick={() => handleFillForm(cleanDocName)}>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Fill Out Form
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Controller
+                                        control={form.control}
+                                        name={docName}
+                                        render={({ field: { onChange, ...fieldProps }, fieldState }) => {
+                                            const file = form.watch(docName as any);
+                                            return (
+                                                <FormItem>
+                                                    <FormLabel className="font-semibold">{cleanDocName}</FormLabel>
+                                                    <FormControl>
+                                                        <div className="relative">
+                                                            <Input 
+                                                              type="file" 
+                                                              accept="image/*,.pdf" 
+                                                              {...fieldProps} 
+                                                              onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                onChange(file);
+                                                                handleFileNameChange(docName, file);
+                                                              }} 
+                                                              value={undefined}
+                                                              className="pr-12"
+                                                            />
+                                                            <File className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                                        </div>
+                                                    </FormControl>
+                                                     {file instanceof File && (
+                                                        <FormDescription className="flex items-center gap-2 pt-1">
+                                                           <FileText className="h-4 w-4 text-muted-foreground" /> {file.name}
+                                                        </FormDescription>
+                                                     )}
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        )
+                    })
+                ) : (
+                    <div className="text-center py-10 text-muted-foreground">
+                        No specific documents have been requested for this position.
+                    </div>
+                )}
           </CardContent>
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || requiredDocs.length === 0}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Submit Documents
           </Button>
