@@ -12,7 +12,6 @@ import { FormProvider, useForm } from "react-hook-form";
 
 
 function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }) {
-    // Dummy form for preview purposes to satisfy the FormProvider context
     const form = useForm();
     
     return (
@@ -26,9 +25,8 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                 </CardHeader>
                 <CardContent>
                     <div className="relative w-full">
-                        {/* Using a local image of the form as a background */}
                         <Image
-                            src="/images/form-i9.png"
+                            src="https://static.wixstatic.com/media/d9b54b_6c6ba388315247b59187e19a4e3751e7~mv2.png"
                             alt="Form I-9"
                             width={2000}
                             height={2588}
@@ -37,7 +35,6 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                             data-ai-hint="document form"
                         />
                         
-                        {/* Overlay for Employer's Business Name */}
                         <div
                             className="absolute"
                             style={{
@@ -54,7 +51,6 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                             />
                         </div>
 
-                        {/* Overlay for Employer's Address */}
                         <div
                             className="absolute"
                             style={{

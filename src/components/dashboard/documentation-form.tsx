@@ -46,7 +46,6 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
         shape.i9_lastName = z.string().optional();
         shape.i9_firstName = z.string().optional();
         shape.i9_middleInitial = z.string().optional();
-        // Add all other I-9 fields here as needed
     }
 
     return z.object(shape);
@@ -65,7 +64,7 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
             <CardContent>
                  <div className="relative w-full">
                     <Image
-                        src="/images/form-i9.png"
+                        src="https://static.wixstatic.com/media/d9b54b_6c6ba388315247b59187e19a4e3751e7~mv2.png"
                         alt="Form I-9"
                         width={2000}
                         height={2588}
@@ -74,7 +73,7 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
                         data-ai-hint="document form"
                     />
                     
-                    {/* Section 1 Overlays */}
+                    {/* Section 1 Overlays - To be filled by candidate */}
                     <div className="absolute" style={{ top: '15.4%', left: '11.8%', width: '30%', height: '2.5%' }}>
                         <FormField control={form.control} name="i9_lastName" render={({ field }) => (
                             <Input {...field} placeholder="Last Name (Family Name)" className="absolute bg-transparent h-full" />
@@ -90,7 +89,6 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
                             <Input {...field} placeholder="MI" className="absolute bg-transparent h-full"/>
                         )} />
                     </div>
-                    {/* Add more overlays for all of Section 1 as needed */}
 
 
                     {/* Section 2 - Pre-filled Data */}
