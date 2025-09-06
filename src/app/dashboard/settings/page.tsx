@@ -16,6 +16,7 @@ import { type Company, type RequiredDoc } from "@/lib/company-schemas";
 import { supabase } from "@/lib/supabaseClient";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { FormItem } from "@/components/ui/form";
 
 // Helper to convert file to Base64
 const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -28,8 +29,8 @@ const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) 
 type EditableCompany = Partial<Company>;
 
 const standardDocs: Omit<RequiredDoc, 'type'>[] = [
-    { id: 'w4', label: 'Form W-4' },
     { id: 'i9', label: 'Form I-9' },
+    { id: 'w4', label: 'Form W-4' },
     { id: 'proofOfIdentity', label: 'Proof of Identity' },
     { id: 'educationalDiplomas', label: 'Educational Diplomas/Certificates' },
 ];
@@ -206,7 +207,7 @@ export default function SettingsPage() {
             const newDoc: RequiredDoc = {
                 id: `custom_${Date.now()}`,
                 label: customDocLabel.trim(),
-                type: 'upload',
+                type: 'upload', // Custom docs default to upload
             };
             setRequiredDocs([...requiredDocs, newDoc]);
             setCustomDocLabel("");
@@ -373,7 +374,7 @@ export default function SettingsPage() {
                                 </div>
                                 {isChecked && (
                                     <RadioGroup
-                                        className="pl-7 pt-2 border-l ml-2"
+                                        className="pl-7 pt-4 border-t mt-4"
                                         value={requiredDocs.find(d => d.id === doc.id)?.type}
                                         onValueChange={(type: 'digital' | 'upload') => handleDocTypeChange(doc.id, type)}
                                     >
@@ -411,16 +412,7 @@ export default function SettingsPage() {
                     {requiredDocs.filter(d => d.id.startsWith('custom_')).map(doc => (
                         <div key={doc.id} className="flex items-center gap-4 p-2 border rounded-md">
                            <span className="flex-1">{doc.label}</span>
-                           <div className="flex items-center gap-2">
-                                <Label htmlFor={`${doc.id}-type`} className="text-sm">Digital Form</Label>
-                                <Switch 
-                                    id={`${doc.id}-type`}
-                                    checked={doc.type === 'digital'}
-                                    onCheckedChange={(isDigital) => handleDocTypeChange(doc.id, isDigital ? 'digital' : 'upload')}
-                                    aria-label="Toggle between digital form and file upload"
-                                />
-                                <Label htmlFor={`${doc.id}-type`} className="text-sm">Upload</Label>
-                            </div>
+                           <p className="text-sm text-muted-foreground">(Applicant Upload)</p>
                            <Button variant="ghost" size="icon" onClick={() => removeDoc(doc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </div>
                     ))}
@@ -446,3 +438,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

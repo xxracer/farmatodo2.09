@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
-import { RequiredDoc } from "@/lib/company-schemas"
+import { Company, RequiredDoc } from "@/lib/company-schemas"
 import { I9Form } from "./i9-form" // Import the new I-9 form component
 
 
@@ -43,11 +43,31 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
         // We can just use z.any() for the file and handle validation elsewhere if needed
         shape[doc.id] = z.any().optional(); 
     });
+    // Add specific schema for I-9 form if it's present
+    if (requiredDocs.some(d => d.id === 'i9')) {
+        shape.i9 = z.object({
+            lastName: z.string().optional(),
+            firstName: z.string().optional(),
+            middleInitial: z.string().optional(),
+            otherLastNames: z.string().optional(),
+            address: z.string().optional(),
+            aptNumber: z.string().optional(),
+            city: z.string().optional(),
+            state: z.string().optional(),
+            zipCode: z.string().optional(),
+            dateOfBirth: z.string().optional(),
+            ssn: z.string().optional(),
+            email: z.string().optional(),
+            phone: z.string().optional(),
+            citizenshipStatus: z.string().optional(),
+        }).optional()
+    }
+
     return z.object(shape);
 };
 
 
-export function DocumentationForm({ companyName, candidateId, requiredDocs, companyData }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[], companyData?: any }) {
+export function DocumentationForm({ companyName, candidateId, requiredDocs, companyData }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[], companyData?: Partial<Company> | null }) {
     const { toast } = useToast()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -199,3 +219,5 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
     </Form>
   )
 }
+
+    

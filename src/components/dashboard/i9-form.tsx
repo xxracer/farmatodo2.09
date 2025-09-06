@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
+import { Company } from '@/lib/company-schemas';
 
 interface I9FormProps {
   form: UseFormReturn<any>;
-  companyData?: any;
+  companyData?: Partial<Company> | null;
 }
 
 export function I9Form({ form, companyData }: I9FormProps) {
@@ -52,7 +54,7 @@ export function I9Form({ form, companyData }: I9FormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Middle Initial</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
+                <FormControl><Input maxLength={1} {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -64,7 +66,7 @@ export function I9Form({ form, companyData }: I9FormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Other Last Names Used (if any)</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
+                <FormControl><Input placeholder="N/A" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -84,7 +86,7 @@ export function I9Form({ form, companyData }: I9FormProps) {
             <FormField
                 control={form.control}
                 name="i9.aptNumber"
-                render={({ field }) => (<FormItem><FormLabel>Apt. Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}
+                render={({ field }) => (<FormItem><FormLabel>Apt. Number</FormLabel><FormControl><Input placeholder="N/A" {...field} /></FormControl><FormMessage /></FormItem>)}
             />
             <FormField
                 control={form.control}
@@ -106,7 +108,7 @@ export function I9Form({ form, companyData }: I9FormProps) {
             <FormField
                 control={form.control}
                 name="i9.dateOfBirth"
-                render={({ field }) => (<FormItem><FormLabel>Date of Birth (mm/dd/yyyy)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}
+                render={({ field }) => (<FormItem><FormLabel>Date of Birth (mm/dd/yyyy)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)}
             />
              <FormField
                 control={form.control}
@@ -116,12 +118,12 @@ export function I9Form({ form, companyData }: I9FormProps) {
              <FormField
                 control={form.control}
                 name="i9.email"
-                render={({ field }) => (<FormItem><FormLabel>Employee's Email Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}
+                render={({ field }) => (<FormItem><FormLabel>Employee's Email Address</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)}
             />
              <FormField
                 control={form.control}
                 name="i9.phone"
-                render={({ field }) => (<FormItem><FormLabel>Employee's Telephone Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}
+                render={({ field }) => (<FormItem><FormLabel>Employee's Telephone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)}
             />
         </div>
         
@@ -156,12 +158,16 @@ export function I9Form({ form, companyData }: I9FormProps) {
         />
         
          <div className="border-t pt-4">
-            <FormLabel>Section 2: Employer Review and Verification</FormLabel>
+            <Label className="font-semibold">Section 2: Employer Review and Verification</Label>
             <FormDescription>This section is to be completed by the employer.</FormDescription>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="employerName">Employer's Business or Organization Name</Label>
-                    <Input id="employerName" value={companyData?.name || ''} readOnly disabled />
+                    <Input id="employerName" value={companyData?.name || 'Loading...'} readOnly disabled />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="employerAddress">Employer's Business or Organization Address</Label>
+                    <Input id="employerAddress" value={companyData?.address || 'Loading...'} readOnly disabled />
                 </div>
             </div>
         </div>
@@ -170,3 +176,5 @@ export function I9Form({ form, companyData }: I9FormProps) {
     </Card>
   );
 }
+
+    
