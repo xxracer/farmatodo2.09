@@ -189,14 +189,16 @@ export default function SettingsPage() {
     
     const handleStandardDocChange = (doc: Omit<RequiredDoc, 'type'>, checked: boolean) => {
         if (checked) {
-            setRequiredDocs([...requiredDocs, { ...doc, type: 'upload' }]);
+            // Add with default type 'digital' when first checked
+            setRequiredDocs([...requiredDocs, { ...doc, type: 'digital' }]);
         } else {
+            // Remove when unchecked
             setRequiredDocs(requiredDocs.filter(d => d.id !== doc.id));
         }
     };
 
-    const handleDocTypeChange = (docId: string, isDigital: boolean) => {
-        setRequiredDocs(requiredDocs.map(d => d.id === docId ? { ...d, type: isDigital ? 'digital' : 'upload' } : d));
+    const handleDocTypeChange = (docId: string, type: 'digital' | 'upload') => {
+        setRequiredDocs(requiredDocs.map(d => d.id === docId ? { ...d, type } : d));
     };
     
     const addCustomDoc = () => {
@@ -357,28 +359,51 @@ export default function SettingsPage() {
             <CardContent className="space-y-6">
                 <div className="space-y-4">
                     <Label className="font-semibold">Standard Documents</Label>
-                    {standardDocs.map(doc => (
-                        <div key={doc.id} className="flex items-center gap-4 p-2 border rounded-md">
-                            <Checkbox 
-                                id={doc.id}
-                                checked={requiredDocs.some(d => d.id === doc.id)}
-                                onCheckedChange={(checked) => handleStandardDocChange(doc, !!checked)}
-                            />
-                            <Label htmlFor={doc.id} className="flex-1">{doc.label}</Label>
-                            {requiredDocs.some(d => d.id === doc.id) && (
-                                <div className="flex items-center gap-2">
-                                    <Label htmlFor={`${doc.id}-type`} className="text-sm">Candidate Fills Online</Label>
-                                    <Switch 
-                                        id={`${doc.id}-type`}
-                                        checked={requiredDocs.find(d => d.id === doc.id)?.type === 'digital'}
-                                        onCheckedChange={(isDigital) => handleDocTypeChange(doc.id, isDigital)}
-                                        aria-label="Toggle between digital form and file upload"
+                    {standardDocs.map(doc => {
+                        const isChecked = requiredDocs.some(d => d.id === doc.id);
+                        return (
+                            <div key={doc.id} className="p-4 border rounded-md space-y-4">
+                                <div className="flex items-center">
+                                    <Checkbox
+                                        id={doc.id}
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) => handleStandardDocChange(doc, !!checked)}
                                     />
-                                     <Label htmlFor={`${doc.id}-type`} className="text-sm">Candidate Uploads File</Label>
+                                    <Label htmlFor={doc.id} className="ml-3 flex-1">{doc.label}</Label>
                                 </div>
-                            )}
-                        </div>
-                    ))}
+                                {isChecked && (
+                                    <RadioGroup
+                                        className="pl-7 pt-2 border-l ml-2"
+                                        value={requiredDocs.find(d => d.id === doc.id)?.type}
+                                        onValueChange={(type: 'digital' | 'upload') => handleDocTypeChange(doc.id, type)}
+                                    >
+                                        <FormItem>
+                                            <div className="flex items-center space-x-3">
+                                                <RadioGroupItem value="digital" id={`${doc.id}-digital`} />
+                                                <div className="grid gap-1.5 leading-none">
+                                                    <Label htmlFor={`${doc.id}-digital`} className="font-normal">System-Generated Form</Label>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      The system will generate a digital form for the applicant to fill out via the provided link.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </FormItem>
+                                        <FormItem>
+                                             <div className="flex items-center space-x-3">
+                                                <RadioGroupItem value="upload" id={`${doc.id}-upload`} />
+                                                <div className="grid gap-1.5 leading-none">
+                                                    <Label htmlFor={`${doc.id}-upload`} className="font-normal">Applicant Upload</Label>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        The applicant will be required to upload their own pre-filled document.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </FormItem>
+                                    </RadioGroup>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">
@@ -387,11 +412,12 @@ export default function SettingsPage() {
                         <div key={doc.id} className="flex items-center gap-4 p-2 border rounded-md">
                            <span className="flex-1">{doc.label}</span>
                            <div className="flex items-center gap-2">
-                                <Label htmlFor={`${doc.id}-type`} className="text-sm">Fill Online</Label>
+                                <Label htmlFor={`${doc.id}-type`} className="text-sm">Digital Form</Label>
                                 <Switch 
                                     id={`${doc.id}-type`}
                                     checked={doc.type === 'digital'}
-                                    onCheckedChange={(isDigital) => handleDocTypeChange(doc.id, isDigital)}
+                                    onCheckedChange={(isDigital) => handleDocTypeChange(doc.id, isDigital ? 'digital' : 'upload')}
+                                    aria-label="Toggle between digital form and file upload"
                                 />
                                 <Label htmlFor={`${doc.id}-type`} className="text-sm">Upload</Label>
                             </div>
