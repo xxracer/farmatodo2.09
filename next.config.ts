@@ -22,12 +22,6 @@ const nextConfig: NextConfig = {
         hostname: 'static.wixstatic.com',
         port: '',
         pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'www.uscis.gov',
-        port: '',
-        pathname: '/**',
       }
     ],
   },

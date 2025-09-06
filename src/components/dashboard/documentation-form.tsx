@@ -65,7 +65,7 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
             <CardContent>
                  <div className="relative w-full">
                     <Image
-                        src="https://www.uscis.gov/sites/default/files/document/forms/i-9-paper-version.png"
+                        src="/images/form-i9.png"
                         alt="Form I-9"
                         width={2000}
                         height={2588}

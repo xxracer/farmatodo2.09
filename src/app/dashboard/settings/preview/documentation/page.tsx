@@ -28,7 +28,7 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                     <div className="relative w-full">
                         {/* Using a static image of the form as a background */}
                         <Image
-                            src="https://www.uscis.gov/sites/default/files/document/forms/i-9-paper-version.png"
+                            src="/images/form-i9.png"
                             alt="Form I-9"
                             width={2000}
                             height={2588}
