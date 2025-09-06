@@ -4,10 +4,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import { Loader2, File, FileText, Pencil } from "lucide-react"
+import { useState } from "react"
+import { Loader2, File, FileText, Download } from "lucide-react"
 import { z } from "zod"
-import Image from "next/image"
 
 
 import { Button } from "@/components/ui/button"
@@ -25,7 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 import { Company, RequiredDoc } from "@/lib/company-schemas"
-import { supabase } from "@/lib/supabaseClient"
+import Link from "next/link"
 
 
 async function fileToDataURL(file: File): Promise<string> {
@@ -40,84 +39,26 @@ async function fileToDataURL(file: File): Promise<string> {
 const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
     const shape: Record<string, any> = {};
     requiredDocs.forEach(doc => {
-        shape[doc.id] = z.any().optional(); 
+        // All documents are now file uploads
+        shape[doc.id] = z.any()
+            .refine((file): file is File => file instanceof File, "This document is required.")
     });
     
-    if (requiredDocs.some(d => d.id === 'i9' && d.type === 'digital')) {
-        shape.i9_lastName = z.string().optional();
-        shape.i9_firstName = z.string().optional();
-        shape.i9_middleInitial = z.string().optional();
-    }
-
     return z.object(shape);
 };
 
 
-function I9FormDigital({ form, companyData, i9FormUrl }: { form: any, companyData?: Partial<Company> | null, i9FormUrl: string | null }) {
-    return (
-        <Card className="border-2 border-dashed">
-            <CardHeader>
-                <CardTitle className="font-headline">Form I-9: Employment Eligibility Verification</CardTitle>
-                <CardDescription>
-                Please fill out all the required fields in Section 1. Your employer has pre-filled their information in Section 2.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <div className="relative w-full">
-                    {i9FormUrl ? (
-                        <Image
-                            src={i9FormUrl}
-                            alt="Form I-9"
-                            width={2000}
-                            height={2588}
-                            priority
-                            className="w-full h-auto select-none pointer-events-none"
-                            data-ai-hint="document form"
-                        />
-                    ) : (
-                        <div className="w-full aspect-[1/1.294] bg-muted flex items-center justify-center">
-                           <Loader2 className="h-8 w-8 animate-spin" />
-                           <p className="ml-2">Loading form template...</p>
-                        </div>
-                    )}
-                    
-                    {/* Section 1 Overlays - To be filled by candidate */}
-                    <div className="absolute" style={{ top: '15.4%', left: '11.8%', width: '30%', height: '2.5%' }}>
-                        <FormField control={form.control} name="i9_lastName" render={({ field }) => (
-                            <Input {...field} placeholder="Last Name (Family Name)" className="absolute bg-transparent h-full" />
-                        )} />
-                    </div>
-                     <div className="absolute" style={{ top: '15.4%', left: '42.9%', width: '30%', height: '2.5%' }}>
-                        <FormField control={form.control} name="i9_firstName" render={({ field }) => (
-                            <Input {...field} placeholder="First Name (Given Name)" className="absolute bg-transparent h-full" />
-                        )} />
-                    </div>
-                     <div className="absolute" style={{ top: '15.4%', left: '74%', width: '10%', height: '2.5%' }}>
-                        <FormField control={form.control} name="i9_middleInitial" render={({ field }) => (
-                            <Input {...field} placeholder="MI" className="absolute bg-transparent h-full"/>
-                        )} />
-                    </div>
-
-
-                    {/* Section 2 - Pre-filled Data */}
-                    <div className="absolute" style={{ top: '73.2%', left: '11.8%', width: '45.5%', height: '2.5%' }}>
-                        <Input readOnly value={companyData?.name || ''} className="bg-blue-100/50 h-full" />
-                    </div>
-                     <div className="absolute" style={{ top: '73.2%', left: '58.8%', width: '38.2%', height: '2.5%' }}>
-                        <Input readOnly value={companyData?.address || ''} className="bg-blue-100/50 h-full" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
+// Map of official document links
+const officialDocLinks: Record<string, string> = {
+    'i9': 'https://www.uscis.gov/sites/default/files/document/forms/i-9.pdf',
+    'w4': 'https://www.irs.gov/pub/irs-pdf/fw4.pdf',
 }
 
 
-export function DocumentationForm({ companyName, candidateId, requiredDocs, companyData }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[], companyData?: Partial<Company> | null }) {
+export function DocumentationForm({ companyName, candidateId, requiredDocs }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[] }) {
     const { toast } = useToast()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [i9FormUrl, setI9FormUrl] = useState<string | null>(null);
 
     const documentationSchema = createDocumentationSchema(requiredDocs);
     type DocumentationSchema = z.infer<typeof documentationSchema>;
@@ -125,24 +66,6 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
     const form = useForm<DocumentationSchema>({
         resolver: zodResolver(documentationSchema),
     });
-
-    useEffect(() => {
-        // If an I-9 form is required, fetch its signed URL when the component mounts.
-        const i9Required = requiredDocs.some(doc => doc.id === 'i9' && doc.type === 'digital');
-        if (i9Required) {
-            supabase.storage
-                .from('templates')
-                .createSignedUrl('i-9.png', 60 * 5) // 5 minute expiry for the candidate to fill out
-                .then(({ data, error }) => {
-                    if (error) {
-                        console.error("Error creating signed URL for I-9:", error);
-                        toast({ variant: "destructive", title: "Could not load form", description: "Failed to load the I-9 form template. Please refresh."});
-                    } else {
-                        setI9FormUrl(data.signedUrl);
-                    }
-                });
-        }
-    }, [requiredDocs, toast]);
 
     async function onSubmit(data: DocumentationSchema) {
         if (!candidateId) {
@@ -159,20 +82,17 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
             const documentsToUpload: Record<string, string> = {};
             
             for (const doc of requiredDocs) {
-                if (doc.type === 'upload') {
-                    const file = data[doc.id as keyof typeof data];
-                    if (file instanceof File) {
-                        documentsToUpload[doc.id] = await fileToDataURL(file);
-                    }
+                const file = data[doc.id as keyof typeof data];
+                if (file instanceof File) {
+                    // Use a more descriptive key for the backend
+                    const key = doc.id === 'proofOfIdentity' ? 'idCard' : doc.id;
+                    documentsToUpload[key] = await fileToDataURL(file);
                 }
             }
 
             const result = await updateCandidateWithDocuments(
                 candidateId, 
-                {
-                    idCard: documentsToUpload["proofOfIdentity"],
-                    proofOfAddress: documentsToUpload["proofOfAddress"],
-                }
+                documentsToUpload
             );
 
             if (result.success) {
@@ -205,22 +125,10 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
         <Card>
             <CardContent className="pt-6 space-y-6">
                 {requiredDocs.length > 0 ? (
-                    requiredDocs.map(doc => (
-                        <div key={doc.id}>
-                           {doc.type === 'digital' && doc.id === 'i9' ? (
-                                <I9FormDigital form={form} companyData={companyData} i9FormUrl={i9FormUrl} />
-                           ) : doc.type === 'digital' ? (
-                                <div className="flex items-center justify-between p-4 border rounded-md">
-                                    <div>
-                                        <FormLabel className="font-semibold">{doc.label}</FormLabel>
-                                        <FormDescription>This form must be completed digitally.</FormDescription>
-                                    </div>
-                                    <Button type="button" variant="secondary" disabled>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        Fill Out Form (Coming Soon)
-                                    </Button>
-                                </div>
-                            ) : (
+                    requiredDocs.map(doc => {
+                        const officialLink = officialDocLinks[doc.id];
+                        return (
+                            <div key={doc.id}>
                                 <Controller
                                     control={form.control}
                                     name={doc.id}
@@ -229,11 +137,22 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
                                         return (
                                             <FormItem>
                                                 <FormLabel className="font-semibold">{doc.label}</FormLabel>
+                                                {officialLink && (
+                                                    <FormDescription>
+                                                        Download the official form, fill it out, save it, and then upload it here.
+                                                        <Button variant="link" asChild className="p-1 h-auto ml-1">
+                                                            <Link href={officialLink} target="_blank" rel="noopener noreferrer">
+                                                                <Download className="mr-1 h-3 w-3" />
+                                                                Download {doc.label}
+                                                            </Link>
+                                                        </Button>
+                                                    </FormDescription>
+                                                )}
                                                 <FormControl>
                                                     <div className="relative">
                                                         <Input 
                                                           type="file" 
-                                                          accept="image/*,.pdf" 
+                                                          accept="application/pdf" 
                                                           {...fieldProps} 
                                                           onChange={(e) => onChange(e.target.files?.[0])} 
                                                           value={undefined}
@@ -252,9 +171,9 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
                                         )
                                     }}
                                 />
-                            )}
-                        </div>
-                    ))
+                            </div>
+                        )
+                    })
                 ) : (
                     <div className="text-center py-10 text-muted-foreground">
                         No specific documents have been requested for this position.

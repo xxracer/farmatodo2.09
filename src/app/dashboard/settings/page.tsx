@@ -44,9 +44,6 @@ export default function SettingsPage() {
   const [companies, setCompanies] = useState<EditableCompany[]>([{}]);
   
   // State for customization settings, tied to the first company for now
-  const [formCustomization, setFormCustomization] = useState('template');
-  const [phase1Images, setPhase1Images] = useState<(string | null)[]>([]);
-  const [interviewImage, setInterviewImage] = useState<string | null>(null);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
   const [customDocLabel, setCustomDocLabel] = useState("");
 
@@ -68,9 +65,6 @@ export default function SettingsPage() {
         setCompanyType(data.length > 1 ? 'multiple' : 'one');
         
         const firstCompany = companiesWithSignedUrls[0];
-        setFormCustomization(firstCompany.formCustomization || 'template');
-        setPhase1Images(firstCompany.phase1Images || []);
-        setInterviewImage(firstCompany.interviewImage || null);
         setRequiredDocs(firstCompany.requiredDocs || []);
 
       } else {
@@ -92,13 +86,22 @@ export default function SettingsPage() {
             }
             
             try {
-                const result = await createOrUpdateCompany(company);
+                // Save only identity fields
+                const identityData = {
+                    id: company.id,
+                    name: company.name,
+                    logo: company.logo,
+                    address: company.address,
+                    phone: company.phone,
+                    fax: company.fax,
+                };
+                const result = await createOrUpdateCompany(identityData);
                 if (!result.success || !result.company) throw new Error("Failed to save company identity.");
                 
                  setCompanies(prevCompanies => {
                     const newCompanies = [...prevCompanies];
                     const foundIndex = newCompanies.findIndex(c => c.id === result.company!.id || (!c.id && c.name === result.company!.name));
-                    newCompanies[foundIndex !== -1 ? foundIndex : index] = result.company!;
+                    newCompanies[foundIndex !== -1 ? foundIndex : index] = { ...prevCompanies[foundIndex !== -1 ? foundIndex : index], ...result.company!};
                     return newCompanies;
                  });
 
@@ -111,7 +114,7 @@ export default function SettingsPage() {
     });
   };
 
-  const handleSaveCustomization = (e: React.FormEvent) => {
+  const handleSaveDocumentation = (e: React.FormEvent) => {
       e.preventDefault();
       startTransition(async () => {
         if (!companies.length || !companies[0].id) {
@@ -120,18 +123,15 @@ export default function SettingsPage() {
         }
 
         const firstCompany = companies[0];
-        const customizationData: Partial<Company> = {
+        const documentationData: Partial<Company> = {
             id: firstCompany.id,
-            formCustomization,
-            phase1Images,
-            interviewImage,
             requiredDocs,
         };
 
         try {
-            const result = await createOrUpdateCompany(customizationData);
-            if (!result.success) throw new Error("Failed to save customizations.");
-            toast({ title: "Customizations Saved", description: "Your application settings have been updated." });
+            const result = await createOrUpdateCompany(documentationData);
+            if (!result.success) throw new Error("Failed to save documentation settings.");
+            toast({ title: "Documentation Settings Saved", description: "Your required documents have been updated." });
         } catch (error) {
             toast({ variant: "destructive", title: "Save Failed", description: (error as Error).message });
         }
@@ -169,35 +169,14 @@ export default function SettingsPage() {
     (newCompanies[index] as any)[field] = value;
     setCompanies(newCompanies);
   };
-  
-    const addPhase1Image = () => setPhase1Images([...phase1Images, null]);
-    const removePhase1Image = (index: number) => setPhase1Images(phase1Images.filter((_, i) => i !== index));
-
-    const handlePhase1ImageChange = async (index: number, file: File | null) => {
-        if (file) {
-            const base64Image = await toBase64(file);
-            const newImages = [...phase1Images];
-            newImages[index] = base64Image;
-            setPhase1Images(newImages);
-        }
-    };
-    
-    const handleInterviewImageChange = async (file: File | null) => {
-        if (file) {
-            setInterviewImage(await toBase64(file));
-        }
-    };
     
     const handleStandardDocChange = (doc: Omit<RequiredDoc, 'type'>, checked: boolean) => {
         if (checked) {
-            setRequiredDocs([...requiredDocs, { ...doc, type: 'digital' }]);
+            // All documents are now 'upload' type
+            setRequiredDocs([...requiredDocs, { ...doc, type: 'upload' }]);
         } else {
             setRequiredDocs(requiredDocs.filter(d => d.id !== doc.id));
         }
-    };
-
-    const handleDocTypeChange = (docId: string, type: 'digital' | 'upload') => {
-        setRequiredDocs(requiredDocs.map(d => d.id === docId ? { ...d, type } : d));
     };
     
     const addCustomDoc = () => {
@@ -304,72 +283,19 @@ export default function SettingsPage() {
         </Card>
       </form>
       
-      <form onSubmit={handleSaveCustomization}>
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5" />Application Form Customization (Phase 1)</CardTitle>
-            <CardDescription>Choose between a predefined template or upload your own images for the application form.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <RadioGroup value={formCustomization} onValueChange={setFormCustomization} className="flex gap-4">
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="template" id="template" /><Label htmlFor="template">Use Predefined Template</Label></div>
-                  <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id="custom" /><Label htmlFor="custom">Upload Custom Images</Label></div>
-              </RadioGroup>
-              {formCustomization === 'custom' && (
-                <div className="space-y-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">Supply images for the application sections (e.g., one image per page of your form).</p>
-                  {phase1Images.map((image, index) => (
-                      <div key={index} className="space-y-2">
-                          <Label htmlFor={`application-header-${index}`}>Application Form Image #{index + 1}</Label>
-                          <div className="flex items-center gap-4">
-                              <Input id={`application-header-${index}`} type="file" className="max-w-xs" onChange={(e) => handlePhase1ImageChange(index, e.target.files?.[0] || null)} accept="image/*" />
-                               {image && <Image src={image} alt="Preview" width={40} height={40} className="rounded-sm object-contain" />}
-                              {phase1Images.length > 1 && (<Button variant="ghost" size="icon" type="button" onClick={() => removePhase1Image(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>)}
-                          </div>
-                      </div>
-                  ))}
-                  <Button variant="outline" size="sm" type="button" onClick={addPhase1Image}><PlusCircle className="mr-2 h-4 w-4" />Add another image</Button>
-                </div>
-              )}
-               <div className="flex justify-end pt-4 border-t">
-                    <Button asChild variant="ghost"><Link href="/dashboard/settings/preview/application" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Application Form</Link></Button>
-                </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" />Interview Phase Customization (Phase 2)</CardTitle>
-            <CardDescription>Personalize the interview review section with a custom background image. This is optional.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-                <Label htmlFor="interview-image">Interview Header Image</Label>
-                <div className="flex items-center gap-4">
-                    <Input id="interview-image" type="file" className="max-w-xs" onChange={(e) => handleInterviewImageChange(e.target.files?.[0] || null)} accept="image/*" />
-                    {interviewImage && <Image src={interviewImage} alt="Preview" width={40} height={40} className="rounded-sm object-contain" />}
-                </div>
-                <p className="text-sm text-muted-foreground">This image will be displayed in the background of the interview review form.</p>
-            </div>
-            <div className="flex justify-end pt-4 border-t">
-                <Button asChild variant="ghost"><Link href="/dashboard/settings/preview/interview" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Interview Section</Link></Button>
-            </div>
-          </CardContent>
-        </Card>
-
+      <form onSubmit={handleSaveDocumentation}>
         <Card className="mt-6">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Required Documentation (Phase 3)</CardTitle>
-                <CardDescription>Select the documents candidates must provide. The AI will use this list to detect missing items.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Required Documentation</CardTitle>
+                <CardDescription>Select the official documents candidates must download, fill, and upload. The AI will use this list to detect missing items.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-4">
                     <Label className="font-semibold">Standard Documents</Label>
                     {standardDocs.map(doc => {
                         const isChecked = requiredDocs.some(d => d.id === doc.id);
-                        const docType = requiredDocs.find(d => d.id === doc.id)?.type;
                         return (
-                            <div key={doc.id} className="p-4 border rounded-md space-y-4">
+                            <div key={doc.id} className="p-4 border rounded-md space-y-2">
                                 <div className="flex items-center">
                                     <Checkbox
                                         id={doc.id}
@@ -378,43 +304,9 @@ export default function SettingsPage() {
                                     />
                                     <Label htmlFor={doc.id} className="ml-3 flex-1">{doc.label}</Label>
                                 </div>
-                                {isChecked && (
-                                    <RadioGroup
-                                        className="pl-7 pt-4 border-t mt-4"
-                                        value={docType}
-                                        onValueChange={(type: 'digital' | 'upload') => handleDocTypeChange(doc.id, type)}
-                                    >
-                                        <div className="flex flex-col gap-4">
-                                            <FormItem>
-                                                <div className="flex items-center space-x-3">
-                                                    <RadioGroupItem value="digital" id={`${doc.id}-digital`} />
-                                                    <div className="grid gap-1.5 leading-none flex-1">
-                                                        <Label htmlFor={`${doc.id}-digital`} className="font-normal">System-Generated Form</Label>
-                                                        <p className="text-xs text-muted-foreground">
-                                                          The applicant will fill out the form directly in the portal.
-                                                        </p>
-                                                    </div>
-                                                    {docType === 'digital' && (
-                                                        <Button asChild variant="secondary" size="sm">
-                                                            <Link href="/dashboard/settings/preview/documentation" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview</Link>
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </FormItem>
-                                            <FormItem>
-                                                 <div className="flex items-center space-x-3">
-                                                    <RadioGroupItem value="upload" id={`${doc.id}-upload`} />
-                                                    <div className="grid gap-1.5 leading-none">
-                                                        <Label htmlFor={`${doc.id}-upload`} className="font-normal">Applicant Upload</Label>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            The applicant will be required to upload their own pre-filled document.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </FormItem>
-                                        </div>
-                                    </RadioGroup>
-                                )}
+                                <p className="text-xs text-muted-foreground pl-7">
+                                  Applicant will be required to download the official PDF, fill it, and upload the completed file.
+                                </p>
                             </div>
                         );
                     })}
@@ -422,6 +314,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-4 pt-4 border-t">
                     <Label className="font-semibold">Custom Documents</Label>
+                     <p className="text-sm text-muted-foreground">Add any other documents your company requires applicants to upload.</p>
                     {requiredDocs.filter(d => d.id.startsWith('custom_')).map(doc => (
                         <div key={doc.id} className="flex items-center gap-4 p-2 border rounded-md">
                            <span className="flex-1">{doc.label}</span>
@@ -431,25 +324,23 @@ export default function SettingsPage() {
                     ))}
                     <div className="flex gap-2">
                         <Input 
-                            placeholder="Enter custom document name" 
+                            placeholder="Enter custom document name, e.g., 'Portfolio'" 
                             value={customDocLabel}
                             onChange={(e) => setCustomDocLabel(e.target.value)}
                         />
                         <Button type="button" onClick={addCustomDoc}>Add</Button>
                     </div>
                 </div>
+                 <div className="mt-6 flex justify-end">
+                    <Button type="submit" disabled={isPending}>
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save Documentation Settings
+                    </Button>
+                </div>
             </CardContent>
         </Card>
 
-        <div className="mt-8 flex justify-end">
-          <Button type="submit" disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save All Customizations
-          </Button>
-        </div>
       </form>
     </div>
   );
 }
-
-    

@@ -157,28 +157,20 @@ export async function getCandidate(id: string): Promise<ApplicationData | null> 
 
 export async function updateCandidateWithDocuments(
     id: string, 
-    documents: { 
-        idCard?: string, 
-        proofOfAddress?: string, 
-    }
+    documents: Record<string, string>
 ) {
     try {
-        const updates: { idCard?: string; proofOfAddress?: string } = {};
+        const updates: Record<string, string> = {};
         
-        if (documents.idCard) {
-             const { buffer, mimeType, extension } = dataUriToBuffer(documents.idCard);
-             const fileName = `idcard_${id}.${extension}`;
-             const { data: uploadData, error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
-             if (error) throw error;
-             updates.idCard = uploadData.path;
-        }
-
-        if (documents.proofOfAddress) {
-             const { buffer, mimeType, extension } = dataUriToBuffer(documents.proofOfAddress);
-             const fileName = `address_proof_${id}.${extension}`;
-             const { data: uploadData, error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
-             if (error) throw error;
-             updates.proofOfAddress = uploadData.path;
+        for (const docKey in documents) {
+            if (Object.prototype.hasOwnProperty.call(documents, docKey)) {
+                const dataUri = documents[docKey];
+                 const { buffer, mimeType, extension } = dataUriToBuffer(dataUri);
+                 const fileName = `${docKey}_${id}.${extension}`;
+                 const { data: uploadData, error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
+                 if (error) throw error;
+                 updates[docKey] = uploadData.path;
+            }
         }
 
         if (Object.keys(updates).length > 0) {

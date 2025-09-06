@@ -4,6 +4,7 @@ import { z } from "zod";
 const MAX_FILE_SIZE = 5000000; // 5MB
 const ACCEPTED_RESUME_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+const ACCEPTED_PDF_ONLY = ["application/pdf"];
 
 
 const educationEntrySchema = z.object({
@@ -163,6 +164,11 @@ export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense
     driversLicense?: string;
     idCard?: string;
     proofOfAddress?: string;
+    // Add fields for other uploaded documents
+    i9?: string;
+    w4?: string;
+    educationalDiplomas?: string;
+    [key: string]: any; // Allow for custom doc fields
 };
 
 export const interviewReviewSchema = z.object({
@@ -183,21 +189,20 @@ export const interviewReviewSchema = z.object({
 
 export type InterviewReviewSchema = z.infer<typeof interviewReviewSchema>;
 
+const requiredDocUpload = z.any()
+  .refine((file): file is File => file instanceof File, "File is required.")
+  .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+  .refine(
+    (file) => ACCEPTED_PDF_ONLY.includes(file.type),
+    "Only .pdf files are accepted."
+  );
+
 export const documentationSchema = z.object({
-  idCard: z
-    .instanceof(File, { message: "ID is required." })
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-    .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
-      "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
-    ).optional(),
-  proofOfAddress: z
-    .instanceof(File, { message: "Proof of address is required." })
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-    .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
-      "Only .jpg, .jpeg, .png, .webp and .pdf files are accepted."
-    ).optional(),
-});
+  i9: requiredDocUpload.optional(),
+  w4: requiredDocUpload.optional(),
+  proofOfIdentity: requiredDocUpload.optional(),
+  educationalDiplomas: requiredDocUpload.optional(),
+  // This allows for dynamic custom fields
+}).catchall(requiredDocUpload.optional());
 
 export type DocumentationSchema = z.infer<typeof documentationSchema>;
