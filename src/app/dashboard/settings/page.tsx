@@ -74,46 +74,46 @@ export default function SettingsPage() {
   const handleSaveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      try {
         const companiesToSave = companyType === 'one' ? companies.slice(0, 1) : companies;
 
-        for (let i = 0; i < companiesToSave.length; i++) {
-            const company = companiesToSave[i];
-            if (!company.name) {
-                toast({ variant: "destructive", title: "Validation Error", description: `Company name for item #${i+1} is required.`});
-                return;
-            }
-            // Attach shared settings to each company
-            const companyToSave: Partial<Company> = {
-                ...company,
-                formCustomization,
-                phase1Images,
-                interviewImage,
-                requiredDocs,
-            };
-            
-            const result = await createOrUpdateCompany(companyToSave);
+        for (const company of companiesToSave) {
+            try {
+                if (!company.name) {
+                    toast({ variant: "destructive", title: "Validation Error", description: `Company name for item is required.`});
+                    return;
+                }
+                // Attach shared settings to each company
+                const companyToSave: Partial<Company> = {
+                    ...company,
+                    formCustomization,
+                    phase1Images,
+                    interviewImage,
+                    requiredDocs,
+                };
+                
+                const result = await createOrUpdateCompany(companyToSave);
 
-            if (result.success && result.company) {
+                if (!result.success || !result.company) {
+                    throw new Error("Failed to save one of the companies.");
+                }
+
                 // Update the local state with the returned data, which includes the new temporary signed URL for the logo
-                const newCompanies = [...companies];
-                newCompanies[i] = result.company;
-                setCompanies(newCompanies);
-            } else {
-                throw new Error("Failed to save one of the companies.");
+                 setCompanies(prevCompanies => prevCompanies.map(c => c.id === result.company!.id ? result.company : c));
+
+            } catch (error) {
+                toast({
+                    variant: "destructive",
+                    title: "Save Failed",
+                    description: (error as Error).message || "An unexpected error occurred.",
+                });
+                return; // Stop on first error
             }
         }
+
         toast({
             title: "Settings Saved",
             description: "Your company settings have been updated.",
         });
-      } catch (error) {
-           toast({
-              variant: "destructive",
-              title: "Save Failed",
-              description: (error as Error).message || "An unexpected error occurred.",
-            });
-      }
     });
   };
   

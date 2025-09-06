@@ -46,7 +46,7 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     if (logoToSave && logoToSave.startsWith('data:image')) {
         const { buffer, mimeType, extension } = dataUriToBuffer(logoToSave);
         const companyNameSlug = companyData.name?.toLowerCase().replace(/\s+/g, '_') || 'company';
-        const logoFileName = `${companyNameSlug}_logo.${extension}`;
+        const logoFileName = `${companyNameSlug}_logo_${Date.now()}.${extension}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('logos')
@@ -69,7 +69,6 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
 
     if (dataToSave.id) {
         // UPDATE existing company
-        // Ensure we don't try to update created_at
         const { created_at, ...updateData } = dataToSave;
         const validatedData = companySchema.partial().parse(updateData);
         const { data: updateResult, error: updateError } = await supabase
@@ -95,7 +94,8 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     
     if (error) {
         console.error("Error saving company:", error);
-        throw new Error("Failed to save company settings.");
+        // This is a more specific error message now
+        throw new Error(`Failed to save company data to the database: ${error.message}`);
     }
     
     revalidatePath('/dashboard/settings');
