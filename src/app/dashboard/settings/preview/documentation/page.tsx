@@ -12,15 +12,9 @@ import { FormProvider, useForm } from "react-hook-form";
 import { supabase } from "@/lib/supabaseClient";
 
 
-function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }) {
+function I9FormPreview({ companyData, i9FormUrl }: { companyData: Partial<Company> | null, i9FormUrl: string | null }) {
     const form = useForm();
     
-    // Construct the URL to the I-9 template in Supabase Storage
-    const { data: { publicUrl: i9FormUrl } } = supabase
-        .storage
-        .from('templates')
-        .getPublicUrl('i-9.png');
-
     return (
         <FormProvider {...form}>
             <Card className="border">
@@ -44,7 +38,8 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                             />
                         ) : (
                             <div className="w-full aspect-[1/1.294] bg-muted flex items-center justify-center">
-                                <p className="text-muted-foreground">Could not load form template.</p>
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                                <p className="ml-2">Loading form template...</p>
                             </div>
                         )}
                        
@@ -89,6 +84,7 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
 
 export default function DocumentationPreviewPage() {
   const [company, setCompany] = useState<Partial<Company> | null>(null);
+  const [i9FormUrl, setI9FormUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -101,8 +97,21 @@ export default function DocumentationPreviewPage() {
         } else {
           setCompany({ name: "Your Company Name", address: "Your Company Address" });
         }
+
+        // Generate a signed URL for the I-9 template from the private bucket
+        const { data, error } = await supabase
+          .storage
+          .from('templates')
+          .createSignedUrl('i-9.png', 60); // URL expires in 60 seconds
+
+        if (error) {
+            console.error("Error creating signed URL for I-9:", error);
+            throw error;
+        }
+        setI9FormUrl(data.signedUrl);
+
       } catch (error) {
-        console.error("Failed to load company settings:", error);
+        console.error("Failed to load company settings or form template:", error);
         setCompany({ name: "Your Company Name", address: "Your Company Address" });
       } finally {
         setLoading(false);
@@ -125,7 +134,7 @@ export default function DocumentationPreviewPage() {
             PREVIEW MODE
         </div>
         <div className="w-full max-w-4xl z-10 mt-12">
-            <I9FormPreview companyData={company} />
+            <I9FormPreview companyData={company} i9FormUrl={i9FormUrl} />
         </div>
     </div>
   );

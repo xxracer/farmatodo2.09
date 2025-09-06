@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Loader2, File, FileText, Pencil } from "lucide-react"
 import { z } from "zod"
 import Image from "next/image"
@@ -53,14 +53,7 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
 };
 
 
-function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial<Company> | null }) {
-    
-    // Construct the URL to the I-9 template in Supabase Storage
-    const { data: { publicUrl: i9FormUrl } } = supabase
-        .storage
-        .from('templates')
-        .getPublicUrl('i-9.png');
-    
+function I9FormDigital({ form, companyData, i9FormUrl }: { form: any, companyData?: Partial<Company> | null, i9FormUrl: string | null }) {
     return (
         <Card className="border-2 border-dashed">
             <CardHeader>
@@ -83,7 +76,8 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
                         />
                     ) : (
                         <div className="w-full aspect-[1/1.294] bg-muted flex items-center justify-center">
-                            <p className="text-muted-foreground">Could not load form template.</p>
+                           <Loader2 className="h-8 w-8 animate-spin" />
+                           <p className="ml-2">Loading form template...</p>
                         </div>
                     )}
                     
@@ -123,6 +117,7 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
     const { toast } = useToast()
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [i9FormUrl, setI9FormUrl] = useState<string | null>(null);
 
     const documentationSchema = createDocumentationSchema(requiredDocs);
     type DocumentationSchema = z.infer<typeof documentationSchema>;
@@ -130,6 +125,24 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
     const form = useForm<DocumentationSchema>({
         resolver: zodResolver(documentationSchema),
     });
+
+    useEffect(() => {
+        // If an I-9 form is required, fetch its signed URL when the component mounts.
+        const i9Required = requiredDocs.some(doc => doc.id === 'i9' && doc.type === 'digital');
+        if (i9Required) {
+            supabase.storage
+                .from('templates')
+                .createSignedUrl('i-9.png', 60 * 5) // 5 minute expiry for the candidate to fill out
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error("Error creating signed URL for I-9:", error);
+                        toast({ variant: "destructive", title: "Could not load form", description: "Failed to load the I-9 form template. Please refresh."});
+                    } else {
+                        setI9FormUrl(data.signedUrl);
+                    }
+                });
+        }
+    }, [requiredDocs, toast]);
 
     async function onSubmit(data: DocumentationSchema) {
         if (!candidateId) {
@@ -195,7 +208,7 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
                     requiredDocs.map(doc => (
                         <div key={doc.id}>
                            {doc.type === 'digital' && doc.id === 'i9' ? (
-                                <I9FormDigital form={form} companyData={companyData} />
+                                <I9FormDigital form={form} companyData={companyData} i9FormUrl={i9FormUrl} />
                            ) : doc.type === 'digital' ? (
                                 <div className="flex items-center justify-between p-4 border rounded-md">
                                     <div>
