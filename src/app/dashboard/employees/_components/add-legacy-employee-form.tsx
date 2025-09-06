@@ -30,7 +30,7 @@ async function fileToDataURL(file: File): Promise<string> {
 }
 
 const formSchema = z.object({
-    pdf: z.any().refine((file): file is File => file instanceof File, "A PDF file is required."),
+    pdf: z.any().refine((file) => !!file, "A PDF file is required."),
     hireDate: z.date({ required_error: "A hire date is required." }),
 });
 
@@ -200,4 +200,3 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
         </form>
     );
 }
-
