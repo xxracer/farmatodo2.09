@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { AlertCircle, FileCheck, Lightbulb, Loader2, Link as LinkIcon } from "lucide-react";
+import { AlertCircle, FileCheck, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { detectMissingDocuments, DetectMissingDocumentsInput } from "@/ai/flows/detect-missing-documents";
@@ -122,10 +122,6 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
                     <Button onClick={handleDetectMissing} disabled={isLoading || !candidate}>
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
                         Detect Missing Documents
-                    </Button>
-                    <Button onClick={handleConnectDrive} variant="secondary">
-                        <LinkIcon className="mr-2 h-4 w-4" />
-                        Connect to Google Drive
                     </Button>
                 </div>
             </CardContent>

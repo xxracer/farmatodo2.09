@@ -7,7 +7,7 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getCompanies } from "@/app/actions/company-actions";
 import { supabase } from "@/lib/supabaseClient";
-import { Company, RequiredDoc } from "@/lib/company-schemas";
+import { Company } from "@/lib/company-schemas";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 
@@ -21,28 +21,30 @@ async function getSignedUrl(path: string | null | undefined) {
 
 function DocumentationPageContent() {
     const searchParams = useSearchParams();
-    // We will use a dummy candidateId for this simulation
-    const candidateId = searchParams.get('candidateId') || 'simulated-candidate-123';
-    const companyId = searchParams.get('company');
+    const candidateId = searchParams.get('candidateId');
+    const companyIdFromUrl = searchParams.get('company'); // This is a slug like 'licoreria'
 
     const [company, setCompany] = useState<Partial<Company> | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function getCompanyForDocumentation(): Promise<Partial<Company>> {
-            // --- SIMULATION ---
-            // Instead of fetching from DB, we are hardcoding the requested company data.
-            const simulatedCompany: Partial<Company> = {
-                name: "licoreria",
-                address: "antimano",
-                logo: "https://placehold.co/150x50.png",
-                // We force the required documents to ensure the I-9 is shown.
-                requiredDocs: [
-                    { id: "i9", label: "Form I-9", type: "digital" }
-                ]
-            };
-            
-            return simulatedCompany;
+        async function getCompanyForDocumentation() {
+            if (!companyIdFromUrl) return null;
+
+            const companies = await getCompanies();
+            // Find the company whose name, when slugified, matches the URL parameter
+            const foundCompany = companies.find(
+                c => c.name?.toLowerCase().replace(/\s+/g, '-') === companyIdFromUrl
+            );
+
+            if (foundCompany) {
+                 if (foundCompany.logo && !foundCompany.logo.startsWith('http')) {
+                    const signedUrl = await getSignedUrl(foundCompany.logo);
+                    return { ...foundCompany, logo: signedUrl };
+                }
+                return foundCompany;
+            }
+            return null;
         }
 
         async function loadData() {
@@ -53,7 +55,7 @@ function DocumentationPageContent() {
         }
 
         loadData();
-    }, [companyId]);
+    }, [companyIdFromUrl]);
 
     if (loading) {
         return (
@@ -61,6 +63,24 @@ function DocumentationPageContent() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         )
+    }
+
+    if (!company) {
+         return (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+                <Card className="w-full max-w-lg mx-auto text-center">
+                    <CardHeader>
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                            <AlertTriangle className="h-8 w-8 text-destructive" />
+                        </div>
+                    <CardTitle className="font-headline text-2xl mt-4">Company Not Found</CardTitle>
+                    <CardDescription>
+                        The company specified in the link could not be found. Please check the URL.
+                    </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+         )
     }
 
     const requiredDocs = company?.requiredDocs || [];
