@@ -52,6 +52,10 @@ const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
 
 const FileRow = ({ label, value }: { label: string, value?: string }) => {
     if (!value) return null;
+    // Check if the value is a signed URL (starts with http) or a path
+    const isUrl = value.startsWith('http');
+    if (!isUrl) return null; // Don't render if it's just a path and not a signed URL
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
@@ -164,7 +168,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Education</CardTitle>
-          </CardHeader>
+          </Header>
           <CardContent>
             <EducationDetails title="College" education={data.education.college} />
             <EducationDetails title="Vo-Tech or Trade" education={data.education.voTech} />
@@ -176,7 +180,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Employment History</CardTitle>
-          </CardHeader>
+          </Header>
           <CardContent>
             <EmploymentHistoryDetails history={data.employmentHistory} />
           </CardContent>
@@ -231,12 +235,17 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <CardDescription>Documents uploaded during the documentation phase.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                <FileRow label="Government-issued ID" value={data.idCard} />
-                <FileRow label="Proof of Address" value={data.proofOfAddress} />
                 <FileRow label="Driver's License" value={data.driversLicense} />
                 <DataRow label="Name on License" value={data.driversLicenseName} />
                 <DataRow label="License Expiration" value={data.driversLicenseExpiration} isDate={true}/>
-                {!data.idCard && !data.proofOfAddress && !data.driversLicense && (
+                
+                <FileRow label="Government-issued ID" value={data.idCard} />
+                <FileRow label="Proof of Address" value={data.proofOfAddress} />
+                <FileRow label="Form I-9" value={data.i9} />
+                <FileRow label="Form W-4" value={data.w4} />
+                <FileRow label="Educational Diplomas" value={data.educationalDiplomas} />
+                
+                {!data.idCard && !data.proofOfAddress && !data.driversLicense && !data.i9 && !data.w4 && !data.educationalDiplomas && (
                     <div className="flex items-center justify-center text-sm text-muted-foreground p-4">
                         <Paperclip className="mr-2 h-4 w-4" />
                         No documents have been uploaded yet.
@@ -257,3 +266,5 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
     </div>
   );
 }
+
+    

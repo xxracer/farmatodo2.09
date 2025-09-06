@@ -29,7 +29,7 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
         const resumeFileName = `resume_${crypto.randomUUID()}.${resumeExtension}`;
         const { data: resumeUploadData, error: resumeUploadError } = await supabase.storage
             .from('resumes')
-            .upload(resumeFileName, resumeBuffer, { contentType: resumeMimeType, upsert: true });
+            .upload(resumeFileName, resumeBuffer, { contentType: resumeMimeType, upsert: false });
 
         if (resumeUploadError) throw resumeUploadError;
         const resumePath = resumeUploadData.path;
@@ -40,7 +40,7 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
         const licenseFileName = `license_${crypto.randomUUID()}.${licenseExtension}`;
         const { data: licenseUploadData, error: licenseUploadError } = await supabase.storage
             .from('licenses')
-            .upload(licenseFileName, licenseBuffer, { contentType: licenseMimeType, upsert: true });
+            .upload(licenseFileName, licenseBuffer, { contentType: licenseMimeType, upsert: false });
             
         if (licenseUploadError) throw licenseUploadError;
         const licensePath = licenseUploadData.path;
@@ -176,6 +176,27 @@ export async function getCandidate(id: string): Promise<ApplicationData | null> 
         console.error("Error fetching candidate:", error);
         return null;
     }
+    
+    if (!data) return null;
+
+    // Create signed URLs for resume and license if they exist
+    if (data.resume) {
+        const { data: resumeUrlData, error: resumeUrlError } = await supabase.storage.from('resumes').createSignedUrl(data.resume, 3600);
+        if (resumeUrlError) {
+             console.error('Error creating signed URL for resume:', resumeUrlError);
+        } else {
+            data.resume = resumeUrlData.signedUrl;
+        }
+    }
+    if (data.driversLicense) {
+        const { data: licenseUrlData, error: licenseUrlError } = await supabase.storage.from('licenses').createSignedUrl(data.driversLicense, 3600);
+         if (licenseUrlError) {
+             console.error('Error creating signed URL for license:', licenseUrlError);
+        } else {
+            data.driversLicense = licenseUrlData.signedUrl;
+        }
+    }
+
     return data;
 }
 
@@ -265,3 +286,5 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
         return false;
     }
 }
+
+    
