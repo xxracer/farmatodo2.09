@@ -32,16 +32,22 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                 </CardHeader>
                 <CardContent>
                     <div className="relative w-full">
-                        <Image
-                            src={i9FormUrl}
-                            alt="Form I-9"
-                            width={2000}
-                            height={2588}
-                            priority
-                            className="w-full h-auto"
-                            data-ai-hint="document form"
-                        />
-                        
+                        {i9FormUrl ? (
+                             <Image
+                                src={i9FormUrl}
+                                alt="Form I-9"
+                                width={2000}
+                                height={2588}
+                                priority
+                                className="w-full h-auto"
+                                data-ai-hint="document form"
+                            />
+                        ) : (
+                            <div className="w-full aspect-[1/1.294] bg-muted flex items-center justify-center">
+                                <p className="text-muted-foreground">Could not load form template.</p>
+                            </div>
+                        )}
+                       
                         <div
                             className="absolute"
                             style={{

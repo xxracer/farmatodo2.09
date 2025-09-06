@@ -55,6 +55,7 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
 
 function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial<Company> | null }) {
     
+    // Construct the URL to the I-9 template in Supabase Storage
     const { data: { publicUrl: i9FormUrl } } = supabase
         .storage
         .from('templates')
@@ -70,15 +71,21 @@ function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial
             </CardHeader>
             <CardContent>
                  <div className="relative w-full">
-                    <Image
-                        src={i9FormUrl}
-                        alt="Form I-9"
-                        width={2000}
-                        height={2588}
-                        priority
-                        className="w-full h-auto select-none pointer-events-none"
-                        data-ai-hint="document form"
-                    />
+                    {i9FormUrl ? (
+                        <Image
+                            src={i9FormUrl}
+                            alt="Form I-9"
+                            width={2000}
+                            height={2588}
+                            priority
+                            className="w-full h-auto select-none pointer-events-none"
+                            data-ai-hint="document form"
+                        />
+                    ) : (
+                        <div className="w-full aspect-[1/1.294] bg-muted flex items-center justify-center">
+                            <p className="text-muted-foreground">Could not load form template.</p>
+                        </div>
+                    )}
                     
                     {/* Section 1 Overlays - To be filled by candidate */}
                     <div className="absolute" style={{ top: '15.4%', left: '11.8%', width: '30%', height: '2.5%' }}>
