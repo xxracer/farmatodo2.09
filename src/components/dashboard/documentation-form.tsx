@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2, File, FileText, Pencil } from "lucide-react"
 import { z } from "zod"
+import Image from "next/image"
 
 
 import { Button } from "@/components/ui/button"
@@ -20,11 +21,10 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 import { Company, RequiredDoc } from "@/lib/company-schemas"
-import { I9Form } from "./i9-form" // Import the new I-9 form component
 
 
 async function fileToDataURL(file: File): Promise<string> {
@@ -36,35 +36,68 @@ async function fileToDataURL(file: File): Promise<string> {
     });
 }
 
-// Dynamically create a Zod schema based on the required documents
 const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
     const shape: Record<string, any> = {};
     requiredDocs.forEach(doc => {
-        // We can just use z.any() for the file and handle validation elsewhere if needed
         shape[doc.id] = z.any().optional(); 
     });
-    // Add specific schema for I-9 form if it's present
-    if (requiredDocs.some(d => d.id === 'i9')) {
-        shape.i9 = z.object({
-            lastName: z.string().optional(),
-            firstName: z.string().optional(),
-            middleInitial: z.string().optional(),
-            otherLastNames: z.string().optional(),
-            address: z.string().optional(),
-            aptNumber: z.string().optional(),
-            city: z.string().optional(),
-            state: z.string().optional(),
-            zipCode: z.string().optional(),
-            dateOfBirth: z.string().optional(),
-            ssn: z.string().optional(),
-            email: z.string().optional(),
-            phone: z.string().optional(),
-            citizenshipStatus: z.string().optional(),
-        }).optional()
+    
+    // Add specific schema for I-9 form fields if it's required as "digital"
+    if (requiredDocs.some(d => d.id === 'i9' && d.type === 'digital')) {
+        shape.i9_lastName = z.string().optional();
+        shape.i9_firstName = z.string().optional();
+        // Add all other I-9 fields here as needed
     }
 
     return z.object(shape);
 };
+
+
+function I9FormDigital({ form, companyData }: { form: any, companyData?: Partial<Company> | null }) {
+    return (
+        <Card className="border-2 border-dashed">
+            <CardHeader>
+                <CardTitle className="font-headline">Form I-9: Employment Eligibility Verification</CardTitle>
+                <CardDescription>
+                Please fill out all the required fields in Section 1. Your employer has pre-filled their information in Section 2.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <div className="relative w-full">
+                    <Image
+                        src="https://www.uscis.gov/sites/default/files/document/forms/i-9-paper-version.png"
+                        alt="Form I-9"
+                        width={2000}
+                        height={2588}
+                        priority
+                        className="w-full h-auto select-none pointer-events-none"
+                    />
+                    
+                    {/* Section 1 Overlays */}
+                    <FormField control={form.control} name="i9_lastName" render={({ field }) => (
+                         <Input {...field} placeholder="Last Name" className="absolute" style={{ top: '15.5%', left: '11.5%', width: '30%' }}/>
+                    )} />
+                     <FormField control={form.control} name="i9_firstName" render={({ field }) => (
+                         <Input {...field} placeholder="First Name" className="absolute" style={{ top: '15.5%', left: '42.5%', width: '30%' }}/>
+                    )} />
+                     <FormField control={form.control} name="i9_middleInitial" render={({ field }) => (
+                         <Input {...field} placeholder="MI" className="absolute" style={{ top: '15.5%', left: '73.5%', width: '10%' }}/>
+                    )} />
+                    {/* Add more overlays for all of Section 1 as needed */}
+
+
+                    {/* Section 2 - Pre-filled Data */}
+                    <div className="absolute" style={{ top: '73.4%', left: '11.5%', width: '45%' }}>
+                        <Input readOnly value={companyData?.name || ''} className="bg-muted" />
+                    </div>
+                     <div className="absolute" style={{ top: '73.4%', left: '58.5%', width: '38%' }}>
+                        <Input readOnly value={companyData?.address || ''} className="bg-muted" />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
 
 
 export function DocumentationForm({ companyName, candidateId, requiredDocs, companyData }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[], companyData?: Partial<Company> | null }) {
@@ -102,14 +135,11 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
                 }
             }
 
-            // This needs to be adapted if the server expects specific keys
-            // Map our dynamic doc IDs to the expected server action keys
             const result = await updateCandidateWithDocuments(
                 candidateId, 
                 {
                     idCard: documentsToUpload["proofOfIdentity"],
                     proofOfAddress: documentsToUpload["proofOfAddress"],
-                    // ... we can add more specific fields to the server action later
                 }
             );
 
@@ -137,14 +167,6 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
         }
     }
     
-    const handleFillForm = (docName: string) => {
-        toast({
-            title: `Simulating Digital Form`,
-            description: `Opening a secure portal to fill out ${docName}.`,
-        });
-    }
-
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -154,16 +176,16 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
                     requiredDocs.map(doc => (
                         <div key={doc.id}>
                            {doc.type === 'digital' && doc.id === 'i9' ? (
-                                <I9Form form={form} companyData={companyData} />
+                                <I9FormDigital form={form} companyData={companyData} />
                            ) : doc.type === 'digital' ? (
                                 <div className="flex items-center justify-between p-4 border rounded-md">
                                     <div>
                                         <FormLabel className="font-semibold">{doc.label}</FormLabel>
                                         <FormDescription>This form must be completed digitally.</FormDescription>
                                     </div>
-                                    <Button type="button" variant="secondary" onClick={() => handleFillForm(doc.label)}>
+                                    <Button type="button" variant="secondary" disabled>
                                         <Pencil className="mr-2 h-4 w-4" />
-                                        Fill Out Form
+                                        Fill Out Form (Coming Soon)
                                     </Button>
                                 </div>
                             ) : (
@@ -219,5 +241,3 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs, comp
     </Form>
   )
 }
-
-    

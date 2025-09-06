@@ -1,22 +1,80 @@
 
 "use client";
 
-import { I9Form } from "@/components/dashboard/i9-form";
 import { getCompanies } from "@/app/actions/company-actions";
 import { Company } from "@/lib/company-schemas";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { Form } from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import { Input } from "@/components/ui/input";
+
+
+function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }) {
+    return (
+        <Card className="border">
+            <CardHeader>
+                <CardTitle className="font-headline">Form I-9: Employment Eligibility Verification</CardTitle>
+                <CardDescription>
+                    This is a preview of the system-generated form. The candidate will be able to fill out the fields directly.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="relative w-full">
+                    {/* Using a static image of the form as a background */}
+                    <Image
+                        src="https://www.uscis.gov/sites/default/files/document/forms/i-9-paper-version.png"
+                        alt="Form I-9"
+                        width={2000}
+                        height={2588}
+                        priority
+                        className="w-full h-auto"
+                        data-ai-hint="document form"
+                    />
+                    
+                    {/* Overlay for Employer's Business Name */}
+                    <div
+                        className="absolute"
+                        style={{
+                            top: '73.4%', 
+                            left: '11.5%',
+                            width: '45%',
+                        }}
+                    >
+                        <Input
+                            className="bg-blue-100/50 border-blue-300 text-sm"
+                            readOnly
+                            value={companyData?.name || "Your Company Name"}
+                        />
+                         <p className="text-xs text-muted-foreground mt-1">Employer's Business or Organization Name</p>
+                    </div>
+
+                     {/* Overlay for Employer's Address */}
+                     <div
+                        className="absolute"
+                        style={{
+                            top: '73.4%', 
+                            left: '58.5%',
+                            width: '38%',
+                        }}
+                    >
+                        <Input
+                            className="bg-blue-100/50 border-blue-300 text-sm"
+                            readOnly
+                            value={companyData?.address || "Your Company Address"}
+                        />
+                         <p className="text-xs text-muted-foreground mt-1">Employer's Business or Organization Address</p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 
 export default function DocumentationPreviewPage() {
   const [company, setCompany] = useState<Partial<Company> | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Create a dummy form instance for preview purposes.
-  // This is required to provide context to the form components inside I9Form.
-  const form = useForm();
 
   useEffect(() => {
     async function loadSettings() {
@@ -24,7 +82,6 @@ export default function DocumentationPreviewPage() {
       if (companies && companies.length > 0) {
         setCompany(companies[0]);
       } else {
-        // Provide a default object for the preview if no company is configured
         setCompany({ name: "Your Company Name", address: "Your Company Address" });
       }
       setLoading(false);
@@ -41,21 +98,13 @@ export default function DocumentationPreviewPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 relative">
+    <div className="flex min-h-screen flex-col items-center bg-muted/40 p-4 relative">
         <div className="fixed top-0 left-0 w-full bg-background/80 backdrop-blur-sm p-2 text-center text-sm font-semibold border-b shadow-sm z-20">
             PREVIEW MODE
         </div>
-        <div className="w-full max-w-4xl z-10 pointer-events-none opacity-70 mt-12">
-            <h1 className="text-2xl font-bold text-center mb-4">Form I-9 Preview</h1>
-            <p className="text-muted-foreground text-center mb-8">This is what the candidate will see when asked to fill out the form digitally.</p>
-            <Form {...form}>
-                <form>
-                    <I9Form form={form} companyData={company} />
-                </form>
-            </Form>
+        <div className="w-full max-w-4xl z-10 mt-12">
+            <I9FormPreview companyData={company} />
         </div>
     </div>
   );
 }
-
-    
