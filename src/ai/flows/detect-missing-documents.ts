@@ -20,6 +20,7 @@ const DetectMissingDocumentsInputSchema = z.object({
     .enum(['Application', 'Detailed Documentation'])
     .describe('The current onboarding phase of the candidate.'),
   submittedDocuments: z.array(z.string()).describe('A list of documents already submitted by the candidate.'),
+  requiredDocuments: z.array(z.object({ label: z.string(), type: z.string() })).describe('The structured list of required documents configured by the admin.'),
 });
 export type DetectMissingDocumentsInput = z.infer<typeof DetectMissingDocumentsInputSchema>;
 
@@ -42,20 +43,18 @@ const prompt = ai.definePrompt({
 
 Based on the candidate's profile, current onboarding phase, and the list of submitted documents, you will generate a ranked list of potentially missing documents.
 
+The complete list of documents required by the company is:
+{{#each requiredDocuments}}
+- {{{this.label}}} (Type: {{{this.type}}})
+{{/each}}
+
 Candidate Profile: {{{candidateProfile}}}
 Onboarding Phase: {{{onboardingPhase}}}
 Submitted Documents: {{#each submittedDocuments}}{{{this}}}, {{/each}}
 
-Analyze the provided information and determine which of the following standard documents are still needed. Do not suggest documents that are already submitted.
-- CV/Resume
-- Professional References
-- Educational Diplomas/Certificates
-- Form W-4 (Employee's Withholding Certificate)
-- Form I-9 (Employment Eligibility Verification)
-- Proof of Identity
-- Proof of Address
+Analyze the provided information and determine which documents from the complete required list are still needed. Do not suggest documents that are already in the "Submitted Documents" list.
 
-Do not suggest "Cover Letter" as it is not required.
+Do not suggest "Cover Letter" as it is not a standard requirement unless specified in the required list.
 
 Return a ranked list of potentially missing documents.
 `,

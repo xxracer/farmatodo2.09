@@ -11,6 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CopyDocumentationLink } from "./copy-documentation-link";
 import { getCandidate } from "@/app/actions/client-actions";
 import { ApplicationData } from "@/lib/schemas";
+import { getCompanies } from "@/app/actions/company-actions";
+import { RequiredDoc } from "@/lib/company-schemas";
 
 
 function buildCandidateProfile(candidate: ApplicationData | null): string {
@@ -24,18 +26,27 @@ function buildCandidateProfile(candidate: ApplicationData | null): string {
   `;
 }
 
-export function DocumentationPhase({ candidateId }: { candidateId: string, candidateProfile: string, submittedDocuments: string[]}) {
+export function DocumentationPhase({ candidateId }: { candidateId: string}) {
   const [missingDocuments, setMissingDocuments] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<ApplicationData | null>(null);
+  const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
+  const [companyName, setCompanyName] = useState<string>('');
   const { toast } = useToast();
 
   const loadData = useCallback(async () => {
     if (candidateId) {
-      const data = await getCandidate(candidateId);
-      setCandidate(data ? JSON.parse(JSON.stringify(data)) : null);
+      const candidateData = await getCandidate(candidateId);
+      setCandidate(candidateData ? JSON.parse(JSON.stringify(candidateData)) : null);
     }
+    // Load company settings to get the required docs list
+    const companies = await getCompanies();
+    if (companies && companies.length > 0) {
+        setRequiredDocs(companies[0].requiredDocs || []);
+        setCompanyName(companies[0].name || '');
+    }
+
   }, [candidateId]);
 
   useEffect(() => {
@@ -65,6 +76,7 @@ export function DocumentationPhase({ candidateId }: { candidateId: string, candi
       candidateProfile: buildCandidateProfile(candidate),
       onboardingPhase: "Detailed Documentation",
       submittedDocuments: submittedDocs,
+      requiredDocuments: requiredDocs,
     };
 
     try {
@@ -96,7 +108,7 @@ export function DocumentationPhase({ candidateId }: { candidateId: string, candi
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CopyDocumentationLink candidateId={candidateId} companyName={candidate?.applyingFor[0]} />
+            <CopyDocumentationLink candidateId={candidateId} companyName={companyName} />
           </CardContent>
         </Card>
 
@@ -140,7 +152,7 @@ export function DocumentationPhase({ candidateId }: { candidateId: string, candi
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
-            {missingDocuments && (
+            {missingDocuments && missingDocuments.length > 0 && (
                 <Alert>
                     <FileCheck className="h-4 w-4" />
                     <AlertTitle>Potentially Missing Documents</AlertTitle>
@@ -150,6 +162,15 @@ export function DocumentationPhase({ candidateId }: { candidateId: string, candi
                                 <li key={index}>{doc}</li>
                             ))}
                         </ul>
+                    </AlertDescription>
+                </Alert>
+            )}
+            {missingDocuments && missingDocuments.length === 0 && (
+                 <Alert variant="default" className="border-green-500/50 text-green-700 dark:border-green-500 [&>svg]:text-green-700">
+                    <FileCheck className="h-4 w-4" />
+                    <AlertTitle>All Documents Accounted For!</AlertTitle>
+                    <AlertDescription>
+                       Based on the analysis, the candidate seems to have submitted all required documents.
                     </AlertDescription>
                 </Alert>
             )}

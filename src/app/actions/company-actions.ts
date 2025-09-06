@@ -54,7 +54,7 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
 
         if (uploadError) {
             console.error("Error uploading logo:", uploadError);
-            throw new Error("Failed to upload logo.");
+            throw new Error(`Failed to upload logo: ${uploadError.message}`);
         }
         
         // We store the path from the upload, not the original base64 string.
@@ -93,9 +93,8 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     }
     
     if (error) {
-        console.error("Error saving company:", error);
-        // This is a more specific error message now
-        throw new Error(`Failed to save company data to the database: ${error.message}`);
+        console.error("Error saving company data to the database:", error);
+        throw new Error(`Failed to save company data: ${error.message}`);
     }
     
     revalidatePath('/dashboard/settings');

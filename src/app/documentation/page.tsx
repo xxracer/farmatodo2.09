@@ -5,7 +5,7 @@ import { DocumentationForm } from "@/components/dashboard/documentation-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { getCompany } from "@/app/actions/company-actions";
+import { getCompanies } from "@/app/actions/company-actions";
 import { supabase } from "@/lib/supabaseClient";
 import { Company } from "@/lib/company-schemas";
 import { useSearchParams } from "next/navigation";
@@ -14,8 +14,8 @@ import { useEffect, useState, Suspense } from "react";
 
 async function getSignedUrl(path: string | null | undefined) {    
     if (!path || path.startsWith('http')) return path;
-    const { data } = await supabase.storage.from('logos').getPublicUrl(path);
-    return data?.publicUrl || path;
+    const { data } = await supabase.storage.from('logos').createSignedUrl(path, 3600);
+    return data?.signedUrl || path;
 }
 
 
@@ -28,10 +28,8 @@ function DocumentationPageContent() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function getCompanyForDocumentation(cId?: string | null): Promise<Partial<Company>> {
-            if (!cId) return { name: "Company", logo: "https://placehold.co/150x50.png" };
-            
-            // In a multi-company setup, we'd find the specific one. For now, we get the first.
+        async function getCompanyForDocumentation(): Promise<Partial<Company>> {
+            // In a multi-company setup, we'd find the specific one by `companyId`. For now, we get the first.
             const companies = await getCompanies();
             const foundCompany = companies.length > 0 ? companies[0] : null;
             
@@ -43,12 +41,12 @@ function DocumentationPageContent() {
                 return foundCompany;
             }
             
-            return { name: "Company", logo: "https://placehold.co/150x50.png" };
+            return { name: "Company", logo: "https://placehold.co/150x50.png", requiredDocs: [] };
         }
 
         async function loadData() {
             setLoading(true);
-            const companyData = await getCompanyForDocumentation(companyId);
+            const companyData = await getCompanyForDocumentation();
             setCompany(companyData);
             setLoading(false);
         }
@@ -64,7 +62,7 @@ function DocumentationPageContent() {
         )
     }
 
-    const requiredDocs = company?.requiredDocs?.split('\n').filter(doc => doc.trim() !== '') || [];
+    const requiredDocs = company?.requiredDocs || [];
 
     return (
         <div className="flex min-h-screen flex-col items-center bg-background p-4">
