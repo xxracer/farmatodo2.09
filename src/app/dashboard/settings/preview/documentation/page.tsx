@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { Form, FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 
 
 function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }) {
@@ -26,7 +26,7 @@ function I9FormPreview({ companyData }: { companyData: Partial<Company> | null }
                 </CardHeader>
                 <CardContent>
                     <div className="relative w-full">
-                        {/* Using a static image of the form as a background */}
+                        {/* Using a local image of the form as a background */}
                         <Image
                             src="/images/form-i9.png"
                             alt="Form I-9"
