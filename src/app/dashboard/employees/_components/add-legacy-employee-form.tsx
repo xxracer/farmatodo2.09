@@ -79,6 +79,9 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
             zipCode: extractedData.zipCode,
             driversLicenseExpiration: new Date(extractedData.driversLicenseExpiration),
             date: hireDate, // Using 'date' field to store hire date as it's used elsewhere for hire/application date
+            position: extractedData.position,
+            homePhone: extractedData.homePhone,
+            emergencyContact: extractedData.emergencyContact,
         };
 
         const result = await createLegacyEmployee(employeeData);
@@ -102,17 +105,31 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
                         Please review the information extracted by the AI. You can edit it before saving.
                     </AlertDescription>
                 </Alert>
-                <div className="space-y-2">
-                    <Label>First Name</Label>
-                    <Input value={extractedData.firstName} onChange={(e) => setExtractedData({ ...extractedData, firstName: e.target.value })} />
-                </div>
-                 <div className="space-y-2">
-                    <Label>Last Name</Label>
-                    <Input value={extractedData.lastName} onChange={(e) => setExtractedData({ ...extractedData, lastName: e.target.value })} />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>First Name</Label>
+                        <Input value={extractedData.firstName} onChange={(e) => setExtractedData({ ...extractedData, firstName: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Last Name</Label>
+                        <Input value={extractedData.lastName} onChange={(e) => setExtractedData({ ...extractedData, lastName: e.target.value })} />
+                    </div>
                 </div>
                  <div className="space-y-2">
                     <Label>Address</Label>
                     <Input value={extractedData.address} onChange={(e) => setExtractedData({ ...extractedData, address: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Position</Label>
+                    <Input value={extractedData.position} onChange={(e) => setExtractedData({ ...extractedData, position: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Home Phone</Label>
+                    <Input value={extractedData.homePhone} onChange={(e) => setExtractedData({ ...extractedData, homePhone: e.target.value })} />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Emergency Contact</Label>
+                    <Input value={extractedData.emergencyContact} onChange={(e) => setExtractedData({ ...extractedData, emergencyContact: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                     <Label>Driver's License Expiration (YYYY-MM-DD)</Label>

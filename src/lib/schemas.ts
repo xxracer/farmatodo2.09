@@ -225,5 +225,8 @@ export const ExtractEmployeeDataOutputSchema = z.object({
   state: z.string().describe("The employee's state."),
   zipCode: z.string().describe("The employee's zip code."),
   driversLicenseExpiration: z.string().describe("The expiration date of the driver's license in YYYY-MM-DD format."),
+  position: z.string().describe("The position the employee applied for."),
+  homePhone: z.string().describe("The employee's home phone number."),
+  emergencyContact: z.string().describe("The employee's emergency contact (name and phone number)."),
 });
 export type ExtractEmployeeDataOutput = z.infer<typeof ExtractEmployeeDataOutputSchema>;

@@ -29,6 +29,9 @@ You will be provided with a PDF document. Your task is to carefully analyze the 
 - State
 - Zip Code
 - Driver's License Expiration Date
+- Position applying for
+- Home Phone Number
+- Emergency Contact (Name and Phone Number)
 
 Pay very close attention to the "Driver's License Expiration Date". It is a critical piece of information. Ensure the date is formatted as YYYY-MM-DD.
 
