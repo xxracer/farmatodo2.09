@@ -70,7 +70,12 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     if (dataToSave.id) {
         // UPDATE existing company
         const { created_at, ...updateData } = dataToSave;
-        const validatedData = companySchema.partial().parse(updateData);
+        // Ensure requiredDocs is valid JSON or null before saving
+        const validatedData = {
+            ...updateData,
+            requiredDocs: updateData.requiredDocs ? JSON.parse(JSON.stringify(updateData.requiredDocs)) : null,
+        };
+
         const { data: updateResult, error: updateError } = await supabase
             .from('companies')
             .update(validatedData)
@@ -82,7 +87,10 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
     } else {
         // INSERT new company
         const { id, ...insertData } = dataToSave; // Exclude null/undefined id
-        const validatedData = companySchema.omit({ id: true, created_at: true }).partial().parse(insertData);
+        const validatedData = {
+            ...insertData,
+            requiredDocs: insertData.requiredDocs ? JSON.parse(JSON.stringify(insertData.requiredDocs)) : null,
+        };
         const { data: insertResult, error: insertError } = await supabase
             .from('companies')
             .insert(validatedData)
