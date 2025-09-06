@@ -3,6 +3,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
+import { revalidatePath } from "next/cache";
 
 // Helper function to decode a base64 data URI and convert it to a File-like object for Supabase
 function dataUriToBuffer(dataUri: string): { buffer: Buffer, mimeType: string, extension: string } {
@@ -31,7 +32,6 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
             .upload(resumeFileName, resumeBuffer, { contentType: resumeMimeType, upsert: true });
 
         if (resumeUploadError) throw resumeUploadError;
-        // NOTE: We no longer get a public URL. We store the path and will generate signed URLs when needed.
         const resumePath = resumeUploadData.path;
 
 
@@ -43,7 +43,6 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
             .upload(licenseFileName, licenseBuffer, { contentType: licenseMimeType, upsert: true });
             
         if (licenseUploadError) throw licenseUploadError;
-        // NOTE: We no longer get a public URL. We store the path.
         const licensePath = licenseUploadData.path;
         
         
@@ -67,6 +66,31 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
     } catch (error) {
         console.error("Error creating candidate: ", error);
         return { success: false, error: (error as Error).message || "Failed to create candidate." };
+    }
+}
+
+
+export async function createLegacyEmployee(employeeData: Partial<ApplicationData>) {
+    try {
+        const dataToInsert = {
+            ...employeeData,
+            status: 'employee',
+        };
+
+        const { data: insertedData, error: insertError } = await supabase
+            .from('candidates')
+            .insert([dataToInsert])
+            .select()
+            .single();
+        
+        if (insertError) throw insertError;
+        
+        revalidatePath('/dashboard/employees');
+        return { success: true, id: insertedData.id };
+
+    } catch (error) {
+         console.error("Error creating legacy employee: ", error);
+        return { success: false, error: (error as Error).message || "Failed to create legacy employee." };
     }
 }
 
