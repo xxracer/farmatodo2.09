@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { extractEmployeeDataFromPdf } from "@/ai/flows/extract-employee-data";
 import { createLegacyEmployee } from "@/app/actions/client-actions";
+import { ExtractEmployeeDataOutput } from "@/lib/schemas";
 
 // Helper to convert a File to a base64 data URI
 async function fileToDataURL(file: File): Promise<string> {
@@ -33,21 +34,12 @@ const formSchema = z.object({
     hireDate: z.date({ required_error: "A hire date is required." }),
 });
 
-type ExtractedData = {
-    firstName: string;
-    lastName: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    driversLicenseExpiration: string;
-};
 
 export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: () => void }) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
+    const [extractedData, setExtractedData] = useState<ExtractEmployeeDataOutput | null>(null);
     const [hireDate, setHireDate] = useState<Date | null>(null);
 
     const { control, handleSubmit, watch, formState: { errors } } = useForm<z.infer<typeof formSchema>>({

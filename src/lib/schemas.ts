@@ -206,3 +206,24 @@ export const documentationSchema = z.object({
 }).catchall(requiredDocUpload.optional());
 
 export type DocumentationSchema = z.infer<typeof documentationSchema>;
+
+// Schemas for the Legacy Employee PDF Extraction Flow
+export const ExtractEmployeeDataInputSchema = z.object({
+  pdfDataUri: z
+    .string()
+    .describe(
+      "The PDF document of the employee's application, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:application/pdf;base64,<encoded_data>'."
+    ),
+});
+export type ExtractEmployeeDataInput = z.infer<typeof ExtractEmployeeDataInputSchema>;
+
+export const ExtractEmployeeDataOutputSchema = z.object({
+  firstName: z.string().describe("The employee's first name."),
+  lastName: z.string().describe("The employee's last name."),
+  address: z.string().describe("The employee's full street address."),
+  city: z.string().describe("The employee's city."),
+  state: z.string().describe("The employee's state."),
+  zipCode: z.string().describe("The employee's zip code."),
+  driversLicenseExpiration: z.string().describe("The expiration date of the driver's license in YYYY-MM-DD format."),
+});
+export type ExtractEmployeeDataOutput = z.infer<typeof ExtractEmployeeDataOutputSchema>;
