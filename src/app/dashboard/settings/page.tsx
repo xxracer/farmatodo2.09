@@ -383,5 +383,3 @@ export default function SettingsPage() {
     </form>
   );
 }
-
-    
