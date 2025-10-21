@@ -278,7 +278,7 @@ export default function SettingsPage() {
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/settings/preview/application" target="_blank">
                             <Eye className="mr-2 h-4 w-4" />
-                            Preview Phase 1 Form
+                            Preview Application Template
                         </Link>
                     </Button>
                 </div>
@@ -302,7 +302,7 @@ export default function SettingsPage() {
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/settings/preview/interview" target="_blank">
                             <Eye className="mr-2 h-4 w-4" />
-                            Preview Phase 2 Screen
+                            Preview Interview Screen
                         </Link>
                     </Button>
                 </div>
@@ -364,7 +364,7 @@ export default function SettingsPage() {
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/settings/preview/documentation" target="_blank">
                             <Eye className="mr-2 h-4 w-4" />
-                            Preview Phase 3 Page
+                            Preview Documentation Page
                         </Link>
                     </Button>
                 </div>
