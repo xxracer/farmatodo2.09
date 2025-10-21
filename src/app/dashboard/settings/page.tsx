@@ -180,27 +180,50 @@ export default function SettingsPage() {
 
   return (
     <form onSubmit={handleSaveSettings} className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
                 <Settings className="h-8 w-8 text-foreground" />
-                <h1 className="text-3xl font-headline font-bold text-foreground">Company Settings</h1>
+                <div>
+                    <h1 className="text-3xl font-headline font-bold text-foreground">Company Settings</h1>
+                    <p className="text-muted-foreground">
+                        Manage your company profile and documentation requirements here.
+                    </p>
+                </div>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/settings/preview/application" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Application
-                    </Link>
-                </Button>
                  <Button type="submit" size="lg" disabled={isPending}>
                     {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save All Settings
                 </Button>
             </div>
         </div>
-      <p className="text-muted-foreground">
-        Manage your company profile and documentation requirements here.
-      </p>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Previews</CardTitle>
+                <CardDescription>Preview the different phases of the candidate experience.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+                 <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/application" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Phase 1: Application
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/interview" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Phase 2: Interview
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/documentation" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Phase 3: Documentation
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
 
       <Card>
         <CardHeader>
