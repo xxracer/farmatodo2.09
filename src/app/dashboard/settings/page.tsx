@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye } from "lucide-react";
+import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,10 @@ export default function SettingsPage() {
                     }));
                     activeCompany.phase1Images = urls.filter(Boolean) as string[];
                 }
+                if (activeCompany.interviewImage && !activeCompany.interviewImage.startsWith('http')) {
+                    const { data: urlData } = await supabase.storage.from('forms').createSignedUrl(activeCompany.interviewImage, 3600);
+                    activeCompany.interviewImage = urlData?.signedUrl || activeCompany.interviewImage;
+                }
             }
             setCompany(activeCompany);
             setRequiredDocs(activeCompany.requiredDocs || []);
@@ -118,6 +122,13 @@ export default function SettingsPage() {
         setCompany(prev => ({ ...prev, logo: base64Logo }));
     }
   };
+
+  const handleInterviewImageChange = async (file: File | null) => {
+    if (file) {
+        const base64Image = await toBase64(file);
+        setCompany(prev => ({ ...prev, interviewImage: base64Image }));
+    }
+  }
 
   const handleCompanyFieldChange = (field: keyof Company, value: string | string[]) => {
     setCompany(prev => ({ ...prev, [field]: value }));
@@ -197,33 +208,6 @@ export default function SettingsPage() {
                 </Button>
             </div>
         </div>
-        
-        <Card>
-            <CardHeader>
-                <CardTitle>Previews</CardTitle>
-                <CardDescription>Preview the different phases of the candidate experience.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-                 <Button variant="outline" asChild>
-                    <Link href="/dashboard/settings/preview/application" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Phase 1: Application
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/settings/preview/interview" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Phase 2: Interview
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/settings/preview/documentation" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Phase 3: Documentation
-                    </Link>
-                </Button>
-            </CardContent>
-        </Card>
 
       <Card>
         <CardHeader>
@@ -250,7 +234,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
       
-        <Card>
+      <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">Phase 1: Application Form</CardTitle>
                 <CardDescription>Choose how candidates will fill out their initial application.</CardDescription>
@@ -289,12 +273,43 @@ export default function SettingsPage() {
                     </div>
                 )}
             </CardContent>
+            <CardContent>
+                 <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/application" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Phase 1: Application
+                    </Link>
+                </Button>
+            </CardContent>
         </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" />Phase 2: Interview</CardTitle>
+                <CardDescription>Customize the background image for the interview review phase.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                  <Label htmlFor="interview-image">Interview Background Image</Label>
+                  <div className="flex items-center gap-4">
+                      <Input id="interview-image" type="file" className="max-w-xs" onChange={(e) => handleInterviewImageChange(e.target.files?.[0] || null)} accept="image/*" />
+                      {company.interviewImage && <Image src={company.interviewImage} alt="Interview BG Preview" width={80} height={40} className="rounded-sm object-cover" />}
+                  </div>
+                </div>
+                 <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/interview" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Phase 2: Interview
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+
 
       <Card>
           <CardHeader>
-              <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Required Documentation</CardTitle>
-              <CardDescription>Select the official documents candidates must download, fill, and upload during the second phase.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Phase 3: Required Documentation</CardTitle>
+              <CardDescription>Select the official documents candidates must download, fill, and upload during the documentation phase.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -338,6 +353,13 @@ export default function SettingsPage() {
                       <Button type="button" onClick={addCustomDoc}>Add</Button>
                   </div>
               </div>
+                <Separator className="my-4" />
+                 <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/documentation" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Phase 3: Documentation
+                    </Link>
+                </Button>
           </CardContent>
       </Card>
       
