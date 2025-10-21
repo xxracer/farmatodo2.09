@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { getCompanies, createOrUpdateCompany } from "@/app/actions/company-actio
 import { type Company, type RequiredDoc } from "@/lib/company-schemas";
 import { supabase } from "@/lib/supabaseClient";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
 
 // Helper to convert file to Base64
 const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -34,31 +37,49 @@ export default function SettingsPage() {
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
 
-  // State for the primary company being edited
   const [company, setCompany] = useState<Partial<Company>>({});
-  
-  // State for documentation settings
   const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
   const [customDocLabel, setCustomDocLabel] = useState("");
+  const [phase1ImagesToUpload, setPhase1ImagesToUpload] = useState<string[]>([]);
+  const [phase1ImageFiles, setPhase1ImageFiles] = useState<File[]>([]);
 
 
   // Load the first company from Supabase on component mount
   useEffect(() => {
-    setIsLoading(true);
-    getCompanies().then(async (data) => {
-      let activeCompany: Partial<Company> = {};
-      if (data && data.length > 0) {
-        activeCompany = data[0]; // Always edit the first company on this page
-        if (activeCompany.logo && !activeCompany.logo.startsWith('http')) {
-             const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(activeCompany.logo, 3600);
-             activeCompany.logo = signedUrlData?.signedUrl || activeCompany.logo;
+    async function loadCompany() {
+        setIsLoading(true);
+        try {
+            const data = await getCompanies();
+            let activeCompany: Partial<Company> = {};
+            if (data && data.length > 0) {
+                activeCompany = data[0]; 
+                
+                // Get signed URLs for display
+                if (activeCompany.logo && !activeCompany.logo.startsWith('http')) {
+                    const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(activeCompany.logo, 3600);
+                    activeCompany.logo = signedUrlData?.signedUrl || activeCompany.logo;
+                }
+                 if (activeCompany.phase1Images && activeCompany.phase1Images.length > 0) {
+                    const urls = await Promise.all(activeCompany.phase1Images.map(async p => {
+                        if (p && !p.startsWith('http')) {
+                            const { data: urlData } = await supabase.storage.from('forms').createSignedUrl(p, 3600);
+                            return urlData?.signedUrl || null;
+                        }
+                        return p;
+                    }));
+                    activeCompany.phase1Images = urls.filter(Boolean) as string[];
+                }
+            }
+            setCompany(activeCompany);
+            setRequiredDocs(activeCompany.requiredDocs || []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Failed to load settings", description: (error as Error).message });
+        } finally {
+            setIsLoading(false);
         }
-      }
-      setCompany(activeCompany);
-      setRequiredDocs(activeCompany.requiredDocs || []);
-      setIsLoading(false);
-    });
-  }, []);
+    }
+    loadCompany();
+  }, [toast]);
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,17 +90,20 @@ export default function SettingsPage() {
         }
         
         try {
-            const dataToSave: Partial<Company> = {
+            const dataToSave: Partial<Company> & { phase1ImagesToUpload?: string[] } = {
                 ...company,
                 requiredDocs,
+                phase1ImagesToUpload: phase1ImagesToUpload
             };
-
+            
             const result = await createOrUpdateCompany(dataToSave);
+
             if (!result.success || !result.company) throw new Error("Failed to save company settings.");
             
-            // Update local state with the returned data, including new ID and signed URL for logo
             setCompany(result.company);
             setRequiredDocs(result.company.requiredDocs || []);
+            setPhase1ImagesToUpload([]);
+            setPhase1ImageFiles([]);
 
             toast({ title: "Settings Saved", description: "Your company settings have been updated." });
         } catch (error) {
@@ -95,14 +119,32 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCompanyFieldChange = (field: keyof Company, value: string) => {
+  const handleCompanyFieldChange = (field: keyof Company, value: string | string[]) => {
     setCompany(prev => ({ ...prev, [field]: value }));
   };
-    
+
+  const handleFormCustomizationChange = (value: 'template' | 'custom') => {
+    setCompany(prev => ({ ...prev, formCustomization: value }));
+  }
+
+  const handlePhase1ImagesChange = async (files: FileList | null) => {
+    if (files) {
+        const fileArray = Array.from(files);
+        setPhase1ImageFiles(prev => [...prev, ...fileArray]);
+        const base64Promises = fileArray.map(file => toBase64(file));
+        const base64Results = await Promise.all(base64Promises);
+        setPhase1ImagesToUpload(prev => [...prev, ...base64Results]);
+    }
+  }
+
+  const removePhase1Image = (index: number) => {
+    setPhase1ImagesToUpload(prev => prev.filter((_, i) => i !== index));
+    setPhase1ImageFiles(prev => prev.filter((_, i) => i !== index));
+  }
+  
     const handleStandardDocChange = (doc: Omit<RequiredDoc, 'type'>, checked: boolean) => {
         setRequiredDocs(prevDocs => {
             if (checked) {
-                // All documents are now 'upload' type
                 return [...prevDocs, { ...doc, type: 'upload' }];
             } else {
                 return prevDocs.filter(d => d.id !== doc.id);
@@ -138,10 +180,24 @@ export default function SettingsPage() {
 
   return (
     <form onSubmit={handleSaveSettings} className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Settings className="h-8 w-8 text-foreground" />
-        <h1 className="text-3xl font-headline font-bold text-foreground">Company Settings</h1>
-      </div>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                <Settings className="h-8 w-8 text-foreground" />
+                <h1 className="text-3xl font-headline font-bold text-foreground">Company Settings</h1>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/application" target="_blank">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview Application
+                    </Link>
+                </Button>
+                 <Button type="submit" size="lg" disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Save All Settings
+                </Button>
+            </div>
+        </div>
       <p className="text-muted-foreground">
         Manage your company profile and documentation requirements here.
       </p>
@@ -168,27 +224,54 @@ export default function SettingsPage() {
                   </div>
               </div>
            </div>
-           <div className="space-y-2">
-              <Label htmlFor="company-address">Address</Label>
-              <Input id="company-address" placeholder="123 Health St, Suite 100" value={company.address || ''} onChange={(e) => handleCompanyFieldChange('address', e.target.value)} />
-           </div>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="space-y-2">
-                  <Label htmlFor="company-phone">Phone Number</Label>
-                  <Input id="company-phone" placeholder="(555) 123-4567" value={company.phone || ''} onChange={(e) => handleCompanyFieldChange('phone', e.target.value)} />
-               </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company-fax">Fax Number</Label>
-                  <Input id="company-fax" placeholder="(555) 123-4568" value={company.fax || ''} onChange={(e) => handleCompanyFieldChange('fax', e.target.value)} />
-               </div>
-           </div>
         </CardContent>
       </Card>
       
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">Phase 1: Application Form</CardTitle>
+                <CardDescription>Choose how candidates will fill out their initial application.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <RadioGroup 
+                    value={company.formCustomization || 'template'} 
+                    onValueChange={handleFormCustomizationChange}
+                    className="space-y-2"
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="template" id="template" />
+                        <Label htmlFor="template">Default Template Form</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="custom" id="custom" />
+                        <Label htmlFor="custom">Custom Uploaded Form (Image/PDF)</Label>
+                    </div>
+                </RadioGroup>
+
+                {company.formCustomization === 'custom' && (
+                    <div className="pt-4 border-t mt-4">
+                        <Label htmlFor="phase1-images">Upload Form Pages</Label>
+                        <p className="text-sm text-muted-foreground mb-2">Upload images or a PDF of your paper application form. These will be displayed to the applicant instead of the digital form.</p>
+                        <Input id="phase1-images" type="file" multiple onChange={(e) => handlePhase1ImagesChange(e.target.files)} accept="image/*,.pdf" />
+                        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                           {phase1ImageFiles.map((file, index) => (
+                             <div key={index} className="relative group">
+                                <Image src={URL.createObjectURL(file)} alt={`Form page ${index + 1}`} width={150} height={200} className="rounded-md object-cover w-full" />
+                                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhase1Image(index)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                             </div>
+                           ))}
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+
       <Card>
           <CardHeader>
               <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Required Documentation</CardTitle>
-              <CardDescription>Select the official documents candidates must download, fill, and upload.</CardDescription>
+              <CardDescription>Select the official documents candidates must download, fill, and upload during the second phase.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -234,6 +317,8 @@ export default function SettingsPage() {
               </div>
           </CardContent>
       </Card>
+      
+      <Separator />
 
       <div className="flex justify-end">
           <Button type="submit" size="lg" disabled={isPending}>
@@ -244,5 +329,3 @@ export default function SettingsPage() {
     </form>
   );
 }
-
-    
