@@ -10,10 +10,14 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 
-async function getSignedUrl(path: string | null | undefined) {    
+async function getSignedUrl(bucket: string, path: string | null | undefined) {    
     if (!path || path.startsWith('http')) return path;
-    const { data } = await supabase.storage.from('logos').getPublicUrl(path);
-    return data?.publicUrl || path;
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600); // 1 hour expiry
+    if (error) {
+        console.error(`Error creating signed url for ${path} in ${bucket}:`, error);
+        return null;
+    }
+    return data?.signedUrl || path;
 }
 
 
@@ -49,8 +53,8 @@ export default function InterviewPreviewPage() {
       if (companies && companies.length > 0) {
         const firstCompany = companies[0];
         if (firstCompany.interviewImage) {
-            const url = await getSignedUrl(firstCompany.interviewImage);
-            setInterviewImage(url);
+            const url = await getSignedUrl('forms', firstCompany.interviewImage);
+            if(url) setInterviewImage(url);
         }
       }
       setLoading(false);

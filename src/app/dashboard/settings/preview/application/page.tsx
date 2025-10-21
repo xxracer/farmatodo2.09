@@ -9,39 +9,44 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Card, CardContent } from "@/components/ui/card";
 
-// Helper to get a signed URL for a stored path
-async function getSignedUrl(path: string | null | undefined) {    
+
+// Helper to get a signed URL for a stored path from a specific bucket
+async function getSignedUrl(bucket: string, path: string | null | undefined) {    
     if (!path || path.startsWith('http')) return path;
-    const { data } = await supabase.storage.from('logos').getPublicUrl(path);
-    return data?.publicUrl || path;
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600); // 1 hour expiry
+    if (error) {
+        console.error(`Error creating signed url for ${path} in ${bucket}:`, error);
+        return null;
+    }
+    return data?.signedUrl || path;
 }
 
 
 export default function ApplicationPreviewPage() {
   const [company, setCompany] = useState<Partial<Company> | null>(null);
-  const [phase1ImageUrls, setPhase1ImageUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadSettings() {
       const companies = await getCompanies();
       if (companies && companies.length > 0) {
-        const firstCompany = companies[0];
+        const firstCompany = { ...companies[0] }; // Create a mutable copy
 
         // Get signed URL for the logo
         if (firstCompany.logo) {
-            const logoUrl = await getSignedUrl(firstCompany.logo);
-            firstCompany.logo = logoUrl;
+            const logoUrl = await getSignedUrl('logos', firstCompany.logo);
+            if(logoUrl) firstCompany.logo = logoUrl;
         }
-
-        setCompany(firstCompany);
 
         // Get signed URLs for phase 1 images if they exist
         if (firstCompany.phase1Images && firstCompany.phase1Images.length > 0) {
-            const urls = await Promise.all(firstCompany.phase1Images.map(p => getSignedUrl(p)));
-            setPhase1ImageUrls(urls.filter((url): url is string => !!url));
+            const urls = await Promise.all(firstCompany.phase1Images.map(p => getSignedUrl('forms', p)));
+            firstCompany.phase1Images = urls.filter((url): url is string => !!url);
         }
+        
+        setCompany(firstCompany);
 
       } else {
         setCompany({ name: "Your Company", logo: "https://placehold.co/150x50.png" });
@@ -60,7 +65,7 @@ export default function ApplicationPreviewPage() {
     )
   }
   
-  const useTemplate = !company || company.formCustomization === 'template';
+  const useTemplate = !company || !company.formCustomization || company.formCustomization === 'template';
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-muted/40 p-4">
@@ -87,10 +92,10 @@ export default function ApplicationPreviewPage() {
                 ) : (
                     <Card>
                         <CardContent className="p-2 md:p-4">
-                             {phase1ImageUrls.length > 0 ? (
+                             {(company?.phase1Images && company.phase1Images.length > 0) ? (
                                 <Carousel className="w-full">
                                     <CarouselContent>
-                                        {phase1ImageUrls.map((url, index) => (
+                                        {company.phase1Images.map((url, index) => (
                                             <CarouselItem key={index}>
                                                 <Image
                                                     src={url}
@@ -102,7 +107,7 @@ export default function ApplicationPreviewPage() {
                                             </CarouselItem>
                                         ))}
                                     </CarouselContent>
-                                    {phase1ImageUrls.length > 1 && (
+                                    {company.phase1Images.length > 1 && (
                                         <>
                                             <CarouselPrevious className="ml-12" />
                                             <CarouselNext className="mr-12" />
