@@ -1,30 +1,30 @@
 
 'use client';
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, MoreHorizontal, LogOut, Loader2, AlertCircle } from "lucide-react";
+import { User, MoreHorizontal, LogOut, Loader2, AlertCircle, Settings, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useTransition } from "react";
-import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
+import { getCompanies, deleteCompany } from "@/app/actions/company-actions";
 import { supabase } from "@/lib/supabaseClient";
 import { Company } from "@/lib/company-schemas";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function SuperAdminPage() {
     const [clients, setClients] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
+    const router = useRouter();
 
     useEffect(() => {
         getCompanies().then(async (data) => {
-            // Since getCompanies returns paths for private buckets, we need to generate signed URLs to display them.
              const companiesWithSignedUrls = await Promise.all(data.map(async (c) => {
                 if (c.logo && !c.logo.startsWith('http')) {
-                    const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(c.logo, 3600); // 1 hour expiry
+                    const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(c.logo, 3600);
                     return { ...c, logo: signedUrlData?.signedUrl || c.logo };
                 }
                 return c;
@@ -62,7 +62,8 @@ export default function SuperAdminPage() {
                  <div className="ml-auto flex items-center gap-2">
                      <Button asChild>
                         <Link href="/dashboard/settings">
-                            Go to Settings
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add New Company
                         </Link>
                     </Button>
                     <Button asChild variant="outline">
@@ -76,21 +77,21 @@ export default function SuperAdminPage() {
             <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Clients</CardTitle>
+                        <CardTitle>Client Companies</CardTitle>
                         <CardDescription>
-                            A list of all clients managed in the system, fetched from the database.
+                            A list of all companies managed in the system. Add a new one or edit existing ones.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                        {clients.length === 0 ? (
                             <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[200px]">
                                 <AlertCircle className="h-12 w-12 text-muted-foreground" />
-                                <h3 className="mt-4 text-lg font-semibold">No Clients Found</h3>
+                                <h3 className="mt-4 text-lg font-semibold">No Companies Found</h3>
                                 <p className="mt-2 text-sm text-muted-foreground">
-                                    Go to the settings page to add your first company.
+                                    Click "Add New Company" to set up your first client.
                                 </p>
                                  <Button asChild className="mt-4">
-                                    <Link href="/dashboard/settings">Add Company</Link>
+                                    <Link href="/dashboard/settings">Add New Company</Link>
                                 </Button>
                             </div>
                        ) : (
@@ -99,8 +100,8 @@ export default function SuperAdminPage() {
                                     <TableRow>
                                         <TableHead>Company Name</TableHead>
                                         <TableHead>Created At</TableHead>
-                                        <TableHead>
-                                            <span className="sr-only">Actions</span>
+                                        <TableHead className="text-right">
+                                            Actions
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -114,25 +115,15 @@ export default function SuperAdminPage() {
                                         <TableCell>
                                            {new Date(client.created_at!).toLocaleDateString()}
                                         </TableCell>
-                                        <TableCell>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                        <span className="sr-only">Toggle menu</span>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onSelect={() => alert('Edit functionality to be implemented.')}>
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive" onSelect={() => handleDeleteClient(client.id!)}>
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm" asChild>
+                                                <Link href="/dashboard/settings">
+                                                    <Settings className="mr-2 h-4 w-4" /> Edit
+                                                </Link>
+                                            </Button>
+                                            <Button variant="destructive" size="sm" className="ml-2" onClick={() => handleDeleteClient(client.id!)} disabled={isPending}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                     ))}
@@ -145,3 +136,5 @@ export default function SuperAdminPage() {
         </div>
     )
 }
+
+    
