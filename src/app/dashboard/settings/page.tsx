@@ -239,47 +239,49 @@ export default function SettingsPage() {
                 <CardTitle className="flex items-center gap-2">Phase 1: Application Form</CardTitle>
                 <CardDescription>Choose how candidates will fill out their initial application.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-                <RadioGroup 
-                    value={company.formCustomization || 'template'} 
-                    onValueChange={handleFormCustomizationChange}
-                    className="space-y-2"
-                >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="template" id="template" />
-                        <Label htmlFor="template">Default Template Form</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="custom" id="custom" />
-                        <Label htmlFor="custom">Custom Uploaded Form (Image/PDF)</Label>
-                    </div>
-                </RadioGroup>
-
-                {company.formCustomization === 'custom' && (
-                    <div className="pt-4 border-t mt-4">
-                        <Label htmlFor="phase1-images">Upload Form Pages</Label>
-                        <p className="text-sm text-muted-foreground mb-2">Upload images or a PDF of your paper application form. These will be displayed to the applicant instead of the digital form.</p>
-                        <Input id="phase1-images" type="file" multiple onChange={(e) => handlePhase1ImagesChange(e.target.files)} accept="image/*,.pdf" />
-                        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                           {phase1ImageFiles.map((file, index) => (
-                             <div key={index} className="relative group">
-                                <Image src={URL.createObjectURL(file)} alt={`Form page ${index + 1}`} width={150} height={200} className="rounded-md object-cover w-full" />
-                                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhase1Image(index)}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                             </div>
-                           ))}
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <div className="md:col-span-2 space-y-6">
+                    <RadioGroup 
+                        value={company.formCustomization || 'template'} 
+                        onValueChange={handleFormCustomizationChange}
+                        className="space-y-2"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="template" id="template" />
+                            <Label htmlFor="template">Default Template Form</Label>
                         </div>
-                    </div>
-                )}
-            </CardContent>
-            <CardContent>
-                 <Button variant="outline" asChild>
-                    <Link href="/dashboard/settings/preview/application" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Phase 1: Application
-                    </Link>
-                </Button>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="custom" id="custom" />
+                            <Label htmlFor="custom">Custom Uploaded Form (Image/PDF)</Label>
+                        </div>
+                    </RadioGroup>
+
+                    {company.formCustomization === 'custom' && (
+                        <div className="pt-4 border-t mt-4">
+                            <Label htmlFor="phase1-images">Upload Form Pages</Label>
+                            <p className="text-sm text-muted-foreground mb-2">Upload images or a PDF of your paper application form. These will be displayed to the applicant instead of the digital form.</p>
+                            <Input id="phase1-images" type="file" multiple onChange={(e) => handlePhase1ImagesChange(e.target.files)} accept="image/*,.pdf" />
+                            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {phase1ImageFiles.map((file, index) => (
+                                <div key={index} className="relative group">
+                                    <Image src={URL.createObjectURL(file)} alt={`Form page ${index + 1}`} width={150} height={200} className="rounded-md object-cover w-full" />
+                                    <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhase1Image(index)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+                 <div className="flex justify-end md:justify-self-end">
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/settings/preview/application" target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview Phase 1 Form
+                        </Link>
+                    </Button>
+                </div>
             </CardContent>
         </Card>
         
@@ -288,20 +290,22 @@ export default function SettingsPage() {
                 <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" />Phase 2: Interview</CardTitle>
                 <CardDescription>Customize the background image for the interview review phase.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="space-y-2">
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                 <div className="md:col-span-2 space-y-2">
                   <Label htmlFor="interview-image">Interview Background Image</Label>
                   <div className="flex items-center gap-4">
                       <Input id="interview-image" type="file" className="max-w-xs" onChange={(e) => handleInterviewImageChange(e.target.files?.[0] || null)} accept="image/*" />
                       {company.interviewImage && <Image src={company.interviewImage} alt="Interview BG Preview" width={80} height={40} className="rounded-sm object-cover" />}
                   </div>
                 </div>
-                 <Button variant="outline" asChild>
-                    <Link href="/dashboard/settings/preview/interview" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Phase 2: Interview
-                    </Link>
-                </Button>
+                 <div className="flex justify-end md:justify-self-end">
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/settings/preview/interview" target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview Phase 2 Screen
+                        </Link>
+                    </Button>
+                </div>
             </CardContent>
         </Card>
 
@@ -311,55 +315,60 @@ export default function SettingsPage() {
               <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Phase 3: Required Documentation</CardTitle>
               <CardDescription>Select the official documents candidates must download, fill, and upload during the documentation phase.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-              <div className="space-y-4">
-                  <Label className="font-semibold">Standard Documents</Label>
-                  {standardDocs.map(doc => {
-                      const isChecked = requiredDocs.some(d => d.id === doc.id);
-                      return (
-                          <div key={doc.id} className="p-4 border rounded-md space-y-2">
-                              <div className="flex items-center">
-                                  <Checkbox
-                                      id={doc.id}
-                                      checked={isChecked}
-                                      onCheckedChange={(checked) => handleStandardDocChange(doc, !!checked)}
-                                  />
-                                  <Label htmlFor={doc.id} className="ml-3 flex-1">{doc.label}</Label>
-                              </div>
-                              <p className="text-xs text-muted-foreground pl-7">
-                                Applicant will be required to download the official PDF, fill it, and upload the completed file.
-                              </p>
-                          </div>
-                      );
-                  })}
-              </div>
+          <CardContent>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-6">
+                    <div className="space-y-4">
+                        <Label className="font-semibold">Standard Documents</Label>
+                        {standardDocs.map(doc => {
+                            const isChecked = requiredDocs.some(d => d.id === doc.id);
+                            return (
+                                <div key={doc.id} className="p-4 border rounded-md space-y-2">
+                                    <div className="flex items-center">
+                                        <Checkbox
+                                            id={doc.id}
+                                            checked={isChecked}
+                                            onCheckedChange={(checked) => handleStandardDocChange(doc, !!checked)}
+                                        />
+                                        <Label htmlFor={doc.id} className="ml-3 flex-1">{doc.label}</Label>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground pl-7">
+                                        Applicant will be required to download the official PDF, fill it, and upload the completed file.
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
 
-              <div className="space-y-4 pt-4 border-t">
-                  <Label className="font-semibold">Custom Documents</Label>
-                   <p className="text-sm text-muted-foreground">Add any other documents your company requires applicants to upload.</p>
-                  {requiredDocs.filter(d => d.id.startsWith('custom_')).map(doc => (
-                      <div key={doc.id} className="flex items-center gap-4 p-2 border rounded-md">
-                         <span className="flex-1">{doc.label}</span>
-                         <p className="text-sm text-muted-foreground">(Applicant Upload)</p>
-                         <Button variant="ghost" type="button" size="icon" onClick={() => removeDoc(doc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      </div>
-                  ))}
-                  <div className="flex gap-2">
-                      <Input 
-                          placeholder="Enter custom document name, e.g., 'Portfolio'" 
-                          value={customDocLabel}
-                          onChange={(e) => setCustomDocLabel(e.target.value)}
-                      />
-                      <Button type="button" onClick={addCustomDoc}>Add</Button>
-                  </div>
-              </div>
-                <Separator className="my-4" />
-                 <Button variant="outline" asChild>
-                    <Link href="/dashboard/settings/preview/documentation" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Phase 3: Documentation
-                    </Link>
-                </Button>
+                    <div className="space-y-4 pt-4 border-t">
+                        <Label className="font-semibold">Custom Documents</Label>
+                        <p className="text-sm text-muted-foreground">Add any other documents your company requires applicants to upload.</p>
+                        {requiredDocs.filter(d => d.id.startsWith('custom_')).map(doc => (
+                            <div key={doc.id} className="flex items-center gap-4 p-2 border rounded-md">
+                            <span className="flex-1">{doc.label}</span>
+                            <p className="text-sm text-muted-foreground">(Applicant Upload)</p>
+                            <Button variant="ghost" type="button" size="icon" onClick={() => removeDoc(doc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                        ))}
+                        <div className="flex gap-2">
+                            <Input 
+                                placeholder="Enter custom document name, e.g., 'Portfolio'" 
+                                value={customDocLabel}
+                                onChange={(e) => setCustomDocLabel(e.target.value)}
+                            />
+                            <Button type="button" onClick={addCustomDoc}>Add</Button>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex justify-start md:justify-end md:justify-self-end">
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/settings/preview/documentation" target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview Phase 3 Page
+                        </Link>
+                    </Button>
+                </div>
+             </div>
           </CardContent>
       </Card>
       
@@ -374,3 +383,5 @@ export default function SettingsPage() {
     </form>
   );
 }
+
+    
