@@ -17,7 +17,6 @@ export default function DashboardPage() {
   const [isConfigured, setIsConfigured] = useState(false);
 
   useEffect(() => {
-    // Check if any company is configured in Supabase.
     async function checkConfiguration() {
         const companies = await getCompanies();
         if (companies && companies.length > 0) {
@@ -26,6 +25,11 @@ export default function DashboardPage() {
         setLoading(false);
     }
     checkConfiguration();
+
+    window.addEventListener('storage', checkConfiguration);
+    return () => {
+        window.removeEventListener('storage', checkConfiguration);
+    }
   }, []);
 
   if (loading) {

@@ -20,10 +20,10 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
-import { Company, RequiredDoc } from "@/lib/company-schemas"
+import { RequiredDoc } from "@/lib/company-schemas"
 import Link from "next/link"
 
 
@@ -39,7 +39,7 @@ async function fileToDataURL(file: File): Promise<string> {
 const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
     const shape: Record<string, any> = {};
     requiredDocs.forEach(doc => {
-        // All documents are now file uploads
+        // All documents are file uploads
         shape[doc.id] = z.any()
             .refine((file): file is File => file instanceof File, "This document is required.")
     });
@@ -152,7 +152,7 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs }: { 
                                                     <div className="relative">
                                                         <Input 
                                                           type="file" 
-                                                          accept="application/pdf" 
+                                                          accept="application/pdf,image/*" 
                                                           {...fieldProps} 
                                                           onChange={(e) => onChange(e.target.files?.[0])} 
                                                           value={undefined}

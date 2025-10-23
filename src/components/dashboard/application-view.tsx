@@ -52,18 +52,18 @@ const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
 
 const FileRow = ({ label, value }: { label: string, value?: string }) => {
     if (!value) return null;
-    // Check if the value is a signed URL (starts with http) or a path
-    const isUrl = value.startsWith('http');
-    if (!isUrl) return null; // Don't render if it's just a path and not a signed URL
+    // Check if the value is a base64 data URI
+    const isDataUrl = value.startsWith('data:');
+    if (!isDataUrl) return null;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
             <p>
                 <Button asChild variant="link" className="p-0 h-auto">
-                    <Link href={value} target="_blank" rel="noopener noreferrer">
+                    <a href={value} download={`${label.replace(/\s/g, '_')}.pdf`}>
                         View/Download Document <Download className="ml-2 h-4 w-4" />
-                    </Link>
+                    </a>
                 </Button>
             </p>
         </div>
@@ -266,5 +266,3 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
     </div>
   );
 }
-
-    

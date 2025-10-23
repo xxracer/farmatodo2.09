@@ -7,21 +7,8 @@ import { getCompanies } from "@/app/actions/company-actions";
 import { Company } from "@/lib/company-schemas";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
-
-
-// Helper to get a signed URL for a stored path from a specific bucket
-async function getSignedUrl(bucket: string, path: string | null | undefined) {    
-    if (!path || path.startsWith('http')) return path;
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600); // 1 hour expiry
-    if (error) {
-        console.error(`Error creating signed url for ${path} in ${bucket}:`, error);
-        return null;
-    }
-    return data?.signedUrl || path;
-}
 
 
 export default function ApplicationPreviewPage() {
@@ -32,22 +19,7 @@ export default function ApplicationPreviewPage() {
     async function loadSettings() {
       const companies = await getCompanies();
       if (companies && companies.length > 0) {
-        const firstCompany = { ...companies[0] }; // Create a mutable copy
-
-        // Get signed URL for the logo
-        if (firstCompany.logo) {
-            const logoUrl = await getSignedUrl('logos', firstCompany.logo);
-            if(logoUrl) firstCompany.logo = logoUrl;
-        }
-
-        // Get signed URLs for phase 1 images if they exist
-        if (firstCompany.phase1Images && firstCompany.phase1Images.length > 0) {
-            const urls = await Promise.all(firstCompany.phase1Images.map(p => getSignedUrl('forms', p)));
-            firstCompany.phase1Images = urls.filter((url): url is string => !!url);
-        }
-        
-        setCompany(firstCompany);
-
+        setCompany(companies[0]);
       } else {
         setCompany({ name: "Your Company", logo: "https://placehold.co/150x50.png" });
       }

@@ -7,18 +7,6 @@ import { getCompanies } from "@/app/actions/company-actions";
 import { Company } from "@/lib/company-schemas";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-
-
-async function getSignedUrl(bucket: string, path: string | null | undefined) {    
-    if (!path || path.startsWith('http')) return path;
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600); // 1 hour expiry
-    if (error) {
-        console.error(`Error creating signed url for ${path} in ${bucket}:`, error);
-        return null;
-    }
-    return data?.signedUrl || path;
-}
 
 
 function InterviewPreview({ interviewImageUrl }: { interviewImageUrl: string | null }) {
@@ -53,8 +41,7 @@ export default function InterviewPreviewPage() {
       if (companies && companies.length > 0) {
         const firstCompany = companies[0];
         if (firstCompany.interviewImage) {
-            const url = await getSignedUrl('forms', firstCompany.interviewImage);
-            if(url) setInterviewImage(url);
+            setInterviewImage(firstCompany.interviewImage);
         }
       }
       setLoading(false);

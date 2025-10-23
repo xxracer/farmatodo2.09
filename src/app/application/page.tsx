@@ -1,48 +1,45 @@
 
+'use client';
+
 import { ApplicationForm } from "@/components/dashboard/application-form";
 import { getCompanies } from "@/app/actions/company-actions";
-import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import { Company } from "@/lib/company-schemas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { notFound } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 
-async function getFirstCompany(): Promise<Partial<Company>> {
-    const companies = await getCompanies();
-    if (companies && companies.length > 0) {
-        const firstCompany = companies[0];
+export default function ApplicationPage() {
+  const [company, setCompany] = useState<Partial<Company> | null>(null);
+  const [loading, setLoading] = useState(true);
 
-        // Fetch signed URL for logo
-        if (firstCompany.logo && !firstCompany.logo.startsWith('http')) {
-            const { data } = await supabase.storage.from('logos').createSignedUrl(firstCompany.logo, 3600);
-            firstCompany.logo = data?.signedUrl || null;
+  useEffect(() => {
+    const loadFirstCompany = async () => {
+        setLoading(true);
+        const companies = await getCompanies();
+        if (companies && companies.length > 0) {
+            setCompany(companies[0]);
+        } else {
+            // If no company is configured, show a default placeholder.
+            setCompany({ name: "Company", logo: "https://placehold.co/150x50.png" });
         }
-
-        // Fetch signed URLs for phase 1 images
-        if (firstCompany.phase1Images && firstCompany.phase1Images.length > 0) {
-            const urls = await Promise.all(firstCompany.phase1Images.map(async p => {
-                if (p && !p.startsWith('http')) {
-                    const { data } = await supabase.storage.from('forms').createSignedUrl(p, 3600);
-                    return data?.signedUrl;
-                }
-                return p;
-            }));
-            firstCompany.phase1Images = urls.filter(Boolean) as string[];
-        }
-        
-        return firstCompany;
+        setLoading(false);
     }
-    // If no company is configured, we can't show an application form.
-    // In a real app you might redirect or show a generic "not found" page.
-    return { name: "Company", logo: "https://placehold.co/150x50.png" };
-}
+    loadFirstCompany();
+  }, []);
 
-export default async function ApplicationPage() {
-  const company = await getFirstCompany();
+  if (loading) {
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
 
-  if (!company.name) {
+  if (!company?.name) {
     notFound();
   }
 

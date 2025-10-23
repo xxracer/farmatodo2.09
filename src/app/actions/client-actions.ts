@@ -1,68 +1,29 @@
 
-'use server';
+'use client';
 
-import { supabase } from "@/lib/supabaseClient";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { getAll, getById, saveAll, saveById, deleteById, generateId } from "@/lib/local-storage-client";
 
-// Helper function to decode a base64 data URI and convert it to a File-like object for Supabase
-function dataUriToBuffer(dataUri: string): { buffer: Buffer, mimeType: string, extension: string } {
-    const regex = /^data:(.+);base64,(.*)$/;
-    const matches = dataUri.match(regex);
-    if (!matches || matches.length !== 3) {
-        throw new Error("Invalid data URI");
-    }
+const CANDIDATES_KEY = 'candidates';
 
-    const mimeType = matches[1];
-    const base64Data = matches[2];
-    const buffer = Buffer.from(base64Data, 'base64');
-    const extension = mimeType.split('/')[1];
-
-    return { buffer, mimeType, extension };
+function dispatchStorageEvent() {
+    window.dispatchEvent(new Event('storage'));
 }
 
-
-export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | 'driversLicense'> & { resume: string; driversLicense: string }) {
+export async function createCandidate(data: ApplicationSchema) {
     try {
-        // 1. Upload Resume (to a private bucket)
-        const { buffer: resumeBuffer, mimeType: resumeMimeType, extension: resumeExtension } = dataUriToBuffer(data.resume);
-        const resumeFileName = `resume_${crypto.randomUUID()}.${resumeExtension}`;
-        const { data: resumeUploadData, error: resumeUploadError } = await supabase.storage
-            .from('resumes')
-            .upload(resumeFileName, resumeBuffer, { contentType: resumeMimeType, upsert: false });
-
-        if (resumeUploadError) throw resumeUploadError;
-        const resumePath = resumeUploadData.path;
-
-
-        // 2. Upload Driver's License (to a private bucket)
-        const { buffer: licenseBuffer, mimeType: licenseMimeType, extension: licenseExtension } = dataUriToBuffer(data.driversLicense);
-        const licenseFileName = `license_${crypto.randomUUID()}.${licenseExtension}`;
-        const { data: licenseUploadData, error: licenseUploadError } = await supabase.storage
-            .from('licenses')
-            .upload(licenseFileName, licenseBuffer, { contentType: licenseMimeType, upsert: false });
-            
-        if (licenseUploadError) throw licenseUploadError;
-        const licensePath = licenseUploadData.path;
-        
-        
-        // 3. Insert candidate data into the database
-        const newCandidate: Omit<ApplicationData, 'id'> = {
+        const newCandidate: ApplicationData = {
             ...data,
-            resume: resumePath,
-            driversLicense: licensePath,
+            id: generateId(),
             status: 'candidate',
         };
 
-        const { data: insertedData, error: insertError } = await supabase
-            .from('candidates')
-            .insert([newCandidate])
-            .select()
-            .single();
-
-        if (insertError) throw insertError;
+        const candidates = await getCandidates();
+        candidates.push(newCandidate);
+        saveAll<ApplicationData>(CANDIDATES_KEY, candidates);
         
-        return { success: true, id: insertedData.id };
+        dispatchStorageEvent();
+        return { success: true, id: newCandidate.id };
     } catch (error) {
         console.error("Error creating candidate: ", error);
         return { success: false, error: (error as Error).message || "Failed to create candidate." };
@@ -72,21 +33,18 @@ export async function createCandidate(data: Omit<ApplicationSchema, 'resume' | '
 
 export async function createLegacyEmployee(employeeData: Partial<ApplicationData>) {
     try {
-        const dataToInsert = {
+        const newEmployee: ApplicationData = {
             ...employeeData,
+            id: generateId(),
             status: 'employee',
-        };
+        } as ApplicationData;
 
-        const { data: insertedData, error: insertError } = await supabase
-            .from('candidates')
-            .insert([dataToInsert])
-            .select()
-            .single();
-        
-        if (insertError) throw insertError;
-        
-        revalidatePath('/dashboard/employees');
-        return { success: true, id: insertedData.id };
+        const candidates = await getCandidates();
+        candidates.push(newEmployee);
+        saveAll<ApplicationData>(CANDIDATES_KEY, candidates);
+
+        dispatchStorageEvent();
+        return { success: true, id: newEmployee.id };
 
     } catch (error) {
          console.error("Error creating legacy employee: ", error);
@@ -96,108 +54,32 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
 
 
 export async function getCandidates(): Promise<ApplicationData[]> {
-    const { data, error } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('status', 'candidate')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Error fetching candidates:", error);
-        return [];
-    }
-    return data;
+    const all = getAll<ApplicationData>(CANDIDATES_KEY);
+    return all.filter(c => c.status === 'candidate').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 }
 
 export async function getInterviewCandidates(): Promise<ApplicationData[]> {
-    const { data, error } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('status', 'interview')
-        .order('created_at', { ascending: false });
-        
-    if (error) {
-        console.error("Error fetching interview candidates:", error);
-        return [];
-    }
-    return data;
+    const all = getAll<ApplicationData>(CANDIDATES_KEY);
+    return all.filter(c => c.status === 'interview').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 }
 
 export async function getNewHires(): Promise<ApplicationData[]> {
-     const { data, error } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('status', 'new-hire')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Error fetching new hires:", error);
-        return [];
-    }
-    return data;
+    const all = getAll<ApplicationData>(CANDIDATES_KEY);
+    return all.filter(c => c.status === 'new-hire').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 }
 
 export async function getEmployees(): Promise<ApplicationData[]> {
-     const { data, error } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('status', 'employee')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error("Error fetching employees:", error);
-        return [];
-    }
-    return data;
+    const all = getAll<ApplicationData>(CANDIDATES_KEY);
+    return all.filter(c => c.status === 'employee').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 }
 
 export async function getPersonnel(): Promise<ApplicationData[]> {
-     const { data, error } = await supabase
-        .from('candidates')
-        .select('*')
-        .in('status', ['new-hire', 'employee'])
-        .order('created_at', { ascending: false });
-        
-    if (error) {
-        console.error("Error fetching personnel:", error);
-        return [];
-    }
-    return data;
+    const all = getAll<ApplicationData>(CANDIDATES_KEY);
+    return all.filter(c => ['new-hire', 'employee'].includes(c.status!)).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 }
 
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
-    const { data, error } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('id', id)
-        .single();
-    
-    if (error) {
-        console.error("Error fetching candidate:", error);
-        return null;
-    }
-    
-    if (!data) return null;
-
-    // Create signed URLs for resume and license if they exist
-    if (data.resume) {
-        const { data: resumeUrlData, error: resumeUrlError } = await supabase.storage.from('resumes').createSignedUrl(data.resume, 3600);
-        if (resumeUrlError) {
-             console.error('Error creating signed URL for resume:', resumeUrlError);
-        } else {
-            data.resume = resumeUrlData.signedUrl;
-        }
-    }
-    if (data.driversLicense) {
-        const { data: licenseUrlData, error: licenseUrlError } = await supabase.storage.from('licenses').createSignedUrl(data.driversLicense, 3600);
-         if (licenseUrlError) {
-             console.error('Error creating signed URL for license:', licenseUrlError);
-        } else {
-            data.driversLicense = licenseUrlData.signedUrl;
-        }
-    }
-
-    return data;
+    return getById<ApplicationData>(CANDIDATES_KEY, id);
 }
 
 export async function updateCandidateWithDocuments(
@@ -205,24 +87,13 @@ export async function updateCandidateWithDocuments(
     documents: Record<string, string>
 ) {
     try {
-        const updates: Record<string, string> = {};
-        
-        for (const docKey in documents) {
-            if (Object.prototype.hasOwnProperty.call(documents, docKey)) {
-                const dataUri = documents[docKey];
-                 const { buffer, mimeType, extension } = dataUriToBuffer(dataUri);
-                 const fileName = `${docKey}_${id}.${extension}`;
-                 const { data: uploadData, error } = await supabase.storage.from('documents').upload(fileName, buffer, { contentType: mimeType, upsert: true });
-                 if (error) throw error;
-                 updates[docKey] = uploadData.path;
-            }
-        }
+        const candidate = await getCandidate(id);
+        if (!candidate) throw new Error("Candidate not found");
 
-        if (Object.keys(updates).length > 0) {
-            const { error: updateError } = await supabase.from('candidates').update(updates).eq('id', id);
-            if (updateError) throw updateError;
-        }
+        const updatedCandidate = { ...candidate, ...documents };
+        saveById<ApplicationData>(CANDIDATES_KEY, id, updatedCandidate);
         
+        dispatchStorageEvent();
         return { success: true };
     } catch (error) {
         console.error("Error updating document: ", error);
@@ -232,42 +103,36 @@ export async function updateCandidateWithDocuments(
 
 
 export async function updateCandidateStatus(id: string, status: 'interview' | 'new-hire' | 'employee') {
-    const { error } = await supabase
-        .from('candidates')
-        .update({ status: status })
-        .eq('id', id);
+    try {
+        const candidate = await getCandidate(id);
+        if (!candidate) throw new Error("Candidate not found");
+        
+        const updatedCandidate = { ...candidate, status };
+        saveById<ApplicationData>(CANDIDATES_KEY, id, updatedCandidate);
 
-    if (error) {
+        dispatchStorageEvent();
+        return { success: true };
+    } catch (error) {
         console.error("Error updating status: ", error);
         return { success: false, error: "Failed to update candidate status." };
     }
-    return { success: true };
 }
 
 
 export async function deleteCandidate(id: string) {
-    const { error } = await supabase
-        .from('candidates')
-        .delete()
-        .eq('id', id);
-
-    if (error) {
+    try {
+        deleteById(CANDIDATES_KEY, id);
+        dispatchStorageEvent();
+        return { success: true };
+    } catch (error) {
         console.error("Error deleting document: ", error);
         return { success: false, error: "Failed to delete candidate." };
     }
-    return { success: true };
 }
 
 export async function hasCandidates(): Promise<boolean> {
-    const { count, error } = await supabase
-        .from('candidates')
-        .select('*', { count: 'exact', head: true });
-
-    if (error) {
-        console.error("Error checking for candidates:", error);
-        return false;
-    }
-    return (count || 0) > 0;
+    const candidates = getAll<ApplicationData>(CANDIDATES_KEY);
+    return candidates.length > 0;
 }
 
 export async function checkForExpiringDocuments(): Promise<boolean> {
@@ -286,5 +151,3 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
         return false;
     }
 }
-
-    

@@ -124,13 +124,12 @@ export function ApplicationForm({ companyName }: { companyName: string }) {
                 return;
             }
 
-            // Convert files to data URLs on the client
+            // Convert files to data URLs to store in localStorage
             const resumeURL = await fileToDataURL(resumeFile);
             const driversLicenseURL = await fileToDataURL(licenseFile);
 
             const result = await createCandidate({
                 ...data,
-                // The company name is now passed as a prop
                 applyingFor: [companyName],
                 resume: resumeURL,
                 driversLicense: driversLicenseURL,

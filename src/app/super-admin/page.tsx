@@ -3,13 +3,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, MoreHorizontal, LogOut, Loader2, AlertCircle, Settings, PlusCircle } from "lucide-react";
+import { User, LogOut, Loader2, AlertCircle, Settings, PlusCircle, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useTransition } from "react";
 import { getCompanies, deleteCompany } from "@/app/actions/company-actions";
-import { supabase } from "@/lib/supabaseClient";
 import { Company } from "@/lib/company-schemas";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,25 +18,25 @@ export default function SuperAdminPage() {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
-    useEffect(() => {
-        getCompanies().then(async (data) => {
-             const companiesWithSignedUrls = await Promise.all(data.map(async (c) => {
-                if (c.logo && !c.logo.startsWith('http')) {
-                    const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(c.logo, 3600);
-                    return { ...c, logo: signedUrlData?.signedUrl || c.logo };
-                }
-                return c;
-            }));
-            setClients(companiesWithSignedUrls);
+    const loadData = () => {
+        setLoading(true);
+        getCompanies().then(data => {
+            setClients(data);
             setLoading(false);
         });
+    }
+
+    useEffect(() => {
+        loadData();
+        window.addEventListener('storage', loadData);
+        return () => window.removeEventListener('storage', loadData);
     }, []);
 
     const handleDeleteClient = (id: string) => {
         if (confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
             startTransition(async () => {
                 await deleteCompany(id);
-                setClients(prevClients => prevClients.filter(c => c.id !== id));
+                loadData(); // Re-fetch from local storage
             });
         }
     }
@@ -136,5 +134,3 @@ export default function SuperAdminPage() {
         </div>
     )
 }
-
-    

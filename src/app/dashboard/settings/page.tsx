@@ -11,7 +11,6 @@ import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import { getCompanies, createOrUpdateCompany } from "@/app/actions/company-actions";
 import { type Company, type RequiredDoc } from "@/lib/company-schemas";
-import { supabase } from "@/lib/supabaseClient";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
@@ -37,6 +36,7 @@ export default function SettingsPage() {
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
 
+  // For now, we will manage the first company found. A real multi-company app would need more state.
   const [company, setCompany] = useState<Partial<Company>>({});
   const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
   const [customDocLabel, setCustomDocLabel] = useState("");
@@ -44,7 +44,7 @@ export default function SettingsPage() {
   const [phase1ImageFiles, setPhase1ImageFiles] = useState<File[]>([]);
 
 
-  // Load the first company from Supabase on component mount
+  // Load the first company from localStorage on component mount
   useEffect(() => {
     async function loadCompany() {
         setIsLoading(true);
@@ -53,26 +53,6 @@ export default function SettingsPage() {
             let activeCompany: Partial<Company> = {};
             if (data && data.length > 0) {
                 activeCompany = data[0]; 
-                
-                // Get signed URLs for display
-                if (activeCompany.logo && !activeCompany.logo.startsWith('http')) {
-                    const { data: signedUrlData } = await supabase.storage.from('logos').createSignedUrl(activeCompany.logo, 3600);
-                    activeCompany.logo = signedUrlData?.signedUrl || activeCompany.logo;
-                }
-                 if (activeCompany.phase1Images && activeCompany.phase1Images.length > 0) {
-                    const urls = await Promise.all(activeCompany.phase1Images.map(async p => {
-                        if (p && !p.startsWith('http')) {
-                            const { data: urlData } = await supabase.storage.from('forms').createSignedUrl(p, 3600);
-                            return urlData?.signedUrl || null;
-                        }
-                        return p;
-                    }));
-                    activeCompany.phase1Images = urls.filter(Boolean) as string[];
-                }
-                if (activeCompany.interviewImage && !activeCompany.interviewImage.startsWith('http')) {
-                    const { data: urlData } = await supabase.storage.from('forms').createSignedUrl(activeCompany.interviewImage, 3600);
-                    activeCompany.interviewImage = urlData?.signedUrl || activeCompany.interviewImage;
-                }
             }
             setCompany(activeCompany);
             setRequiredDocs(activeCompany.requiredDocs || []);
@@ -83,6 +63,11 @@ export default function SettingsPage() {
         }
     }
     loadCompany();
+
+    window.addEventListener('storage', loadCompany);
+    return () => {
+        window.removeEventListener('storage', loadCompany);
+    }
   }, [toast]);
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -94,10 +79,10 @@ export default function SettingsPage() {
         }
         
         try {
-            const dataToSave: Partial<Company> & { phase1ImagesToUpload?: string[] } = {
+            const dataToSave: Partial<Company> = {
                 ...company,
                 requiredDocs,
-                phase1ImagesToUpload: phase1ImagesToUpload
+                phase1Images: phase1ImagesToUpload.length > 0 ? phase1ImagesToUpload : company.phase1Images
             };
             
             const result = await createOrUpdateCompany(dataToSave);
@@ -145,10 +130,13 @@ export default function SettingsPage() {
         const base64Promises = fileArray.map(file => toBase64(file));
         const base64Results = await Promise.all(base64Promises);
         setPhase1ImagesToUpload(prev => [...prev, ...base64Results]);
+        // Also update the main company object to show previews immediately
+        setCompany(prev => ({ ...prev, phase1Images: [...(prev.phase1Images || []), ...base64Results]}));
     }
   }
 
   const removePhase1Image = (index: number) => {
+    setCompany(prev => ({ ...prev, phase1Images: prev.phase1Images?.filter((_, i) => i !== index)}));
     setPhase1ImagesToUpload(prev => prev.filter((_, i) => i !== index));
     setPhase1ImageFiles(prev => prev.filter((_, i) => i !== index));
   }
@@ -223,7 +211,7 @@ export default function SettingsPage() {
                   {/* This would be a list of companies. For now, it shows the current one. */}
                   <div className="p-3 border rounded-md flex justify-between items-center">
                       <span>{company.name || 'No company configured'}</span>
-                      <Button variant="outline" size="sm" type="button">Add New Company</Button>
+                      <Button variant="outline" size="sm" type="button" onClick={() => toast({ title: "Feature not implemented", description: "Adding multiple companies is planned for a future update."})}>Add New Company</Button>
                   </div>
               </div>
               <div className="space-y-4 pt-4 border-t">
@@ -306,9 +294,9 @@ export default function SettingsPage() {
                             <p className="text-sm text-muted-foreground mb-2">Upload images or a PDF of your paper application form. These will be displayed to the applicant instead of the digital form.</p>
                             <Input id="phase1-images" type="file" multiple onChange={(e) => handlePhase1ImagesChange(e.target.files)} accept="image/*,.pdf" />
                             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {phase1ImageFiles.map((file, index) => (
+                            {(company.phase1Images || []).map((imgSrc, index) => (
                                 <div key={index} className="relative group">
-                                    <Image src={URL.createObjectURL(file)} alt={`Form page ${index + 1}`} width={150} height={200} className="rounded-md object-cover w-full" />
+                                    <Image src={imgSrc} alt={`Form page ${index + 1}`} width={150} height={200} className="rounded-md object-cover w-full" />
                                     <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePhase1Image(index)}>
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -356,7 +344,7 @@ export default function SettingsPage() {
                         </div>
                     </RadioGroup>
                     
-                    { (company.interviewImage || true) && (
+                     {company.interviewImage || company.formCustomization === 'custom' ? ( // A bit of a trick to show this if either is custom
                         <div className="pt-4 border-t mt-4 space-y-2">
                             <Label htmlFor="interview-image">Interview Background Image</Label>
                             <div className="flex items-center gap-4">
@@ -364,7 +352,7 @@ export default function SettingsPage() {
                                 {company.interviewImage && <Image src={company.interviewImage} alt="Interview BG Preview" width={80} height={40} className="rounded-sm object-cover" />}
                             </div>
                         </div>
-                    )}
+                      ) : null }
                 </div>
                  <div className="flex justify-end md:justify-self-end">
                     <Button variant="outline" asChild>
@@ -451,5 +439,3 @@ export default function SettingsPage() {
     </form>
   );
 }
-
-    

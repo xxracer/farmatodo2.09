@@ -6,17 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertTriangle, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getCompanies } from "@/app/actions/company-actions";
-import { supabase } from "@/lib/supabaseClient";
 import { Company } from "@/lib/company-schemas";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-
-
-async function getSignedUrl(path: string | null | undefined) {    
-    if (!path || path.startsWith('http')) return path;
-    const { data } = await supabase.storage.from('logos').createSignedUrl(path, 3600);
-    return data?.signedUrl || path;
-}
 
 
 function DocumentationPageContent() {
@@ -37,14 +29,7 @@ function DocumentationPageContent() {
                 c => c.name?.toLowerCase().replace(/\s+/g, '-') === companyIdFromUrl
             );
 
-            if (foundCompany) {
-                 if (foundCompany.logo && !foundCompany.logo.startsWith('http')) {
-                    const signedUrl = await getSignedUrl(foundCompany.logo);
-                    return { ...foundCompany, logo: signedUrl };
-                }
-                return foundCompany;
-            }
-            return null;
+            return foundCompany || null;
         }
 
         async function loadData() {
@@ -108,7 +93,6 @@ function DocumentationPageContent() {
                     companyName={company?.name || ''} 
                     candidateId={candidateId} 
                     requiredDocs={requiredDocs}
-                    companyData={company} 
                 />
                 ) : (
                 <Card className="w-full max-w-lg mx-auto text-center">
