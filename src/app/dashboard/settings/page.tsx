@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye, Image as ImageIcon } from "lucide-react";
+import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye, Image as ImageIcon, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -209,6 +209,50 @@ export default function SettingsPage() {
             </div>
         </div>
 
+        <Card>
+          <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  User and Company Management
+              </CardTitle>
+              <CardDescription>Add companies and the users who will manage the onboarding process.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+              <div className="space-y-2">
+                  <Label>Companies</Label>
+                  {/* This would be a list of companies. For now, it shows the current one. */}
+                  <div className="p-3 border rounded-md flex justify-between items-center">
+                      <span>{company.name || 'No company configured'}</span>
+                      <Button variant="outline" size="sm" type="button">Add New Company</Button>
+                  </div>
+              </div>
+              <div className="space-y-4 pt-4 border-t">
+                  <Label>Onboarding Users</Label>
+                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                       <div className="space-y-2">
+                          <Label htmlFor="user-name" className="text-xs">User Name</Label>
+                          <Input id="user-name" placeholder="e.g., John Doe" />
+                      </div>
+                       <div className="space-y-2">
+                          <Label htmlFor="user-role" className="text-xs">Role</Label>
+                          <Input id="user-role" placeholder="e.g., HR Manager" />
+                      </div>
+                       <div className="space-y-2">
+                          <Label htmlFor="user-email" className="text-xs">Email</Label>
+                          <Input id="user-email" type="email" placeholder="e.g., john.doe@company.com" />
+                      </div>
+                      <Button type="button" onClick={() => {
+                        const companyName = company.name?.split(' ')[0] || 'company';
+                        const random = Math.floor(1000 + Math.random() * 9000);
+                        toast({ title: "User Added (Simulated)", description: `Password: ${companyName}${random}`})
+                      }}>
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add User
+                      </Button>
+                   </div>
+              </div>
+          </CardContent>
+        </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -278,7 +322,7 @@ export default function SettingsPage() {
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/settings/preview/application" target="_blank">
                             <Eye className="mr-2 h-4 w-4" />
-                            Preview Application Template
+                            Preview Phase 1 Form
                         </Link>
                     </Button>
                 </div>
@@ -291,18 +335,42 @@ export default function SettingsPage() {
                 <CardDescription>Customize the background image for the interview review phase.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                 <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="interview-image">Interview Background Image</Label>
-                  <div className="flex items-center gap-4">
-                      <Input id="interview-image" type="file" className="max-w-xs" onChange={(e) => handleInterviewImageChange(e.target.files?.[0] || null)} accept="image/*" />
-                      {company.interviewImage && <Image src={company.interviewImage} alt="Interview BG Preview" width={80} height={40} className="rounded-sm object-cover" />}
-                  </div>
+                 <div className="md:col-span-2 space-y-6">
+                    <RadioGroup 
+                        value={company.interviewImage ? 'custom' : 'template'} 
+                        onValueChange={(value) => {
+                             if (value === 'template') {
+                                setCompany(prev => ({...prev, interviewImage: null}));
+                            }
+                            // 'custom' is handled by the file input
+                        }}
+                        className="space-y-2"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="template" id="p2-template" />
+                            <Label htmlFor="p2-template">Default Template</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="custom" id="p2-custom" />
+                            <Label htmlFor="p2-custom">Custom Background</Label>
+                        </div>
+                    </RadioGroup>
+                    
+                    { (company.interviewImage || true) && (
+                        <div className="pt-4 border-t mt-4 space-y-2">
+                            <Label htmlFor="interview-image">Interview Background Image</Label>
+                            <div className="flex items-center gap-4">
+                                <Input id="interview-image" type="file" className="max-w-xs" onChange={(e) => handleInterviewImageChange(e.target.files?.[0] || null)} accept="image/*" />
+                                {company.interviewImage && <Image src={company.interviewImage} alt="Interview BG Preview" width={80} height={40} className="rounded-sm object-cover" />}
+                            </div>
+                        </div>
+                    )}
                 </div>
                  <div className="flex justify-end md:justify-self-end">
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/settings/preview/interview" target="_blank">
                             <Eye className="mr-2 h-4 w-4" />
-                            Preview Interview Screen
+                            {company.interviewImage ? "Preview Custom Screen" : "Preview Template Screen"}
                         </Link>
                     </Button>
                 </div>
@@ -364,7 +432,7 @@ export default function SettingsPage() {
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/settings/preview/documentation" target="_blank">
                             <Eye className="mr-2 h-4 w-4" />
-                            Preview Documentation Page
+                            Preview Phase 3 Page
                         </Link>
                     </Button>
                 </div>
@@ -383,3 +451,5 @@ export default function SettingsPage() {
     </form>
   );
 }
+
+    
