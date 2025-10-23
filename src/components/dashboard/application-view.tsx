@@ -168,7 +168,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Education</CardTitle>
-          </Header>
+          </CardHeader>
           <CardContent>
             <EducationDetails title="College" education={data.education.college} />
             <EducationDetails title="Vo-Tech or Trade" education={data.education.voTech} />
@@ -180,7 +180,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Employment History</CardTitle>
-          </Header>
+          </CardHeader>
           <CardContent>
             <EmploymentHistoryDetails history={data.employmentHistory} />
           </CardContent>
