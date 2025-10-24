@@ -18,7 +18,7 @@ export function LoginForm() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const isSuperAdmin = email === "Maijel@ipltecnologies.com" && password === "millionares2025";
+    const isSuperAdmin = email.toLowerCase() === "maijel@ipltecnologies.com" && password === "millionares2025";
     
     if (isSuperAdmin) {
       toast({
@@ -81,3 +81,5 @@ export function LoginForm() {
     </Card>
   );
 }
+
+    

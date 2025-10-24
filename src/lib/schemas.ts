@@ -42,19 +42,13 @@ const professionalReferenceSchema = z.object({
 });
 
 export const applicationSchema = z.object({
-  // This field is no longer displayed but kept for schema compatibility for now.
-  // It should be populated on the backend based on the portal's company.
   applyingFor: z.array(z.string()).optional(),
-
-  // Personal Information
   lastName: z.string().min(1, "Last name is required"),
   firstName: z.string().min(1, "First name is required"),
   middleName: z.string().optional(),
   date: z.date({
     required_error: "A date of application is required.",
   }),
-
-  // Contact Information
   streetAddress: z.string().min(1, "Street address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
@@ -62,8 +56,6 @@ export const applicationSchema = z.object({
   homePhone: z.string().min(10, "A valid phone number is required"),
   businessPhone: z.string().optional(),
   emergencyContact: z.string().min(1, "Emergency contact is required"),
-
-  // Employment Details
   previouslyEmployed: z.enum(["yes", "no"], {
     required_error: "This field is required.",
   }),
@@ -76,37 +68,23 @@ export const applicationSchema = z.object({
   }),
   workEveningsWeekends: z.boolean().default(false),
   position: z.string().min(1, "Position is required"),
-
-  // Education
   education: z.object({
     college: educationEntrySchema.optional(),
     voTech: educationEntrySchema.optional(),
     highSchool: educationEntrySchema.optional(),
     other: educationEntrySchema.optional(),
   }),
-
-  // Employment History
   employmentHistory: z.array(employmentHistoryEntrySchema).max(3, "You can add a maximum of 3 past employments."),
-
-  // Additional Information
   differentLastName: z.enum(["yes", "no"], { required_error: "This field is required." }),
   previousName: z.string().optional(),
   currentlyEmployed: z.enum(["yes", "no"], { required_error: "This field is required." }),
   reliableTransportation: z.enum(["yes", "no"], { required_error: "This field is required." }),
-
-  // Professional References
   professionalReferences: z.array(professionalReferenceSchema).min(1, "At least one professional reference is required.").max(3, "You can add a maximum of 3 references."),
-  
-  // General
   convictedOfCrime: z.enum(["yes", "no"], { required_error: "This field is required." }),
   crimeDescription: z.string().optional(),
   capableOfPerformingJob: z.enum(["yes", "no"], { required_error: "This field is required." }),
   jobRequirementLimitation: z.string().optional(),
-
-  // Credentials & Skills
   specializedSkills: z.string().optional(),
-  
-  // Resume
   resume: z
     .any()
     .refine((file): file is File => file instanceof File, "Resume is required.")
@@ -115,8 +93,6 @@ export const applicationSchema = z.object({
       (file) => ACCEPTED_RESUME_TYPES.includes(file.type),
       ".pdf, .doc, and .docx files are accepted."
     ),
-
-  // Driver's License
   driversLicense: z
     .any()
     .refine((file): file is File => file instanceof File, "Driver's license is required.")
@@ -127,22 +103,10 @@ export const applicationSchema = z.object({
     ),
   driversLicenseName: z.string().min(1, "Name on license is required."),
   driversLicenseExpiration: z.date({ required_error: "Expiration date is required." }),
-
-
-  // Certification
   certification: z.literal(true, {
     errorMap: () => ({ message: "You must certify to submit the application." }),
   }),
   signature: z.string().min(1, "Signature is required"),
-  status: z.enum(['candidate', 'interview', 'new-hire', 'employee', 'inactive']).optional(),
-  
-  // Inactive Info
-  inactiveInfo: z.object({
-    date: z.string(),
-    reason: z.string(),
-    description: z.string(),
-  }).optional(),
-
 }).superRefine((data, ctx) => {
     if (data.differentLastName === 'yes' && !data.previousName) {
         ctx.addIssue({
@@ -171,15 +135,29 @@ export const applicationSchema = z.object({
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
 
-// This is the type for the data that will be stored
+// This is the type for the data that will be stored in localStorage
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
-    // We store the data URL for local storage
-    resume?: string;
-    driversLicense?: string;
-    // The new document structure for KV store
+    created_at?: string;
+    resume?: string; // This will now be a URL from Vercel KV for employees
+    driversLicense?: string; // This will now be a URL from Vercel KV for employees
+    
+    // New document fields from documentation form
+    idCard?: string;
+    proofOfAddress?: string;
+    i9?: string;
+    w4?: string;
+    educationalDiplomas?: string;
+
     documents?: DocumentFile[];
     miscDocuments?: DocumentFile[];
+
+    status?: 'candidate' | 'interview' | 'new-hire' | 'employee' | 'inactive';
+    inactiveInfo?: {
+      date: string;
+      reason: string;
+      description: string;
+    };
 };
 
 export const interviewReviewSchema = z.object({
@@ -241,3 +219,5 @@ export const ExtractEmployeeDataOutputSchema = z.object({
   emergencyContact: z.string().describe("The employee's emergency contact (name and phone number)."),
 });
 export type ExtractEmployeeDataOutput = z.infer<typeof ExtractEmployeeDataOutputSchema>;
+
+    

@@ -111,7 +111,7 @@ export default function SuperAdminPage() {
                                             {client.name}
                                         </TableCell>
                                         <TableCell>
-                                           {new Date(client.created_at!).toLocaleDateString()}
+                                           {client.created_at ? new Date(client.created_at).toLocaleDateString() : 'N/A'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="outline" size="sm" asChild>
@@ -134,3 +134,5 @@ export default function SuperAdminPage() {
         </div>
     )
 }
+
+    

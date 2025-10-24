@@ -19,6 +19,7 @@ import { generateId } from "@/lib/local-storage-client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useRouter } from "next/navigation";
 
 
 // Helper to convert file to Base64
@@ -40,35 +41,35 @@ const STANDARD_DOCS: RequiredDoc[] = [
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
 
-  // State for multiple companies
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<Partial<Company> | null>(null);
-
-  // State for adding/editing a company
+  // This state will hold the specific company being edited.
+  // We'll get its ID from URL params in a real multi-company setup.
+  // For now, it defaults to the first company found.
   const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>({});
   
-  // New state for multiple onboarding processes
+  // State for the onboarding processes of the company being edited
   const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>([]);
 
-  // State for users
+  // State for users of the company being edited
   const [users, setUsers] = useState<{name: string, role: string, email: string}[]>([]);
 
 
-  // Load all companies from localStorage on component mount
+  // Load the first company from localStorage on component mount
   useEffect(() => {
     async function loadData() {
         setIsLoading(true);
         try {
             const data = await getCompanies();
-            setCompanies(data);
             if (data.length > 0) {
                 const firstCompany = data[0];
-                setSelectedCompany(firstCompany);
                 setCompanyForEdit(firstCompany);
                 setOnboardingProcesses(firstCompany.onboardingProcesses || []);
+            } else {
+                // If no company exists, redirect to the super-admin page to create one
+                router.push('/super-admin');
             }
         } catch (error) {
             toast({ variant: 'destructive', title: "Failed to load settings", description: (error as Error).message });
@@ -78,11 +79,12 @@ export default function SettingsPage() {
     }
     loadData();
 
+    // Listen for storage changes to keep data fresh
     window.addEventListener('storage', loadData);
     return () => {
         window.removeEventListener('storage', loadData);
     }
-  }, [toast]);
+  }, [toast, router]);
   
   const handleSaveCompany = () => {
       startTransition(async () => {
@@ -101,11 +103,7 @@ export default function SettingsPage() {
   
               if (!result.success || !result.company) throw new Error("Failed to save company settings.");
               
-              const updatedCompanies = await getCompanies();
-              setCompanies(updatedCompanies);
-              setSelectedCompany(result.company);
-
-              toast({ title: "Settings Saved", description: "Company settings have been updated." });
+              toast({ title: "Company Settings Saved", description: "The general company details have been updated." });
           } catch (error) {
                toast({ variant: "destructive", title: "Save Failed", description: (error as Error).message });
           }
@@ -218,27 +216,11 @@ export default function SettingsPage() {
     );
   }
   
-  const SaveButton = ({ isPending, size = "lg" }: { isPending: boolean, size?: "lg" | "default" | "sm" | "icon" | null}) => (
-      <AlertDialog>
-          <AlertDialogTrigger asChild>
-              <Button size={size} disabled={isPending}>
-                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  Save All Settings
-              </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Save</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      Are you sure you want to save all changes for the company "{companyForEdit.name || 'Unnamed Company'}"?
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSaveCompany}>Confirm & Save</AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
-      </AlertDialog>
+  const SaveButton = ({ onSave, isPending, size = "lg", children }: { onSave: () => void, isPending: boolean, size?: "lg" | "default" | "sm" | "icon" | null, children: React.ReactNode}) => (
+      <Button size={size} disabled={isPending} onClick={onSave}>
+          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+          {children}
+      </Button>
   );
 
 
@@ -250,28 +232,30 @@ export default function SettingsPage() {
                 <div>
                     <h1 className="text-3xl font-headline font-bold text-foreground">System Settings</h1>
                     <p className="text-muted-foreground">
-                        Manage companies, users, and onboarding processes here.
+                        Manage company details, users, and onboarding processes here.
                     </p>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
-                 <SaveButton isPending={isPending} />
+             <div className="flex items-center gap-2">
+                 <Button variant="outline" onClick={() => router.push('/super-admin')}>Manage All Companies</Button>
             </div>
         </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building className="h-5 w-5" />
-            Company & User Management
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Company Details
+            </div>
+            <SaveButton onSave={handleSaveCompany} isPending={isPending} size="sm">Save Company</SaveButton>
           </CardTitle>
-          <CardDescription>Manage all companies and the users responsible for the onboarding process.</CardDescription>
+          <CardDescription>Manage the company profile and associated onboarding users.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Side: Company Details */}
               <div className="space-y-4">
-                  <Label className="font-semibold text-lg">Company Details</Label>
                   <div className="space-y-2">
                       <Label htmlFor="company-name">Company Name</Label>
                       <Input id="company-name" placeholder="e.g., Noble Health" value={companyForEdit.name || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, name: e.target.value}))} />
@@ -301,16 +285,11 @@ export default function SettingsPage() {
                           {companyForEdit.logo && <Image src={companyForEdit.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
                       </div>
                   </div>
-                  <div className="flex gap-2">
-                      <Button type="button" onClick={() => toast({title: "Feature coming soon"})}>
-                          <PlusCircle className="mr-2 h-4 w-4" /> Add New Company
-                      </Button>
-                  </div>
               </div>
 
               {/* Right Side: Onboarding Users */}
               <div className="space-y-4">
-                  <Label className="font-semibold text-lg">Onboarding Users</Label>
+                  <Label className="font-semibold">Onboarding Users</Label>
                   <form onSubmit={handleAddNewUser} className="grid grid-cols-1 gap-4 items-end p-4 border rounded-md">
                        <div className="space-y-2">
                           <Label htmlFor="user-name">User Name</Label>
@@ -349,7 +328,7 @@ export default function SettingsPage() {
        <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5" /> Onboarding Processes</CardTitle>
-                <CardDescription>Define reusable onboarding flows. Each process has its own set of phases for different roles.</CardDescription>
+                <CardDescription>Define reusable onboarding flows for different job roles. Each process has its own set of phases. Click "Save Company" above to persist changes to processes.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <Accordion type="multiple" className="w-full space-y-4">
@@ -495,12 +474,8 @@ export default function SettingsPage() {
                 </Button>
             </CardContent>
         </Card>
-
-      <Separator />
-
-      <div className="flex justify-end">
-          <SaveButton isPending={isPending} />
-      </div>
     </form>
   );
 }
+
+    

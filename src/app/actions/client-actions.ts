@@ -16,6 +16,7 @@ export async function createCandidate(data: ApplicationSchema) {
         const newCandidate: Partial<ApplicationData> = {
             ...data,
             id: generateId(),
+            created_at: new Date().toISOString(),
             status: 'candidate',
             documents: [],
             miscDocuments: []
@@ -50,6 +51,7 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
         const newEmployee: ApplicationData = {
             ...employeeData,
             id: generateId(),
+            created_at: new Date().toISOString(),
             status: 'employee',
         } as ApplicationData;
 
@@ -69,28 +71,33 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
 
 export async function getCandidates(): Promise<ApplicationData[]> {
     const all = getAll<ApplicationData>(CANDIDATES_KEY);
-    return all.filter(c => c.status === 'candidate').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    const sorted = all.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return sorted.filter(c => c.status === 'candidate');
 }
 
 export async function getInterviewCandidates(): Promise<ApplicationData[]> {
     const all = getAll<ApplicationData>(CANDIDATES_KEY);
-    return all.filter(c => c.status === 'interview').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    const sorted = all.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return sorted.filter(c => c.status === 'interview');
 }
 
 export async function getNewHires(): Promise<ApplicationData[]> {
     const all = getAll<ApplicationData>(CANDIDATES_KEY);
-    return all.filter(c => c.status === 'new-hire').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+     const sorted = all.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return sorted.filter(c => c.status === 'new-hire');
 }
 
 export async function getEmployees(): Promise<ApplicationData[]> {
     const all = getAll<ApplicationData>(CANDIDATES_KEY);
-    return all.filter(c => ['employee', 'inactive'].includes(c.status!)).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    const sorted = all.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return sorted.filter(c => ['employee', 'inactive'].includes(c.status!));
 }
 
 
 export async function getPersonnel(): Promise<ApplicationData[]> {
     const all = getAll<ApplicationData>(CANDIDATES_KEY);
-    return all.filter(c => ['new-hire', 'employee', 'inactive'].includes(c.status!)).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    const sorted = all.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return sorted.filter(c => ['new-hire', 'employee', 'inactive'].includes(c.status!));
 }
 
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
@@ -102,25 +109,16 @@ export async function updateCandidateWithDocuments(id: string, documents: { [key
         const candidate = await getCandidate(id);
         if (!candidate) throw new Error("Candidate not found");
 
-        const updatedCandidate: ApplicationData = { 
-            ...candidate, 
-            ...documents,
-            // Assuming documents are being added to the `documents` array
-            // This part needs clarification on how to handle the `documents` object
-        };
-
         const allCandidates = getAll<ApplicationData>(CANDIDATES_KEY);
         const index = allCandidates.findIndex(c => c.id === id);
 
         if (index > -1) {
-            // This merges top-level properties. We need to handle nested document arrays.
-            const existingDocs = allCandidates[index].documents || [];
-            const newDocs = Object.entries(documents).map(([title, url]) => ({ id: url, title, url }));
-            
             allCandidates[index] = { ...allCandidates[index], ...documents };
+             saveAll<ApplicationData>(CANDIDATES_KEY, allCandidates);
+        } else {
+            throw new Error("Could not find candidate to update.")
         }
         
-        saveAll<ApplicationData>(CANDIDATES_KEY, allCandidates);
         dispatchStorageEvent();
         return { success: true };
     } catch (error) {
@@ -179,3 +177,5 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
         return false;
     }
 }
+
+    
