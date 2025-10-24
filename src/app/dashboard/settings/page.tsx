@@ -70,7 +70,6 @@ export default function SettingsPage() {
                 setOnboardingProcesses(firstCompany.onboardingProcesses || []);
             } else {
                 // If no company exists, the page will be in "creation" mode.
-                // The state is already an empty object, so no action is needed.
                 setCompanyForEdit({name: '', onboardingProcesses: []});
             }
         } catch (error) {
@@ -112,7 +111,7 @@ export default function SettingsPage() {
                   setOnboardingProcesses(result.company.onboardingProcesses || []);
               }
               
-              toast({ title: "Company Settings Saved", description: "The general company details have been updated." });
+              toast({ title: "Company Settings Saved", description: "All changes have been successfully saved." });
           } catch (error) {
                toast({ variant: "destructive", title: "Save Failed", description: (error as Error).message });
           }
@@ -210,7 +209,7 @@ export default function SettingsPage() {
 
 
   const handleDeleteProcess = (processId: string) => {
-    if (window.confirm('Are you sure you want to delete this onboarding process?')) {
+    if (window.confirm('Are you sure you want to delete this onboarding process? This change is temporary until you save.')) {
       setOnboardingProcesses(prev => prev.filter(p => p.id !== processId));
     }
   };
@@ -241,7 +240,7 @@ export default function SettingsPage() {
                 <div>
                     <h1 className="text-3xl font-headline font-bold text-foreground">System Settings</h1>
                     <p className="text-muted-foreground">
-                       {companyForEdit.id ? 'Edit company details, users, and onboarding processes.' : 'Create a new company to get started.'}
+                       {companyForEdit.id ? `Editing settings for ${companyForEdit.name}.` : 'Create a new company to get started.'}
                     </p>
                 </div>
             </div>
@@ -257,9 +256,8 @@ export default function SettingsPage() {
               <Building className="h-5 w-5" />
               Company Details
             </div>
-            <SaveButton onSave={handleSaveCompany} isPending={isPending} size="sm">Save Company</SaveButton>
           </CardTitle>
-          <CardDescription>Manage the company profile and associated onboarding users.</CardDescription>
+          <CardDescription>Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -337,7 +335,7 @@ export default function SettingsPage() {
        <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5" /> Onboarding Processes</CardTitle>
-                <CardDescription>Define reusable onboarding flows for different job roles. Each process has its own set of phases. Click "Save Company" above to persist changes to processes.</CardDescription>
+                <CardDescription>Define reusable onboarding flows. Changes here must be saved to take effect.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <Accordion type="multiple" className="w-full space-y-4">
@@ -471,8 +469,9 @@ export default function SettingsPage() {
                                   </div>
                                 </div>
 
-                                <div className="flex justify-end pt-4">
+                                <div className="flex justify-end gap-2 pt-4">
                                     <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteProcess(process.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete Process</Button>
+                                    <SaveButton onSave={handleSaveCompany} isPending={isPending} size="sm">Save All Settings</SaveButton>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
@@ -487,4 +486,3 @@ export default function SettingsPage() {
   );
 }
 
-    
