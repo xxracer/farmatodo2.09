@@ -52,7 +52,7 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
             ...employeeData,
             id: generateId(),
             created_at: new Date().toISOString(),
-            status: 'employee',
+            status: 'employee', // Ensure status is set to 'employee' on creation
         } as ApplicationData;
 
         const candidates = getAll<ApplicationData>(CANDIDATES_KEY);
@@ -177,5 +177,3 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
         return false;
     }
 }
-
-    

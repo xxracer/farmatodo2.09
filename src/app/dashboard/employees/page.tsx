@@ -4,8 +4,7 @@
 import { getEmployees, updateCandidateStatus, deleteCandidate } from "@/app/actions/client-actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApplicationData, DocumentFile } from "@/lib/schemas";
-import { Briefcase, UserPlus, Folder, User, Search, Trash2, Archive, CheckCircle, AlertTriangle, File as FileIcon, Upload, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { Briefcase, UserPlus, Folder, User, Search, Trash2, Archive, Upload, Loader2, File as FileIcon } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { uploadFile, deleteFile } from "@/app/actions/kv-actions";
 import { saveAll } from "@/lib/local-storage-client";
+import { format } from "date-fns";
 
 
 type InactiveInfo = {
@@ -48,7 +48,6 @@ function EmployeeList({
     onDeleteFile: (employeeId: string, fileId: string, type: 'required' | 'misc') => void,
     isUploading: boolean,
 }) {
-    const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
     const [isInactiveModalOpen, setInactiveModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -59,6 +58,7 @@ function EmployeeList({
     const [newDocFile, setNewDocFile] = useState<File | null>(null);
     const [newDocTitle, setNewDocTitle] = useState('');
     const [uploadTarget, setUploadTarget] = useState<{ employeeId: string; type: 'required' | 'misc' } | null>(null);
+    const [activeAccordionItem, setActiveAccordionItem] = useState<string | null>(null);
 
 
     const openInactiveModal = (id: string) => {
@@ -108,7 +108,7 @@ function EmployeeList({
 
 
     return (
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible className="w-full" value={activeAccordionItem || undefined} onValueChange={setActiveAccordionItem}>
             {employees.map(employee => (
                 <AccordionItem key={employee.id} value={employee.id}>
                     <AccordionTrigger className="hover:no-underline">
@@ -118,9 +118,6 @@ function EmployeeList({
                                 <span>{employee.firstName} {employee.lastName}</span>
                                 <span className="text-xs text-muted-foreground">- {employee.position}</span>
                             </div>
-                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setExpandedEmployee(expandedEmployee === employee.id ? null : employee.id); }}>
-                                View
-                             </Button>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent>
@@ -146,7 +143,7 @@ function EmployeeList({
                                                 </Button>
                                             </div>
                                         ))}
-                                        {employee.documents?.length === 0 && <p className="text-sm text-muted-foreground">No required documents uploaded.</p>}
+                                        {(!employee.documents || employee.documents.length === 0) && <p className="text-sm text-muted-foreground">No required documents uploaded.</p>}
                                         <div className="mt-4 pt-4 border-t space-y-2">
                                             <h4 className="font-medium">Upload New Required Document</h4>
                                             <Input placeholder="Document Title (e.g., Driver's License)" value={newDocTitle} onChange={e => setNewDocTitle(e.target.value)} />
@@ -172,7 +169,7 @@ function EmployeeList({
                                                 </Button>
                                             </div>
                                         ))}
-                                        {employee.miscDocuments?.length === 0 && <p className="text-sm text-muted-foreground">No miscellaneous documents uploaded.</p>}
+                                        {(!employee.miscDocuments || employee.miscDocuments.length === 0) && <p className="text-sm text-muted-foreground">No miscellaneous documents uploaded.</p>}
                                         <div className="mt-4 pt-4 border-t space-y-2">
                                             <h4 className="font-medium">Upload New Miscellaneous Document</h4>
                                             <Input placeholder="Document Title (e.g., Performance Review)" value={newDocTitle} onChange={e => setNewDocTitle(e.target.value)} />
@@ -200,7 +197,7 @@ function EmployeeList({
                             </div>
                         </div>
                     </AccordionContent>
-                    <Dialog open={isInactiveModalOpen} onOpenChange={setInactiveModalOpen}>
+                    <Dialog open={isInactiveModalOpen && selectedEmployeeId === employee.id} onOpenChange={setInactiveModalOpen}>
                         <DialogContent>
                             <DialogHeader>
                                 <DialogTitle>Mark Employee as Inactive</DialogTitle>
@@ -242,10 +239,10 @@ function EmployeeList({
                             </div>
                         </DialogContent>
                     </Dialog>
-                    <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                    <AlertDialog open={isDeleteConfirmOpen && selectedEmployeeId === employee.id} onOpenChange={setDeleteConfirmOpen}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>¿Está seguro de que desea eliminar todos los datos de este empleado?</AlertDialogTitle>
+                                <AlertDialogTitle>Are you sure you want to delete this employee's data?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                     This action cannot be undone. This will permanently delete the employee's data from the system.
                                 </AlertDialogDescription>
@@ -255,7 +252,7 @@ function EmployeeList({
                                 <AlertDialogAction onClick={() => {
                                     if (selectedEmployeeId) onDelete(selectedEmployeeId);
                                     setSelectedEmployeeId(null);
-                                }}>SÍ</AlertDialogAction>
+                                }}>YES</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -466,5 +463,3 @@ export default function EmployeesPage() {
     </div>
   );
 }
-
-    
