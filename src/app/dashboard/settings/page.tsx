@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -333,7 +334,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                             </AccordionItem>
                         ))}
                     </Accordion>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddNewProcess} disabled={!companyForEdit.id}>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddNewProcess}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Onboarding Process
                     </Button>
                     {!companyForEdit.id && <p className="text-xs text-muted-foreground">You must save the company before adding onboarding processes.</p>}
@@ -360,8 +361,10 @@ export default function SettingsPage() {
         setAllCompanies(data);
         if (data.length > 0) {
             setManagementMode('multiple');
+            setEditingCompany(null); // Default to list view
         } else {
             setManagementMode('single');
+            setEditingCompany({}); // Default to form view for a new company
         }
     } catch (error) {
         toast({ variant: 'destructive', title: "Failed to load companies", description: (error as Error).message });
@@ -372,9 +375,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadAllCompanies();
-    const handleStorageChange = () => loadAllCompanies();
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
   
   const handleSaveCompany = (companyData: Partial<Company>) => {
@@ -390,7 +390,6 @@ export default function SettingsPage() {
               toast({ title: "Company Settings Saved", description: `Settings for ${result.company.name} have been saved.` });
               
               await loadAllCompanies();
-              setEditingCompany(null); // Go back to the list view after saving
           } catch (error) {
                toast({ variant: "destructive", title: "Save Failed", description: (error as Error).message });
           }
@@ -415,49 +414,47 @@ export default function SettingsPage() {
         setEditingCompany(company);
     }
   }
+  
+  const handleManagementModeChange = (value: 'single' | 'multiple') => {
+    setManagementMode(value);
+    if (value === 'single') {
+        // If switching to single, edit the first company or a new one
+        setEditingCompany(allCompanies[0] || {});
+    } else {
+        // If switching to multiple, show the list
+        setEditingCompany(null);
+    }
+  }
 
-  return (
-    <div className="space-y-6">
-        <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-                <Settings className="h-8 w-8 text-foreground" />
-                <div>
-                    <h1 className="text-3xl font-headline font-bold text-foreground">System Settings</h1>
-                    <p className="text-muted-foreground">
-                       Manage companies and their onboarding processes.
-                    </p>
-                </div>
+
+  const renderContent = () => {
+    if (isLoading) {
+        return (
+            <div className="flex flex-1 items-center justify-center p-10">
+                <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
             </div>
-        </div>
+        );
+    }
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Company Management</CardTitle>
-                <CardDescription>Select a mode to manage your company profiles.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <RadioGroup value={managementMode} onValueChange={(value) => setManagementMode(value as 'single' | 'multiple')} className="flex space-x-4">
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="single" id="single" />
-                        <Label htmlFor="single">Single Company</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="multiple" id="multiple" />
-                        <Label htmlFor="multiple">Multiple Companies</Label>
-                    </div>
-                </RadioGroup>
-            </CardContent>
-        </Card>
+    if (managementMode === 'single') {
+        return <CompanyForm company={allCompanies[0] || {}} onSave={handleSaveCompany} isPending={isPending} />;
+    }
+    
+    // Multiple company mode
+    if (editingCompany) {
+        // Show form to edit a specific company or add a new one
+         return (
+            <div>
+                 <Button variant="outline" onClick={() => setEditingCompany(null)} className="mb-4">
+                    &larr; Back to Company List
+                </Button>
+                <CompanyForm company={editingCompany} onSave={handleSaveCompany} isPending={isPending} />
+            </div>
+         );
+    }
 
-      {isLoading ? (
-          <div className="flex flex-1 items-center justify-center p-10">
-            <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
-          </div>
-      ) : editingCompany ? (
-          <CompanyForm company={editingCompany} onSave={handleSaveCompany} isPending={isPending} />
-      ) : managementMode === 'single' ? (
-          <CompanyForm company={allCompanies[0] || {}} onSave={handleSaveCompany} isPending={isPending} />
-      ) : (
+    // Show list of companies
+    return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -516,7 +513,43 @@ export default function SettingsPage() {
                 </Table>
             </CardContent>
         </Card>
-      )}
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+        <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+                <Settings className="h-8 w-8 text-foreground" />
+                <div>
+                    <h1 className="text-3xl font-headline font-bold text-foreground">System Settings</h1>
+                    <p className="text-muted-foreground">
+                       Manage companies and their onboarding processes.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Company Management</CardTitle>
+                <CardDescription>Select a mode to manage your company profiles.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <RadioGroup value={managementMode} onValueChange={(value) => handleManagementModeChange(value as 'single' | 'multiple')} className="flex space-x-4">
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="single" id="single" />
+                        <Label htmlFor="single">Single Company</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="multiple" id="multiple" />
+                        <Label htmlFor="multiple">Multiple Companies</Label>
+                    </div>
+                </RadioGroup>
+            </CardContent>
+        </Card>
+
+      {renderContent()}
     </div>
   );
 }
