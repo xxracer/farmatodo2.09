@@ -17,16 +17,9 @@ export function LoginForm() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-
-    const isSuperAdmin = email.toLowerCase() === "maijel@ipltecnologies.com" && password === "millionares2025";
     
-    if (isSuperAdmin) {
-      toast({
-        title: "Login Successful",
-        description: "Welcome, Super Admin!",
-      });
-      router.push("/super-admin");
-    } else if (email && password) {
+    // For demo purposes, any login is successful
+    if (email && password) {
       toast({
         title: "Login Successful",
         description: "Welcome back!",
