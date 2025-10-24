@@ -135,7 +135,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
           <CardContent className="space-y-2">
             <DataRow label="Full Name" value={`${data.firstName} ${data.middleName || ''} ${data.lastName}`} />
             <DataRow label="Date of Application" value={data.date} isDate={true} />
-            <DataRow label="Applying For" value={data.applyingFor.join(", ")} />
+            <DataRow label="Applying For" value={Array.isArray(data.applyingFor) ? data.applyingFor.join(", ") : 'N/A'} />
           </CardContent>
         </Card>
 

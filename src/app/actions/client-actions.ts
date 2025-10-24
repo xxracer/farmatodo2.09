@@ -53,6 +53,7 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
             id: generateId(),
             created_at: new Date().toISOString(),
             status: 'employee', // Ensure status is set to 'employee' on creation
+            applyingFor: employeeData.applyingFor || [], // Ensure applyingFor is an array
         } as ApplicationData;
 
         const candidates = getAll<ApplicationData>(CANDIDATES_KEY);
