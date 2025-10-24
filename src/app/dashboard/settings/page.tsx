@@ -45,31 +45,23 @@ export default function SettingsPage() {
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
 
-  // This state will hold the specific company being edited.
-  // We'll get its ID from URL params in a real multi-company setup.
-  // For now, it defaults to the first company found or an empty object to create a new one.
   const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>({});
   
-  // State for the onboarding processes of the company being edited
   const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>([]);
 
-  // State for users of the company being edited
   const [users, setUsers] = useState<{name: string, role: string, email: string}[]>([]);
 
 
-  // Load the first company from localStorage on component mount
   useEffect(() => {
     async function loadData() {
         setIsLoading(true);
         try {
             const data = await getCompanies();
             if (data.length > 0) {
-                // If companies exist, load the first one for editing.
                 const firstCompany = data[0];
                 setCompanyForEdit(firstCompany);
                 setOnboardingProcesses(firstCompany.onboardingProcesses || []);
             } else {
-                // If no company exists, the page will be in "creation" mode.
                 setCompanyForEdit({name: '', onboardingProcesses: []});
             }
         } catch (error) {
@@ -80,7 +72,6 @@ export default function SettingsPage() {
     }
     loadData();
 
-    // Listen for storage changes to keep data fresh
     const handleStorageChange = () => loadData();
     window.addEventListener('storage', handleStorageChange);
     return () => {
@@ -105,7 +96,6 @@ export default function SettingsPage() {
   
               if (!result.success || !result.company) throw new Error("Failed to save company settings.");
               
-              // If we were creating a new company, update the state with the full object from the DB
               if (!companyForEdit.id && result.company) {
                   setCompanyForEdit(result.company);
                   setOnboardingProcesses(result.company.onboardingProcesses || []);
@@ -181,7 +171,7 @@ export default function SettingsPage() {
       const updatedProcesses = onboardingProcesses.map(p => {
           if (p.id === processId) {
               const existingDocs = p.requiredDocs || [];
-              if (existingDocs.some(d => d.id === doc.id)) return p; // Avoid duplicates
+              if (existingDocs.some(d => d.id === doc.id)) return p;
               return { ...p, requiredDocs: [...existingDocs, doc] };
           }
           return p;
@@ -225,10 +215,26 @@ export default function SettingsPage() {
   }
   
   const SaveButton = ({ onSave, isPending, size = "lg", children }: { onSave: () => void, isPending: boolean, size?: "lg" | "default" | "sm" | "icon" | null, children: React.ReactNode}) => (
-      <Button size={size} disabled={isPending} onClick={onSave}>
-          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-          {children}
-      </Button>
+      <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size={size} disabled={isPending}>
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {children}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Are you sure you want to save all changes for {companyForEdit.name || "this new company"}?
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onSave}>Confirm & Save</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
   );
 
 
@@ -256,6 +262,7 @@ export default function SettingsPage() {
               <Building className="h-5 w-5" />
               Company Details
             </div>
+            <SaveButton onSave={handleSaveCompany} isPending={isPending} size="default">Save Company</SaveButton>
           </CardTitle>
           <CardDescription>Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
         </CardHeader>
@@ -471,7 +478,7 @@ export default function SettingsPage() {
 
                                 <div className="flex justify-end gap-2 pt-4">
                                     <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteProcess(process.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete Process</Button>
-                                    <SaveButton onSave={handleSaveCompany} isPending={isPending} size="sm">Save All Settings</SaveButton>
+                                    <SaveButton onSave={handleSaveCompany} isPending={isPending} size="sm">Save Company</SaveButton>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
@@ -486,3 +493,4 @@ export default function SettingsPage() {
   );
 }
 
+    
