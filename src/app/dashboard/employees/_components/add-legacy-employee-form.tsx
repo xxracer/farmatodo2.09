@@ -73,7 +73,8 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
         setIsLoading(true);
         
         // The AI returns the date as a "YYYY-MM-DD" string. Parse it into a Date object.
-        const expirationDate = parse(extractedData.driversLicenseExpiration, 'yyyy-MM-dd', new Date());
+        const expirationDateStr = extractedData.driversLicenseExpiration || "";
+        const expirationDate = expirationDateStr ? parse(expirationDateStr, 'yyyy-MM-dd', new Date()) : undefined;
 
         const employeeData = {
             firstName: extractedData.firstName,
@@ -82,7 +83,7 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
             city: extractedData.city,
             state: extractedData.state,
             zipCode: extractedData.zipCode,
-            driversLicenseExpiration: isNaN(expirationDate.getTime()) ? undefined : expirationDate.toISOString(),
+            driversLicenseExpiration: expirationDate && !isNaN(expirationDate.getTime()) ? expirationDate.toISOString() : undefined,
             date: hireDate.toISOString(), // Using 'date' field to store hire date as it's used elsewhere for hire/application date
             position: extractedData.position,
             homePhone: extractedData.homePhone,

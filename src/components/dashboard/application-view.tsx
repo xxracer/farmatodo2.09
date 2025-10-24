@@ -6,14 +6,16 @@ import { type ApplicationData } from "@/lib/schemas";
 import { Check, X, Paperclip, Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 
 // Helper to safely convert a string or date object to a formatted date string
 function formatDisplayDate(dateValue: any): string {
     if (!dateValue) return 'N/A';
     try {
-        // The value can be a Date object or an ISO string
         const date = dateValue instanceof Date ? dateValue : parseISO(dateValue);
+        if (!isValid(date)) {
+            return 'N/A';
+        }
         return format(date, "PPP");
     } catch (error) {
         // Fallback for invalid date formats
@@ -170,10 +172,10 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
             <CardTitle className="font-headline">Education</CardTitle>
           </CardHeader>
           <CardContent>
-            <EducationDetails title="College" education={data.education.college} />
-            <EducationDetails title="Vo-Tech or Trade" education={data.education.voTech} />
-            <EducationDetails title="High School" education={data.education.highSchool} />
-            <EducationDetails title="Other" education={data.education.other} />
+            {data.education && <EducationDetails title="College" education={data.education.college} />}
+            {data.education && <EducationDetails title="Vo-Tech or Trade" education={data.education.voTech} />}
+            {data.education && <EducationDetails title="High School" education={data.education.highSchool} />}
+            {data.education && <EducationDetails title="Other" education={data.education.other} />}
           </CardContent>
         </Card>
 

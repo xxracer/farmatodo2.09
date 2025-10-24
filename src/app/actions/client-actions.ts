@@ -65,7 +65,7 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
         return { success: true, id: newEmployee.id };
 
     } catch (error) {
-         console.error("Error creating legacy employee: ", error);
+        console.error("Error creating legacy employee: ", error);
         return { success: false, error: (error as Error).message || "Failed to create legacy employee." };
     }
 }
