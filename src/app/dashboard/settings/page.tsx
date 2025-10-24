@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye, Image as ImageIcon, Users, Workflow, FileQuestion } from "lucide-react";
+import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye, Image as ImageIcon, Users, Workflow, FileQuestion, HelpCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,10 @@ import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { generateId } from "@/lib/local-storage-client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+
 
 // Helper to convert file to Base64
 const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -24,6 +28,15 @@ const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) 
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = error => reject(error);
 });
+
+const STANDARD_DOCS: RequiredDoc[] = [
+    { id: 'i9', label: 'Form I-9', type: 'upload' },
+    { id: 'w4', label: 'Form W-4', type: 'upload' },
+    { id: 'proofOfIdentity', label: 'Proof of Identity (Govt. ID)', type: 'upload' },
+    { id: 'educationalDiplomas', label: 'Educational Diplomas/Certificates', type: 'upload' },
+    { id: 'proofOfAddress', label: 'Proof of Address', type: 'upload' },
+];
+
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -71,8 +84,7 @@ export default function SettingsPage() {
     }
   }, [toast]);
   
-  const handleSaveCompany = (e: React.FormEvent) => {
-      e.preventDefault();
+  const handleSaveCompany = () => {
       startTransition(async () => {
           if (!companyForEdit.name) {
               toast({ variant: 'destructive', title: "Validation Error", description: "Company name is required."});
@@ -82,7 +94,7 @@ export default function SettingsPage() {
           try {
               const dataToSave: Partial<Company> = {
                   ...companyForEdit,
-                  onboardingProcesses: onboardingProcesses, // Save the new processes structure
+                  onboardingProcesses: onboardingProcesses,
               };
               
               const result = await createOrUpdateCompany(dataToSave);
@@ -133,15 +145,8 @@ export default function SettingsPage() {
     const newProcess: OnboardingProcess = {
         id: generateId(),
         name: `New Onboarding Process #${onboardingProcesses.length + 1}`,
-        applicationForm: {
-            id: generateId(),
-            name: 'Default Application',
-            type: 'template',
-        },
-        interviewScreen: {
-            type: 'template',
-            imageUrl: null,
-        },
+        applicationForm: { id: generateId(), name: 'Default Application', type: 'template' },
+        interviewScreen: { type: 'template', imageUrl: null },
         requiredDocs: [],
     };
     setOnboardingProcesses(prev => [...prev, newProcess]);
@@ -166,17 +171,25 @@ export default function SettingsPage() {
     }));
   };
   
-  const handleAddRequiredDoc = (processId: string, docLabel: string) => {
-      if (!docLabel) return;
-      const newDoc: RequiredDoc = { id: docLabel.toLowerCase().replace(/\s/g, '-'), label: docLabel, type: 'upload' };
+  const handleAddRequiredDoc = (processId: string, doc: RequiredDoc) => {
       const updatedProcesses = onboardingProcesses.map(p => {
           if (p.id === processId) {
-              return { ...p, requiredDocs: [...(p.requiredDocs || []), newDoc] };
+              const existingDocs = p.requiredDocs || [];
+              if (existingDocs.some(d => d.id === doc.id)) return p; // Avoid duplicates
+              return { ...p, requiredDocs: [...existingDocs, doc] };
           }
           return p;
       });
       setOnboardingProcesses(updatedProcesses);
   };
+  
+  const handleAddCustomDoc = (processId: string, docLabel: string) => {
+      if (!docLabel) return;
+      const docId = docLabel.toLowerCase().replace(/\s/g, '-') + `-${generateId()}`;
+      const newDoc: RequiredDoc = { id: docId, label: docLabel, type: 'upload' };
+      handleAddRequiredDoc(processId, newDoc);
+  };
+
 
   const handleRemoveRequiredDoc = (processId: string, docId: string) => {
       const updatedProcesses = onboardingProcesses.map(p => {
@@ -204,9 +217,33 @@ export default function SettingsPage() {
       </div>
     );
   }
+  
+  const SaveButton = ({ isPending, size = "lg" }: { isPending: boolean, size?: "lg" | "default" | "sm" | "icon" | null}) => (
+      <AlertDialog>
+          <AlertDialogTrigger asChild>
+              <Button size={size} disabled={isPending}>
+                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Save All Settings
+              </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Save</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Are you sure you want to save all changes for the company "{companyForEdit.name || 'Unnamed Company'}"?
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSaveCompany}>Confirm & Save</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+  );
+
 
   return (
-    <form onSubmit={handleSaveCompany} className="space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
         <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
                 <Settings className="h-8 w-8 text-foreground" />
@@ -218,10 +255,7 @@ export default function SettingsPage() {
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                 <Button type="submit" size="lg" disabled={isPending}>
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save All Settings
-                </Button>
+                 <SaveButton isPending={isPending} />
             </div>
         </div>
 
@@ -352,7 +386,7 @@ export default function SettingsPage() {
                                           )}
                                       </div>
                                       <div className="flex justify-end items-center">
-                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/application" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 1</Link></Button>
+                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/application" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 1 Form</Link></Button>
                                       </div>
                                   </div>
                                 </div>
@@ -377,7 +411,7 @@ export default function SettingsPage() {
                                           )}
                                       </div>
                                       <div className="flex justify-end items-center">
-                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/interview" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 2</Link></Button>
+                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/interview" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 2 Screen</Link></Button>
                                       </div>
                                   </div>
                                 </div>
@@ -397,19 +431,54 @@ export default function SettingsPage() {
                                                   </Button>
                                               </div>
                                           ))}
+                                          {process.requiredDocs?.length === 0 && <p className="text-xs text-muted-foreground">No documents added yet.</p>}
                                         </div>
-                                        <form onSubmit={(e) => {
-                                            e.preventDefault();
-                                            const input = e.currentTarget.elements.namedItem('doc-label') as HTMLInputElement;
-                                            handleAddRequiredDoc(process.id, input.value);
-                                            input.value = '';
-                                        }} className="flex gap-2">
-                                            <Input name="doc-label" placeholder="e.g., Form I-9" />
-                                            <Button type="submit" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
-                                        </form>
+                                        
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button type="button" variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" /> Add Document</Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-80">
+                                                <div className="grid gap-4">
+                                                    <h4 className="font-medium leading-none">Add Documents</h4>
+                                                    <p className="text-sm text-muted-foreground">Select standard documents or add a custom one.</p>
+                                                    <div className="space-y-2">
+                                                        {STANDARD_DOCS.map(doc => (
+                                                            <div key={doc.id} className="flex items-center justify-between">
+                                                                <Label htmlFor={`doc-${process.id}-${doc.id}`} className="font-normal flex items-center gap-2">
+                                                                    <Checkbox 
+                                                                        id={`doc-${process.id}-${doc.id}`}
+                                                                        checked={(process.requiredDocs || []).some(d => d.id === doc.id)}
+                                                                        onCheckedChange={(checked) => {
+                                                                            if (checked) {
+                                                                                handleAddRequiredDoc(process.id, doc)
+                                                                            } else {
+                                                                                handleRemoveRequiredDoc(process.id, doc.id)
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    {doc.label}
+                                                                </Label>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <Separator />
+                                                    <form onSubmit={(e) => {
+                                                        e.preventDefault();
+                                                        const input = e.currentTarget.elements.namedItem('custom-doc-label') as HTMLInputElement;
+                                                        handleAddCustomDoc(process.id, input.value);
+                                                        input.value = '';
+                                                    }} className="flex gap-2">
+                                                        <Input name="custom-doc-label" placeholder="Custom document name..." className="h-8" />
+                                                        <Button type="submit" size="sm" className="h-8">Add</Button>
+                                                    </form>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
+
                                       </div>
                                       <div className="flex justify-end items-center">
-                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/documentation" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 3</Link></Button>
+                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/documentation" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 3 Page</Link></Button>
                                       </div>
                                   </div>
                                 </div>
@@ -430,10 +499,7 @@ export default function SettingsPage() {
       <Separator />
 
       <div className="flex justify-end">
-          <Button type="submit" size="lg" disabled={isPending}>
-              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save All Settings
-          </Button>
+          <SaveButton isPending={isPending} />
       </div>
     </form>
   );
