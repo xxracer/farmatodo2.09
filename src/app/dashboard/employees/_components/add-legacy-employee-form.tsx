@@ -69,38 +69,48 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
     };
     
     const handleConfirmAndSave = async () => {
-        if (!extractedData || !hireDate) return;
+        if (!extractedData || !hireDate || !pdfFile) return;
         setIsLoading(true);
         
-        // The AI returns the date as a "YYYY-MM-DD" string. Parse it into a Date object.
-        const expirationDateStr = extractedData.driversLicenseExpiration || "";
-        const expirationDate = expirationDateStr ? parse(expirationDateStr, 'yyyy-MM-dd', new Date()) : undefined;
+        try {
+            const tempId = Date.now().toString();
+            const applicationPdfUrl = await uploadFile(pdfFile, `${tempId}/legacy-application.pdf`);
 
-        const employeeData = {
-            firstName: extractedData.firstName,
-            lastName: extractedData.lastName,
-            streetAddress: extractedData.address,
-            city: extractedData.city,
-            state: extractedData.state,
-            zipCode: extractedData.zipCode,
-            driversLicenseExpiration: expirationDate && !isNaN(expirationDate.getTime()) ? expirationDate.toISOString() : undefined,
-            date: hireDate.toISOString(), // Using 'date' field to store hire date as it's used elsewhere for hire/application date
-            position: extractedData.position,
-            homePhone: extractedData.homePhone,
-            emergencyContact: extractedData.emergencyContact,
-            documents: [],
-            miscDocuments: [],
-        };
+            // The AI returns the date as a "YYYY-MM-DD" string. Parse it into a Date object.
+            const expirationDateStr = extractedData.driversLicenseExpiration || "";
+            const expirationDate = expirationDateStr ? parse(expirationDateStr, 'yyyy-MM-dd', new Date()) : undefined;
 
-        const result = await createLegacyEmployee(employeeData);
-        
-        if (result.success) {
-            toast({ title: "Employee Added", description: `${extractedData.firstName} ${extractedData.lastName} has been added to the system.` });
-            onEmployeeAdded(); // Callback to close dialog and refresh list
-        } else {
-            toast({ variant: "destructive", title: "Save Failed", description: result.error });
+            const employeeData = {
+                firstName: extractedData.firstName,
+                lastName: extractedData.lastName,
+                streetAddress: extractedData.address,
+                city: extractedData.city,
+                state: extractedData.state,
+                zipCode: extractedData.zipCode,
+                driversLicenseExpiration: expirationDate && !isNaN(expirationDate.getTime()) ? expirationDate.toISOString() : undefined,
+                date: hireDate.toISOString(), // Using 'date' field to store hire date as it's used elsewhere for hire/application date
+                position: extractedData.position,
+                homePhone: extractedData.homePhone,
+                emergencyContact: extractedData.emergencyContact,
+                documents: [],
+                miscDocuments: [],
+                applicationPdfUrl,
+            };
+
+            const result = await createLegacyEmployee(employeeData);
+            
+            if (result.success) {
+                toast({ title: "Employee Added", description: `${extractedData.firstName} ${extractedData.lastName} has been added to the system.` });
+                onEmployeeAdded(); // Callback to close dialog and refresh list
+            } else {
+                toast({ variant: "destructive", title: "Save Failed", description: result.error });
+            }
+        } catch (e) {
+            console.error(e);
+            toast({ variant: "destructive", title: "Save Failed", description: (e as Error).message || "An unexpected error occurred." });
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     }
 
 

@@ -14,6 +14,12 @@ function formatDisplayDate(dateValue: any): string {
     try {
         const date = dateValue instanceof Date ? dateValue : parseISO(dateValue);
         if (!isValid(date)) {
+            // Try a more lenient parse for "YYYY-MM-DD"
+            const parts = String(dateValue).split('-');
+            if (parts.length === 3) {
+                const parsed = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                if (isValid(parsed)) return format(parsed, "PPP");
+            }
             return 'N/A';
         }
         return format(date, "PPP");
@@ -54,16 +60,25 @@ const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
 
 const FileRow = ({ label, value }: { label: string, value?: string }) => {
     if (!value) return null;
-    // Check if the value is a base64 data URI
+    // Check if the value is a base64 data URI or a Vercel KV key
     const isDataUrl = value.startsWith('data:');
-    if (!isDataUrl) return null;
+    const isKvKey = !isDataUrl && value.includes('/'); // Simple check if it looks like a path/key
+
+    if (!isDataUrl && !isKvKey) return null;
+    
+    // For KV keys, we'll need a server action or API route to fetch the file securely.
+    // For this example, we'll just link to the data URI directly.
+    // A more robust solution would handle KV keys differently.
+    const href = isDataUrl ? value : `/api/files?key=${encodeURIComponent(value)}`;
+    const downloadName = isDataUrl ? `${label.replace(/\s/g, '_')}.pdf` : undefined;
+
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
             <p>
                 <Button asChild variant="link" className="p-0 h-auto">
-                    <a href={value} download={`${label.replace(/\s/g, '_')}.pdf`}>
+                    <a href={value} download={downloadName}>
                         View/Download Document <Download className="ml-2 h-4 w-4" />
                     </a>
                 </Button>
@@ -136,7 +151,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
           </CardHeader>
           <CardContent className="space-y-2">
             <DataRow label="Full Name" value={`${data.firstName} ${data.middleName || ''} ${data.lastName}`} />
-            <DataRow label="Date of Application" value={data.date} isDate={true} />
+            <DataRow label="Date of Application / Hire" value={data.date} isDate={true} />
             <DataRow label="Applying For" value={Array.isArray(data.applyingFor) ? data.applyingFor.join(", ") : 'N/A'} />
           </CardContent>
         </Card>
@@ -226,6 +241,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <CardTitle className="font-headline">Credentials, Skills & Resume</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+                <FileRow label="Original Application PDF" value={data.applicationPdfUrl} />
                 <FileRow label="Resume File" value={data.resume} />
                 <DataRow label="Specialized Skills & Qualifications" value={data.specializedSkills} />
             </CardContent>
@@ -247,7 +263,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <FileRow label="Form W-4" value={data.w4} />
                 <FileRow label="Educational Diplomas" value={data.educationalDiplomas} />
                 
-                {!data.idCard && !data.proofOfAddress && !data.driversLicense && !data.i9 && !data.w4 && !data.educationalDiplomas && (
+                {!data.idCard && !data.proofOfAddress && !data.driversLicense && !data.i9 && !data.w4 && !data.educationalDiplomas && !data.applicationPdfUrl && (
                     <div className="flex items-center justify-center text-sm text-muted-foreground p-4">
                         <Paperclip className="mr-2 h-4 w-4" />
                         No documents have been uploaded yet.

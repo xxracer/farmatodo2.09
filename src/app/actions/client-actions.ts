@@ -57,6 +57,8 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
             education: employeeData.education || { college: {}, voTech: {}, highSchool: {}, other: {} },
         } as ApplicationData;
 
+        console.log("Creating legacy employee with data: ", newEmployee);
+
         const candidates = getAll<ApplicationData>(CANDIDATES_KEY);
         candidates.push(newEmployee);
         saveAll<ApplicationData>(CANDIDATES_KEY, candidates);

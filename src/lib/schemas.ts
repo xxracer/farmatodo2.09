@@ -141,6 +141,7 @@ export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense
     created_at?: string;
     resume?: string; // This will now be a URL from Vercel KV for employees
     driversLicense?: string; // This will now be a URL from Vercel KV for employees
+    applicationPdfUrl?: string; // URL for the original PDF from a legacy employee
     
     // New document fields from documentation form
     idCard?: string;
