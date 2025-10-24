@@ -1,60 +1,249 @@
 
 'use client';
 
-import { getEmployees } from "@/app/actions/client-actions";
-import { CandidatesActions } from "@/app/dashboard/candidates/_components/candidates-actions";
+import { getEmployees, updateCandidateStatus, deleteCandidate } from "@/app/actions/client-actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApplicationData } from "@/lib/schemas";
-import { Briefcase, UserPlus, Folder, Calendar as CalendarIcon, User } from "lucide-react";
-import { format, getMonth, getYear } from "date-fns";
-import { useEffect, useState } from "react";
+import { ApplicationData, DocumentFile } from "@/lib/schemas";
+import { Briefcase, UserPlus, Folder, User, Search, Trash2, Archive, CheckCircle, AlertTriangle, File as FileIcon, Upload } from "lucide-react";
+import { format } from "date-fns";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddLegacyEmployeeForm } from "./_components/add-legacy-employee-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApplicationView } from "@/components/dashboard/application-view";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { uploadFile } from "@/app/actions/kv-actions";
 
 
-// Helper to convert string to JS Date
-function toDate(dateString: string | Date | undefined): Date | null {
-  if (!dateString) return null;
-  if (dateString instanceof Date) return dateString;
-  try {
-    return new Date(dateString);
-  } catch (e) {
-    return null;
-  }
+type InactiveInfo = {
+  date: Date;
+  reason: 'Renunciation' | 'Termination' | 'Other';
+  description: string;
 }
 
-// Group employees by year and month
-type GroupedEmployees = {
-  [year: number]: {
-    [month: string]: ApplicationData[];
-  };
-};
+function EmployeeList({ 
+    employees, 
+    onStatusChange, 
+    onDelete, 
+    onUpload,
+}: { 
+    employees: ApplicationData[],
+    onStatusChange: (id: string, info: InactiveInfo) => void,
+    onDelete: (id: string) => void,
+    onUpload: (employeeId: string, file: File, title: string, type: 'required' | 'misc') => void
+}) {
+    const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
+    const [isInactiveModalOpen, setInactiveModalOpen] = useState(false);
+    const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+    const [inactiveInfo, setInactiveInfo] = useState<{ date: Date | undefined, reason: string, description: string }>({ date: new Date(), reason: '', description: '' });
+    const { toast } = useToast();
 
-function groupEmployees(employees: ApplicationData[]): GroupedEmployees {
-  return employees.reduce((acc, employee) => {
-    const hireDate = toDate(employee.date);
-    if (hireDate) {
-      const year = getYear(hireDate);
-      const month = format(hireDate, 'MMMM');
-      if (!acc[year]) {
-        acc[year] = {};
-      }
-      if (!acc[year][month]) {
-        acc[year][month] = [];
-      }
-      acc[year][month].push(employee);
+    // State for uploading new documents
+    const [newDocFile, setNewDocFile] = useState<File | null>(null);
+    const [newDocTitle, setNewDocTitle] = useState('');
+    const [uploadType, setUploadType] = useState<'required' | 'misc'>('required');
+
+    const toggleEmployee = (id: string) => {
+        setExpandedEmployee(prev => (prev === id ? null : id));
+    };
+
+    const openInactiveModal = (id: string) => {
+        setSelectedEmployeeId(id);
+        setInactiveModalOpen(true);
+    };
+
+    const handleInactiveSubmit = () => {
+        if (!selectedEmployeeId || !inactiveInfo.date || !inactiveInfo.reason) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please fill out all fields.' });
+            return;
+        }
+        onStatusChange(selectedEmployeeId, {
+            date: inactiveInfo.date,
+            reason: inactiveInfo.reason as InactiveInfo['reason'],
+            description: inactiveInfo.description
+        });
+        setInactiveModalOpen(false);
+        setSelectedEmployeeId(null);
+    };
+    
+    const openDeleteConfirm = (id: string) => {
+        setSelectedEmployeeId(id);
+        setDeleteConfirmOpen(true);
     }
-    return acc;
-  }, {} as GroupedEmployees);
-}
+    
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setNewDocFile(e.target.files[0]);
+        }
+    };
+    
+    const handleUploadDocument = (employeeId: string) => {
+        if (!newDocFile || !newDocTitle) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Please select a file and provide a title.'});
+            return;
+        }
+        onUpload(employeeId, newDocFile, newDocTitle, uploadType);
+        setNewDocFile(null);
+        setNewDocTitle('');
+    };
 
+    return (
+        <Accordion type="single" collapsible className="w-full">
+            {employees.map(employee => (
+                <AccordionItem key={employee.id} value={employee.id}>
+                    <AccordionTrigger onClick={() => toggleEmployee(employee.id)} className="hover:no-underline">
+                        <div className="flex items-center justify-between w-full pr-4">
+                            <div className="flex items-center gap-2">
+                                <User className="h-5 w-5" />
+                                <span>{employee.firstName} {employee.lastName}</span>
+                                <span className="text-xs text-muted-foreground">- {employee.position}</span>
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <div className="pl-8 pt-2 space-y-6">
+                            <Accordion type="multiple" className="w-full" defaultValue={['details']}>
+                                <AccordionItem value="details">
+                                    <AccordionTrigger className="font-semibold"><Folder className="mr-2 h-5 w-5 text-primary" /> Employee Details</AccordionTrigger>
+                                    <AccordionContent className="p-4 bg-muted/30 rounded-md">
+                                        <ApplicationView data={employee} />
+                                    </AccordionContent>
+                                </AccordionItem>
+                                
+                                <AccordionItem value="required_docs">
+                                    <AccordionTrigger className="font-semibold"><Folder className="mr-2 h-5 w-5 text-primary" /> Required Documents</AccordionTrigger>
+                                    <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-4">
+                                        {employee.documents?.map((doc: DocumentFile) => (
+                                             <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm hover:underline">
+                                                <FileIcon className="h-4 w-4" /> {doc.title}
+                                            </a>
+                                        ))}
+                                        {employee.documents?.length === 0 && <p className="text-sm text-muted-foreground">No required documents uploaded.</p>}
+                                        <div className="mt-4 pt-4 border-t space-y-2">
+                                            <h4 className="font-medium">Upload New Required Document</h4>
+                                            <Input placeholder="Document Title (e.g., Driver's License)" value={newDocTitle} onChange={e => setNewDocTitle(e.target.value)} />
+                                            <Input type="file" onChange={handleFileChange} />
+                                            <Button size="sm" onClick={() => { setUploadType('required'); handleUploadDocument(employee.id); }}><Upload className="mr-2 h-4 w-4" /> Upload</Button>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+
+                                <AccordionItem value="misc_docs">
+                                    <AccordionTrigger className="font-semibold"><Folder className="mr-2 h-5 w-5 text-primary" /> Miscellaneous Documents</AccordionTrigger>
+                                    <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-4">
+                                        {employee.miscDocuments?.map((doc: DocumentFile) => (
+                                             <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm hover:underline">
+                                                <FileIcon className="h-4 w-4" /> {doc.title}
+                                            </a>
+                                        ))}
+                                        {employee.miscDocuments?.length === 0 && <p className="text-sm text-muted-foreground">No miscellaneous documents uploaded.</p>}
+                                        <div className="mt-4 pt-4 border-t space-y-2">
+                                            <h4 className="font-medium">Upload New Miscellaneous Document</h4>
+                                            <Input placeholder="Document Title (e.g., Performance Review)" value={newDocTitle} onChange={e => setNewDocTitle(e.target.value)} />
+                                            <Input type="file" onChange={handleFileChange} />
+                                            <Button size="sm" onClick={() => { setUploadType('misc'); handleUploadDocument(employee.id); }}><Upload className="mr-2 h-4 w-4" /> Upload</Button>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                            <div className="flex gap-2 justify-end">
+                                {employee.status !== 'inactive' ? (
+                                    <Button variant="outline" onClick={() => openInactiveModal(employee.id)}>
+                                        <Archive className="mr-2 h-4 w-4" />
+                                        Mark as Inactive
+                                    </Button>
+                                ) : (
+                                    <Button variant="destructive" onClick={() => openDeleteConfirm(employee.id)}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Employee Data
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </AccordionContent>
+                    <Dialog open={isInactiveModalOpen} onOpenChange={setInactiveModalOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Mark Employee as Inactive</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Date of Change</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !inactiveInfo.date && "text-muted-foreground")}>
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {inactiveInfo.date ? format(inactiveInfo.date, "PPP") : <span>Pick a date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar mode="single" selected={inactiveInfo.date} onSelect={(d) => setInactiveInfo(prev => ({ ...prev, date: d }))} initialFocus />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Reason for Inactivity</Label>
+                                    <Select onValueChange={(value) => setInactiveInfo(prev => ({...prev, reason: value}))}>
+                                        <SelectTrigger><SelectValue placeholder="Select a reason" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Renunciation">Renunciation</SelectItem>
+                                            <SelectItem value="Termination">Termination</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Description</Label>
+                                    <Textarea placeholder="Add a description..." value={inactiveInfo.description} onChange={(e) => setInactiveInfo(prev => ({...prev, description: e.target.value}))} />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" onClick={() => setInactiveModalOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleInactiveSubmit}>Confirm</Button>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Está seguro de que desea eliminar todos los datos de este empleado?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the employee's data from the system.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setSelectedEmployeeId(null)}>NO</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => {
+                                    if (selectedEmployeeId) onDelete(selectedEmployeeId);
+                                    setSelectedEmployeeId(null);
+                                }}>SÍ</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </AccordionItem>
+            ))}
+        </Accordion>
+    );
+}
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
 
   const loadData = async () => {
     setLoading(true);
@@ -65,20 +254,85 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     loadData();
-
-    const handleReload = () => loadData();
-    window.addEventListener('data-changed', handleReload);
-
+    window.addEventListener('storage', loadData);
     return () => {
-      window.removeEventListener('data-changed', handleReload);
+      window.removeEventListener('storage', loadData);
     };
   }, []);
   
   const onEmployeeAdded = () => {
     setIsFormOpen(false);
     loadData();
-    window.dispatchEvent(new CustomEvent('data-changed'));
   }
+
+  const handleStatusChange = async (id: string, info: InactiveInfo) => {
+    await updateCandidateStatus(id, 'inactive', info);
+    toast({ title: 'Employee Updated', description: 'Status set to inactive.' });
+    loadData();
+  }
+  
+  const handleDelete = async (id: string) => {
+    await deleteCandidate(id);
+    toast({ title: 'Employee Deleted', description: 'All employee data has been removed.' });
+    loadData();
+  }
+  
+  const handleUpload = async (employeeId: string, file: File, title: string, type: 'required' | 'misc') => {
+      if (!file || !title) return;
+      
+      toast({ title: 'Uploading...', description: 'Please wait while the file is uploaded.'});
+
+      try {
+          const fileData = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = error => reject(error);
+          });
+          
+          const fileName = `${employeeId}/${type}/${Date.now()}-${file.name}`;
+          const fileUrl = await uploadFile(fileData, fileName);
+
+          const newDocument: DocumentFile = { id: fileName, title, url: fileUrl };
+          
+          const currentEmployees = await getEmployees();
+          const updatedEmployees = currentEmployees.map(emp => {
+              if (emp.id === employeeId) {
+                  if (type === 'required') {
+                      return { ...emp, documents: [...(emp.documents || []), newDocument] };
+                  } else {
+                       return { ...emp, miscDocuments: [...(emp.miscDocuments || []), newDocument] };
+                  }
+              }
+              return emp;
+          });
+          
+          // Since getEmployees returns all employees, we just save them all back
+          // A more granular update would be better, but this works for localStorage
+          const allData = await getEmployees();
+          const finalData = allData.map(d => updatedEmployees.find(u => u.id === d.id) || d);
+          localStorage.setItem('employees', JSON.stringify(finalData)); // This is a bit of a hack
+
+          loadData();
+          toast({ title: 'Upload Successful', description: `${title} has been added.`});
+
+      } catch (error) {
+          console.error(error);
+          toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the file.'});
+      }
+  }
+
+
+  const { activeEmployees, inactiveEmployees } = useMemo(() => {
+    const filtered = employees.filter(e => 
+        `${e.firstName} ${e.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    return {
+      activeEmployees: filtered.filter(e => e.status !== 'inactive'),
+      inactiveEmployees: filtered.filter(e => e.status === 'inactive'),
+    };
+  }, [employees, searchTerm]);
+
 
   if (loading) {
     return (
@@ -88,9 +342,6 @@ export default function EmployeesPage() {
     )
   }
   
-  const groupedEmployees = groupEmployees(employees);
-  const sortedYears = Object.keys(groupedEmployees).map(Number).sort((a, b) => b - a);
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -111,65 +362,54 @@ export default function EmployeesPage() {
             </DialogContent>
         </Dialog>
       </div>
+      
+       <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+              placeholder="Search employees by name..." 
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+          />
+      </div>
 
-      {employees.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm min-h-[400px]">
-              <div className="flex flex-col items-center gap-2 text-center">
-                  <Briefcase className="h-12 w-12 text-muted-foreground" />
-                  <h3 className="text-2xl font-bold tracking-tight">No Employees</h3>
-                  <p className="text-sm text-muted-foreground">
-                      New hires marked as "Employee" or added legacy employees will appear here.
-                  </p>
-              </div>
-          </div>
-      ) : (
-        <Card>
+      <Tabs defaultValue="active">
+        <TabsList>
+          <TabsTrigger value="active">Active ({activeEmployees.length})</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive ({inactiveEmployees.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value="active">
+          <Card>
             <CardContent className="p-4">
-               <Accordion type="multiple" className="w-full">
-                  {sortedYears.map(year => (
-                    <AccordionItem key={year} value={`year-${year}`}>
-                      <AccordionTrigger className="text-lg font-semibold hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <Folder className="h-6 w-6 text-primary" />
-                          {year}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="pl-6">
-                        <Accordion type="multiple" className="w-full">
-                          {Object.keys(groupedEmployees[year]).map(month => (
-                             <AccordionItem key={month} value={`month-${year}-${month}`}>
-                                <AccordionTrigger className="hover:no-underline">
-                                   <div className="flex items-center gap-2">
-                                     <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                                     {month}
-                                   </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pl-8 pt-2">
-                                  <div className="space-y-2">
-                                    {groupedEmployees[year][month].map(employee => (
-                                      <div key={employee.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
-                                        <div className="flex items-center gap-2">
-                                          <User className="h-4 w-4" />
-                                          <span>{employee.firstName} {employee.lastName}</span>
-                                          <span className="text-xs text-muted-foreground">- {employee.position}</span>
-                                        </div>
-                                        <div className="space-x-2">
-                                          <CandidatesActions candidateId={employee.id} />
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </AccordionContent>
-                             </AccordionItem>
-                          ))}
-                        </Accordion>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-               </Accordion>
+               {activeEmployees.length > 0 ? (
+                 <EmployeeList employees={activeEmployees} onStatusChange={handleStatusChange} onDelete={handleDelete} onUpload={handleUpload} />
+               ) : (
+                  <div className="text-center py-10 text-muted-foreground">
+                      <Briefcase className="h-12 w-12 mx-auto mb-2" />
+                      <h3 className="text-lg font-semibold">No Active Employees</h3>
+                      <p className="text-sm">New hires or legacy employees will appear here.</p>
+                  </div>
+               )}
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        </TabsContent>
+        <TabsContent value="inactive">
+           <Card>
+            <CardContent className="p-4">
+               {inactiveEmployees.length > 0 ? (
+                 <EmployeeList employees={inactiveEmployees} onStatusChange={handleStatusChange} onDelete={handleDelete} onUpload={handleUpload} />
+               ) : (
+                  <div className="text-center py-10 text-muted-foreground">
+                      <Archive className="h-12 w-12 mx-auto mb-2" />
+                      <h3 className="text-lg font-semibold">No Inactive Employees</h3>
+                      <p className="text-sm">Employees marked as inactive will be listed here.</p>
+                  </div>
+               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
+

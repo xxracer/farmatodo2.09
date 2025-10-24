@@ -7,6 +7,13 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 const ACCEPTED_PDF_ONLY = ["application/pdf"];
 
 
+export interface DocumentFile {
+  id: string;
+  title: string;
+  url: string;
+}
+
+
 const educationEntrySchema = z.object({
   name: z.string().optional(),
   location: z.string().optional(),
@@ -127,7 +134,15 @@ export const applicationSchema = z.object({
     errorMap: () => ({ message: "You must certify to submit the application." }),
   }),
   signature: z.string().min(1, "Signature is required"),
-  status: z.enum(['candidate', 'interview', 'new-hire', 'employee']).optional(),
+  status: z.enum(['candidate', 'interview', 'new-hire', 'employee', 'inactive']).optional(),
+  
+  // Inactive Info
+  inactiveInfo: z.object({
+    date: z.string(),
+    reason: z.string(),
+    description: z.string(),
+  }).optional(),
+
 }).superRefine((data, ctx) => {
     if (data.differentLastName === 'yes' && !data.previousName) {
         ctx.addIssue({
@@ -159,16 +174,12 @@ export type ApplicationSchema = z.infer<typeof applicationSchema>;
 // This is the type for the data that will be stored
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
-    // We now store the path to the file in Supabase Storage, not a data URL
+    // We store the data URL for local storage
     resume?: string;
     driversLicense?: string;
-    idCard?: string;
-    proofOfAddress?: string;
-    // Add fields for other uploaded documents
-    i9?: string;
-    w4?: string;
-    educationalDiplomas?: string;
-    [key: string]: any; // Allow for custom doc fields
+    // The new document structure for KV store
+    documents?: DocumentFile[];
+    miscDocuments?: DocumentFile[];
 };
 
 export const interviewReviewSchema = z.object({

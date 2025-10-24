@@ -3,6 +3,7 @@
 
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
 import { getAll, getById, saveAll, saveById, deleteById, generateId } from "@/lib/local-storage-client";
+import { uploadFile } from "./kv-actions";
 
 const CANDIDATES_KEY = 'candidates';
 
@@ -12,14 +13,27 @@ function dispatchStorageEvent() {
 
 export async function createCandidate(data: ApplicationSchema) {
     try {
-        const newCandidate: ApplicationData = {
+        const newCandidate: Partial<ApplicationData> = {
             ...data,
             id: generateId(),
             status: 'candidate',
+            documents: [],
+            miscDocuments: []
         };
+        
+        // Handle file uploads to KV store
+        if (data.resume instanceof File) {
+            const resumeUrl = await uploadFile(data.resume, `${newCandidate.id}/resume-${data.resume.name}`);
+            newCandidate.resume = resumeUrl;
+        }
+        if (data.driversLicense instanceof File) {
+            const licenseUrl = await uploadFile(data.driversLicense, `${newCandidate.id}/license-${data.driversLicense.name}`);
+            newCandidate.driversLicense = licenseUrl;
+        }
+
 
         const candidates = await getCandidates();
-        candidates.push(newCandidate);
+        candidates.push(newCandidate as ApplicationData);
         saveAll<ApplicationData>(CANDIDATES_KEY, candidates);
         
         dispatchStorageEvent();
@@ -39,7 +53,7 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
             status: 'employee',
         } as ApplicationData;
 
-        const candidates = await getCandidates();
+        const candidates = getAll<ApplicationData>(CANDIDATES_KEY);
         candidates.push(newEmployee);
         saveAll<ApplicationData>(CANDIDATES_KEY, candidates);
 
@@ -70,29 +84,43 @@ export async function getNewHires(): Promise<ApplicationData[]> {
 
 export async function getEmployees(): Promise<ApplicationData[]> {
     const all = getAll<ApplicationData>(CANDIDATES_KEY);
-    return all.filter(c => c.status === 'employee').sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return all.filter(c => ['employee', 'inactive'].includes(c.status!)).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 }
+
 
 export async function getPersonnel(): Promise<ApplicationData[]> {
     const all = getAll<ApplicationData>(CANDIDATES_KEY);
-    return all.filter(c => ['new-hire', 'employee'].includes(c.status!)).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return all.filter(c => ['new-hire', 'employee', 'inactive'].includes(c.status!)).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 }
 
 export async function getCandidate(id: string): Promise<ApplicationData | null> {
     return getById<ApplicationData>(CANDIDATES_KEY, id);
 }
 
-export async function updateCandidateWithDocuments(
-    id: string, 
-    documents: Record<string, string>
-) {
+export async function updateCandidateWithDocuments(id: string, documents: { [key: string]: string }) {
     try {
         const candidate = await getCandidate(id);
         if (!candidate) throw new Error("Candidate not found");
 
-        const updatedCandidate = { ...candidate, ...documents };
-        saveById<ApplicationData>(CANDIDATES_KEY, id, updatedCandidate);
+        const updatedCandidate: ApplicationData = { 
+            ...candidate, 
+            ...documents,
+            // Assuming documents are being added to the `documents` array
+            // This part needs clarification on how to handle the `documents` object
+        };
+
+        const allCandidates = getAll<ApplicationData>(CANDIDATES_KEY);
+        const index = allCandidates.findIndex(c => c.id === id);
+
+        if (index > -1) {
+            // This merges top-level properties. We need to handle nested document arrays.
+            const existingDocs = allCandidates[index].documents || [];
+            const newDocs = Object.entries(documents).map(([title, url]) => ({ id: url, title, url }));
+            
+            allCandidates[index] = { ...allCandidates[index], ...documents };
+        }
         
+        saveAll<ApplicationData>(CANDIDATES_KEY, allCandidates);
         dispatchStorageEvent();
         return { success: true };
     } catch (error) {
@@ -102,12 +130,12 @@ export async function updateCandidateWithDocuments(
 }
 
 
-export async function updateCandidateStatus(id: string, status: 'interview' | 'new-hire' | 'employee') {
+export async function updateCandidateStatus(id: string, status: 'interview' | 'new-hire' | 'employee' | 'inactive', inactiveInfo?: any) {
     try {
         const candidate = await getCandidate(id);
         if (!candidate) throw new Error("Candidate not found");
         
-        const updatedCandidate = { ...candidate, status };
+        const updatedCandidate = { ...candidate, status, inactiveInfo };
         saveById<ApplicationData>(CANDIDATES_KEY, id, updatedCandidate);
 
         dispatchStorageEvent();

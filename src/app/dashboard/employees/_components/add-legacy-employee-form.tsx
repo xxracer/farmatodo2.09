@@ -18,6 +18,8 @@ import { format, parse } from "date-fns";
 import { extractEmployeeDataFromPdf } from "@/ai/flows/extract-employee-data";
 import { createLegacyEmployee } from "@/app/actions/client-actions";
 import { ExtractEmployeeDataOutput } from "@/lib/schemas";
+import { uploadFile } from "@/app/actions/kv-actions";
+
 
 // Helper to convert a File to a base64 data URI
 async function fileToDataURL(file: File): Promise<string> {
@@ -80,11 +82,13 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
             city: extractedData.city,
             state: extractedData.state,
             zipCode: extractedData.zipCode,
-            driversLicenseExpiration: isNaN(expirationDate.getTime()) ? null : expirationDate,
-            date: hireDate, // Using 'date' field to store hire date as it's used elsewhere for hire/application date
+            driversLicenseExpiration: isNaN(expirationDate.getTime()) ? undefined : expirationDate.toISOString(),
+            date: hireDate.toISOString(), // Using 'date' field to store hire date as it's used elsewhere for hire/application date
             position: extractedData.position,
             homePhone: extractedData.homePhone,
             emergencyContact: extractedData.emergencyContact,
+            documents: [],
+            miscDocuments: [],
         };
 
         const result = await createLegacyEmployee(employeeData);
