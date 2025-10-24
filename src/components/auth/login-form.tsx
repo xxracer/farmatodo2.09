@@ -12,13 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@acme.com");
+  const [password, setPassword] = useState("password123");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // For demo purposes, any login is successful
     if (email && password) {
       toast({
         title: "Login Successful",

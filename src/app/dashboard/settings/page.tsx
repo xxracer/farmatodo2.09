@@ -524,7 +524,7 @@ export default function SettingsPage() {
 
                                     <div className="flex justify-end gap-2 pt-4">
                                         <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteProcess(process.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete Process</Button>
-                                        <SaveButton onSave={handleSaveCompany} isPending={isPending} size="sm">Save All Changes</SaveButton>
+                                        <SaveButton onSave={handleSaveCompany} isPending={isPending} size="sm">Save Company</SaveButton>
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
@@ -542,4 +542,3 @@ export default function SettingsPage() {
   );
 }
 
-    
