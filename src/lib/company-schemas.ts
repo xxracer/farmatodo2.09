@@ -8,14 +8,28 @@ export const requiredDocSchema = z.object({
 });
 export type RequiredDoc = z.infer<typeof requiredDocSchema>;
 
-export const applicationFormSchema = z.object({
+// Represents the configuration for a single application form (Phase 1)
+const applicationFormSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['template', 'custom']).default('template'),
   images: z.array(z.string()).optional(),
-  requiredDocs: z.array(requiredDocSchema).optional(),
 });
-export type ApplicationForm = z.infer<typeof applicationFormSchema>;
+
+// Represents a complete, reusable onboarding process
+export const onboardingProcessSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    // Phase 1 settings
+    applicationForm: applicationFormSchema,
+    // Phase 2 settings
+    interviewScreen: z.object({
+        type: z.enum(['template', 'custom']).default('template'),
+        imageUrl: z.string().nullable().optional(),
+    }),
+});
+export type OnboardingProcess = z.infer<typeof onboardingProcessSchema>;
+
 
 export const companySchema = z.object({
   id: z.string().uuid().optional(),
@@ -27,13 +41,14 @@ export const companySchema = z.object({
   fax: z.string().optional(),
   email: z.string().email().optional(),
   
-  // Replaces formCustomization and phase1Images
-  applicationForms: z.array(applicationFormSchema).optional(),
-  
-  interviewImage: z.string().nullable().optional(),
-  
-  // This might now belong inside each ApplicationForm
-  requiredDocs: z.array(requiredDocSchema).nullable().optional(),
+  // A company can have multiple onboarding processes
+  onboardingProcesses: z.array(onboardingProcessSchema).optional(),
+
+  // These are now legacy and will be migrated to the new structure.
+  // We keep them for now to avoid breaking existing data.
+  applicationForms: z.any().optional(),
+  interviewImage: z.any().optional(),
+  requiredDocs: z.any().optional(),
 });
 
 export type Company = z.infer<typeof companySchema>;

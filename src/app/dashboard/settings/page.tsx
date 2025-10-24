@@ -10,10 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
-import { type Company, type RequiredDoc } from "@/lib/company-schemas";
+import { type Company, type OnboardingProcess } from "@/lib/company-schemas";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { generateId } from "@/lib/local-storage-client";
 
 // Helper to convert file to Base64
 const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -35,8 +37,8 @@ export default function SettingsPage() {
   // State for adding/editing a company
   const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>({});
   
-  // State for managing application forms for a company
-  const [appForms, setAppForms] = useState<{ id: string, name: string, type: 'template' | 'custom', images?: string[] }[]>([]);
+  // New state for multiple onboarding processes
+  const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>([]);
 
   // State for users
   const [users, setUsers] = useState<{name: string, role: string, email: string}[]>([]);
@@ -50,10 +52,10 @@ export default function SettingsPage() {
             const data = await getCompanies();
             setCompanies(data);
             if (data.length > 0) {
-                // Select the first company by default
-                setSelectedCompany(data[0]);
-                setCompanyForEdit(data[0]);
-                setAppForms(data[0].applicationForms || [{ id: 'default', name: 'Default Application', type: 'template' }]);
+                const firstCompany = data[0];
+                setSelectedCompany(firstCompany);
+                setCompanyForEdit(firstCompany);
+                setOnboardingProcesses(firstCompany.onboardingProcesses || []);
             }
         } catch (error) {
             toast({ variant: 'destructive', title: "Failed to load settings", description: (error as Error).message });
@@ -80,14 +82,13 @@ export default function SettingsPage() {
           try {
               const dataToSave: Partial<Company> = {
                   ...companyForEdit,
-                  applicationForms: appForms,
+                  onboardingProcesses: onboardingProcesses, // Save the new processes structure
               };
               
               const result = await createOrUpdateCompany(dataToSave);
   
               if (!result.success || !result.company) throw new Error("Failed to save company settings.");
               
-              // Refresh company list
               const updatedCompanies = await getCompanies();
               setCompanies(updatedCompanies);
               setSelectedCompany(result.company);
@@ -118,7 +119,6 @@ export default function SettingsPage() {
       setUsers(prev => [...prev, {name, role, email}]);
       toast({ title: `User Added (Simulated)`, description: `Password for ${name}: ${password}` });
       
-      // Reset form fields
       e.currentTarget.reset();
   };
 
@@ -128,6 +128,38 @@ export default function SettingsPage() {
         setCompanyForEdit(prev => ({ ...prev, logo: base64Logo }));
     }
   };
+
+  const handleAddNewProcess = () => {
+    const newProcess: OnboardingProcess = {
+        id: generateId(),
+        name: `New Onboarding Process #${onboardingProcesses.length + 1}`,
+        applicationForm: {
+            id: generateId(),
+            name: 'Default Application',
+            type: 'template',
+        },
+        interviewScreen: {
+            type: 'template',
+            imageUrl: null,
+        },
+    };
+    setOnboardingProcesses(prev => [...prev, newProcess]);
+  };
+
+  const handleUpdateProcess = (processId: string, updatedProcess: Partial<OnboardingProcess>) => {
+    setOnboardingProcesses(prev => prev.map(p => p.id === processId ? { ...p, ...updatedProcess } : p));
+  };
+  
+  const handleUpdateProcessField = <K extends keyof OnboardingProcess>(processId: string, field: K, value: OnboardingProcess[K]) => {
+      setOnboardingProcesses(prev => prev.map(p => p.id === processId ? { ...p, [field]: value } : p));
+  };
+
+  const handleDeleteProcess = (processId: string) => {
+    if (window.confirm('Are you sure you want to delete this onboarding process?')) {
+      setOnboardingProcesses(prev => prev.filter(p => p.id !== processId));
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -247,110 +279,85 @@ export default function SettingsPage() {
       
        <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5" /> Onboarding Process</CardTitle>
-                <CardDescription>Customize the application forms and document requirements for this company.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5" /> Onboarding Processes</CardTitle>
+                <CardDescription>Define reusable onboarding flows for different roles. Each process has its own set of phases.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {appForms.map((form, index) => (
-                    <div key={form.id} className="p-4 border rounded-md">
-                        <Input 
-                          className="text-lg font-semibold border-none shadow-none -ml-3 mb-2 focus-visible:ring-1 focus-visible:ring-ring"
-                          value={form.name}
-                          onChange={(e) => {
-                              const newForms = [...appForms];
-                              newForms[index].name = e.target.value;
-                              setAppForms(newForms);
-                          }}
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                             <div>
-                                 <Label>Application Form Type</Label>
-                                 <RadioGroup 
-                                    value={form.type} 
-                                    onValueChange={(val: 'template' | 'custom') => {
-                                        const newForms = [...appForms];
-                                        newForms[index].type = val;
-                                        setAppForms(newForms);
-                                    }}
-                                    className="space-y-2 mt-2"
-                                >
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="template" id={`template-${form.id}`} />
-                                        <Label htmlFor={`template-${form.id}`}>Default Template Form</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="custom" id={`custom-${form.id}`} />
-                                        <Label htmlFor={`custom-${form.id}`}>Custom Uploaded Form</Label>
-                                    </div>
-                                </RadioGroup>
-                                 {form.type === 'custom' && (
-                                     <div className="mt-4 pt-4 border-t">
-                                        <Label htmlFor={`form-images-${form.id}`}>Upload Form Pages (Images/PDF)</Label>
-                                        <Input id={`form-images-${form.id}`} type="file" multiple accept="image/*,.pdf" className="mt-1" />
-                                     </div>
-                                 )}
-                             </div>
-                             <div className="flex justify-end items-center">
-                                 <Button variant="outline" asChild>
-                                    <Link href="/dashboard/settings/preview/application" target="_blank">
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        Preview Form
-                                    </Link>
-                                </Button>
-                             </div>
-                        </div>
-                    </div>
-                ))}
-                 <Button type="button" variant="outline" size="sm" onClick={() => setAppForms([...appForms, {id: `form_${Date.now()}`, name: 'New Application Form', type: 'template'}])}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Application Form
+                <Accordion type="multiple" className="w-full space-y-4">
+                    {onboardingProcesses.map((process) => (
+                        <AccordionItem key={process.id} value={process.id} className="border rounded-md p-4">
+                            <AccordionTrigger className="w-full hover:no-underline">
+                                <div className="flex items-center justify-between w-full">
+                                  <Input 
+                                    className="text-lg font-semibold border-none shadow-none -ml-3 p-2 focus-visible:ring-1 focus-visible:ring-ring"
+                                    value={process.name}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => handleUpdateProcessField(process.id, 'name', e.target.value)}
+                                  />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-4 space-y-6">
+                                {/* Phase 1 Configuration */}
+                                <div className="p-4 border rounded-md space-y-4">
+                                  <h3 className="font-semibold">Phase 1: Application Form</h3>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                                      <div>
+                                          <RadioGroup 
+                                              value={process.applicationForm.type} 
+                                              onValueChange={(val: 'template' | 'custom') => {
+                                                  const updatedProcess = { ...process, applicationForm: { ...process.applicationForm, type: val }};
+                                                  handleUpdateProcess(process.id, updatedProcess);
+                                              }}
+                                              className="space-y-2 mt-2"
+                                          >
+                                              <div className="flex items-center space-x-2"><RadioGroupItem value="template" id={`p1-template-${process.id}`} /><Label htmlFor={`p1-template-${process.id}`}>Default Template Form</Label></div>
+                                              <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id={`p1-custom-${process.id}`} /><Label htmlFor={`p1-custom-${process.id}`}>Custom Uploaded Form</Label></div>
+                                          </RadioGroup>
+                                          {process.applicationForm.type === 'custom' && (
+                                              <div className="mt-4 pt-4 border-t"><Label htmlFor={`form-images-${process.id}`}>Upload Form Pages (Images)</Label><Input id={`form-images-${process.id}`} type="file" multiple accept="image/*" className="mt-1" /></div>
+                                          )}
+                                      </div>
+                                      <div className="flex justify-end items-center">
+                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/application" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 1</Link></Button>
+                                      </div>
+                                  </div>
+                                </div>
+
+                                {/* Phase 2 Configuration */}
+                                <div className="p-4 border rounded-md space-y-4">
+                                  <h3 className="font-semibold">Phase 2: Interview Screen</h3>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                                      <div>
+                                          <RadioGroup 
+                                              value={process.interviewScreen.type} 
+                                              onValueChange={(val: 'template' | 'custom') => {
+                                                const updatedProcess = { ...process, interviewScreen: { ...process.interviewScreen, type: val }};
+                                                handleUpdateProcess(process.id, updatedProcess);
+                                              }}
+                                              className="space-y-2 mt-2"
+                                          >
+                                              <div className="flex items-center space-x-2"><RadioGroupItem value="template" id={`p2-template-${process.id}`} /><Label htmlFor={`p2-template-${process.id}`}>Default Template</Label></div>
+                                              <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id={`p2-custom-${process.id}`} /><Label htmlFor={`p2-custom-${process.id}`}>Custom Background</Label></div>
+                                          </RadioGroup>
+                                          {process.interviewScreen.type === 'custom' && (
+                                              <div className="mt-4 pt-4 border-t"><Label htmlFor={`interview-image-${process.id}`}>Upload Background Image</Label><Input id={`interview-image-${process.id}`} type="file" accept="image/*" className="mt-1" /></div>
+                                          )}
+                                      </div>
+                                      <div className="flex justify-end items-center">
+                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/interview" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 2</Link></Button>
+                                      </div>
+                                  </div>
+                                </div>
+                                <div className="flex justify-end pt-4">
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteProcess(process.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete Process</Button>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+                 <Button type="button" variant="outline" size="sm" onClick={handleAddNewProcess}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Onboarding Process
                 </Button>
-            </CardContent>
-        </Card>
-        
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" />Phase 2: Interview</CardTitle>
-                <CardDescription>Customize the background image for the interview review screen.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                    <div>
-                        <Label>Interview Screen Style</Label>
-                        <RadioGroup 
-                            value={companyForEdit.interviewImage ? 'custom' : 'template'} 
-                            onValueChange={(value) => {
-                                if (value === 'template') {
-                                    setCompanyForEdit(prev => ({...prev, interviewImage: null}));
-                                }
-                            }}
-                            className="space-y-2 mt-2"
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="template" id="p2-template" />
-                                <Label htmlFor="p2-template">Default Template</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="custom" id="p2-custom" />
-                                <Label htmlFor="p2-custom">Custom Background</Label>
-                            </div>
-                        </RadioGroup>
-                        
-                        {companyForEdit.interviewImage !== null && (
-                            <div className="mt-4 pt-4 border-t space-y-2">
-                                <Label htmlFor="interview-image">Upload Background Image</Label>
-                                <Input id="interview-image" type="file" accept="image/*" />
-                            </div>
-                        )}
-                    </div>
-                    <div className="flex justify-end items-center">
-                        <Button variant="outline" asChild>
-                            <Link href="/dashboard/settings/preview/interview" target="_blank">
-                                <Eye className="mr-2 h-4 w-4" />
-                                {companyForEdit.interviewImage ? "Preview Custom Screen" : "Preview Template Screen"}
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
             </CardContent>
         </Card>
 
