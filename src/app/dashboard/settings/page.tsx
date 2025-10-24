@@ -47,7 +47,7 @@ export default function SettingsPage() {
 
   // This state will hold the specific company being edited.
   // We'll get its ID from URL params in a real multi-company setup.
-  // For now, it defaults to the first company found.
+  // For now, it defaults to the first company found or an empty object to create a new one.
   const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>({});
   
   // State for the onboarding processes of the company being edited
@@ -64,12 +64,14 @@ export default function SettingsPage() {
         try {
             const data = await getCompanies();
             if (data.length > 0) {
+                // If companies exist, load the first one for editing.
                 const firstCompany = data[0];
                 setCompanyForEdit(firstCompany);
                 setOnboardingProcesses(firstCompany.onboardingProcesses || []);
             } else {
-                // If no company exists, redirect to the super-admin page to create one
-                router.push('/super-admin');
+                // If no company exists, the page will be in "creation" mode.
+                // The state is already an empty object, so no action is needed.
+                setCompanyForEdit({name: '', onboardingProcesses: []});
             }
         } catch (error) {
             toast({ variant: 'destructive', title: "Failed to load settings", description: (error as Error).message });
@@ -80,11 +82,12 @@ export default function SettingsPage() {
     loadData();
 
     // Listen for storage changes to keep data fresh
-    window.addEventListener('storage', loadData);
+    const handleStorageChange = () => loadData();
+    window.addEventListener('storage', handleStorageChange);
     return () => {
-        window.removeEventListener('storage', loadData);
+        window.removeEventListener('storage', handleStorageChange);
     }
-  }, [toast, router]);
+  }, [toast]);
   
   const handleSaveCompany = () => {
       startTransition(async () => {
@@ -102,6 +105,12 @@ export default function SettingsPage() {
               const result = await createOrUpdateCompany(dataToSave);
   
               if (!result.success || !result.company) throw new Error("Failed to save company settings.");
+              
+              // If we were creating a new company, update the state with the full object from the DB
+              if (!companyForEdit.id && result.company) {
+                  setCompanyForEdit(result.company);
+                  setOnboardingProcesses(result.company.onboardingProcesses || []);
+              }
               
               toast({ title: "Company Settings Saved", description: "The general company details have been updated." });
           } catch (error) {
@@ -232,7 +241,7 @@ export default function SettingsPage() {
                 <div>
                     <h1 className="text-3xl font-headline font-bold text-foreground">System Settings</h1>
                     <p className="text-muted-foreground">
-                        Manage company details, users, and onboarding processes here.
+                       {companyForEdit.id ? 'Edit company details, users, and onboarding processes.' : 'Create a new company to get started.'}
                     </p>
                 </div>
             </div>
