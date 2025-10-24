@@ -27,6 +27,8 @@ export const onboardingProcessSchema = z.object({
         type: z.enum(['template', 'custom']).default('template'),
         imageUrl: z.string().nullable().optional(),
     }),
+    // Phase 3 settings
+    requiredDocs: z.array(requiredDocSchema).optional().default([]),
 });
 export type OnboardingProcess = z.infer<typeof onboardingProcessSchema>;
 
@@ -48,6 +50,7 @@ export const companySchema = z.object({
   // We keep them for now to avoid breaking existing data.
   applicationForms: z.any().optional(),
   interviewImage: z.any().optional(),
+  // requiredDocs is now per-process, but we keep it for backward compatibility
   requiredDocs: z.any().optional(),
 });
 

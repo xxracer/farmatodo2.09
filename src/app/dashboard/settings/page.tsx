@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye, Image as ImageIcon, Users, Workflow } from "lucide-react";
+import { Settings, Building, Save, FileText, PlusCircle, Trash2, Loader2, Eye, Image as ImageIcon, Users, Workflow, FileQuestion } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
-import { type Company, type OnboardingProcess } from "@/lib/company-schemas";
+import { type Company, type OnboardingProcess, type RequiredDoc } from "@/lib/company-schemas";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
@@ -142,17 +142,52 @@ export default function SettingsPage() {
             type: 'template',
             imageUrl: null,
         },
+        requiredDocs: [],
     };
     setOnboardingProcesses(prev => [...prev, newProcess]);
-  };
-
-  const handleUpdateProcess = (processId: string, updatedProcess: Partial<OnboardingProcess>) => {
-    setOnboardingProcesses(prev => prev.map(p => p.id === processId ? { ...p, ...updatedProcess } : p));
   };
   
   const handleUpdateProcessField = <K extends keyof OnboardingProcess>(processId: string, field: K, value: OnboardingProcess[K]) => {
       setOnboardingProcesses(prev => prev.map(p => p.id === processId ? { ...p, [field]: value } : p));
   };
+  
+  const handleUpdateNestedProcessField = (processId: string, topField: 'applicationForm' | 'interviewScreen', nestedField: string, value: any) => {
+    setOnboardingProcesses(prev => prev.map(p => {
+        if (p.id === processId) {
+            return {
+                ...p,
+                [topField]: {
+                    ...p[topField],
+                    [nestedField]: value
+                }
+            };
+        }
+        return p;
+    }));
+  };
+  
+  const handleAddRequiredDoc = (processId: string, docLabel: string) => {
+      if (!docLabel) return;
+      const newDoc: RequiredDoc = { id: docLabel.toLowerCase().replace(/\s/g, '-'), label: docLabel, type: 'upload' };
+      const updatedProcesses = onboardingProcesses.map(p => {
+          if (p.id === processId) {
+              return { ...p, requiredDocs: [...(p.requiredDocs || []), newDoc] };
+          }
+          return p;
+      });
+      setOnboardingProcesses(updatedProcesses);
+  };
+
+  const handleRemoveRequiredDoc = (processId: string, docId: string) => {
+      const updatedProcesses = onboardingProcesses.map(p => {
+          if (p.id === processId) {
+              return { ...p, requiredDocs: p.requiredDocs?.filter(d => d.id !== docId) };
+          }
+          return p;
+      });
+      setOnboardingProcesses(updatedProcesses);
+  };
+
 
   const handleDeleteProcess = (processId: string) => {
     if (window.confirm('Are you sure you want to delete this onboarding process?')) {
@@ -280,16 +315,16 @@ export default function SettingsPage() {
        <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Workflow className="h-5 w-5" /> Onboarding Processes</CardTitle>
-                <CardDescription>Define reusable onboarding flows for different roles. Each process has its own set of phases.</CardDescription>
+                <CardDescription>Define reusable onboarding flows. Each process has its own set of phases for different roles.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <Accordion type="multiple" className="w-full space-y-4">
                     {onboardingProcesses.map((process) => (
-                        <AccordionItem key={process.id} value={process.id} className="border rounded-md p-4">
-                            <AccordionTrigger className="w-full hover:no-underline">
+                        <AccordionItem key={process.id} value={process.id} className="border rounded-md p-4 bg-muted/20">
+                            <AccordionTrigger className="w-full hover:no-underline -mb-2">
                                 <div className="flex items-center justify-between w-full">
                                   <Input 
-                                    className="text-lg font-semibold border-none shadow-none -ml-3 p-2 focus-visible:ring-1 focus-visible:ring-ring"
+                                    className="text-lg font-semibold border-none shadow-none -ml-3 p-2 focus-visible:ring-1 focus-visible:ring-ring bg-transparent"
                                     value={process.name}
                                     onClick={(e) => e.stopPropagation()}
                                     onChange={(e) => handleUpdateProcessField(process.id, 'name', e.target.value)}
@@ -298,15 +333,14 @@ export default function SettingsPage() {
                             </AccordionTrigger>
                             <AccordionContent className="pt-4 space-y-6">
                                 {/* Phase 1 Configuration */}
-                                <div className="p-4 border rounded-md space-y-4">
+                                <div className="p-4 border rounded-md bg-background/50 space-y-4">
                                   <h3 className="font-semibold">Phase 1: Application Form</h3>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                                       <div>
                                           <RadioGroup 
                                               value={process.applicationForm.type} 
                                               onValueChange={(val: 'template' | 'custom') => {
-                                                  const updatedProcess = { ...process, applicationForm: { ...process.applicationForm, type: val }};
-                                                  handleUpdateProcess(process.id, updatedProcess);
+                                                  handleUpdateNestedProcessField(process.id, 'applicationForm', 'type', val)
                                               }}
                                               className="space-y-2 mt-2"
                                           >
@@ -324,15 +358,14 @@ export default function SettingsPage() {
                                 </div>
 
                                 {/* Phase 2 Configuration */}
-                                <div className="p-4 border rounded-md space-y-4">
+                                <div className="p-4 border rounded-md bg-background/50 space-y-4">
                                   <h3 className="font-semibold">Phase 2: Interview Screen</h3>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                                       <div>
                                           <RadioGroup 
                                               value={process.interviewScreen.type} 
                                               onValueChange={(val: 'template' | 'custom') => {
-                                                const updatedProcess = { ...process, interviewScreen: { ...process.interviewScreen, type: val }};
-                                                handleUpdateProcess(process.id, updatedProcess);
+                                                handleUpdateNestedProcessField(process.id, 'interviewScreen', 'type', val);
                                               }}
                                               className="space-y-2 mt-2"
                                           >
@@ -348,8 +381,41 @@ export default function SettingsPage() {
                                       </div>
                                   </div>
                                 </div>
+                                
+                                 {/* Phase 3 Configuration */}
+                                <div className="p-4 border rounded-md bg-background/50 space-y-4">
+                                  <h3 className="font-semibold">Phase 3: Documentation</h3>
+                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                                      <div className="space-y-4">
+                                        <Label>Required Documents for this Process</Label>
+                                        <div className="space-y-2">
+                                          {(process.requiredDocs || []).map(doc => (
+                                              <div key={doc.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded-md">
+                                                  <span>{doc.label}</span>
+                                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveRequiredDoc(process.id, doc.id)}>
+                                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                                  </Button>
+                                              </div>
+                                          ))}
+                                        </div>
+                                        <form onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const input = e.currentTarget.elements.namedItem('doc-label') as HTMLInputElement;
+                                            handleAddRequiredDoc(process.id, input.value);
+                                            input.value = '';
+                                        }} className="flex gap-2">
+                                            <Input name="doc-label" placeholder="e.g., Form I-9" />
+                                            <Button type="submit" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
+                                        </form>
+                                      </div>
+                                      <div className="flex justify-end items-center">
+                                          <Button variant="outline" asChild><Link href="/dashboard/settings/preview/documentation" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview Phase 3</Link></Button>
+                                      </div>
+                                  </div>
+                                </div>
+
                                 <div className="flex justify-end pt-4">
-                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteProcess(process.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete Process</Button>
+                                    <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteProcess(process.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete Process</Button>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
