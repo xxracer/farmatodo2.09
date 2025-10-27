@@ -15,7 +15,7 @@ async function getAllCandidates(): Promise<ApplicationData[]> {
 
 async function saveAllCandidates(candidates: ApplicationData[]) {
     await kv.set(CANDIDATES_KEY, candidates);
-    revalidatePath('/dashboard'); // Revalidate all dashboard paths
+    revalidatePath('/'); // Revalidate all paths
 }
 
 export async function createCandidate(data: ApplicationSchema) {
@@ -50,8 +50,8 @@ export async function createCandidate(data: ApplicationSchema) {
     }
 }
 
-
-export async function createLegacyEmployee(employeeData: Partial<ApplicationData>) {
+// Adjusted to handle a File object for the PDF
+export async function createLegacyEmployee(employeeData: Partial<ApplicationData>, pdfFile?: File) {
     try {
         const newEmployee: ApplicationData = {
             ...employeeData,
@@ -61,6 +61,11 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
             applyingFor: employeeData.applyingFor || [],
             education: employeeData.education || { college: {}, voTech: {}, highSchool: {}, other: {} },
         } as ApplicationData;
+        
+        if (pdfFile instanceof File) {
+            const applicationPdfUrl = await uploadKvFile(pdfFile, `${newEmployee.id}/legacy-application.pdf`);
+            newEmployee.applicationPdfUrl = applicationPdfUrl;
+        }
 
         const candidates = await getAllCandidates();
         candidates.push(newEmployee);
@@ -115,7 +120,17 @@ export async function updateCandidateWithDocuments(id: string, documents: { [key
         const index = candidates.findIndex(c => c.id === id);
 
         if (index > -1) {
+            // Ensure document arrays exist
+            if (!candidates[index].documents) {
+                candidates[index].documents = [];
+            }
+            if (!candidates[index].miscDocuments) {
+                candidates[index].miscDocuments = [];
+            }
+            
+            // Merge new document keys into the candidate object
             candidates[index] = { ...candidates[index], ...documents };
+
             await saveAllCandidates(candidates);
         } else {
             throw new Error("Could not find candidate to update.")
@@ -127,6 +142,35 @@ export async function updateCandidateWithDocuments(id: string, documents: { [key
         return { success: false, error: (error as Error).message || "Failed to update candidate." };
     }
 }
+
+export async function updateCandidateWithFileUpload(id: string, fileKey: string, fileTitle: string, type: 'required' | 'misc') {
+     try {
+        const candidates = await getAllCandidates();
+        const index = candidates.findIndex(c => c.id === id);
+
+        if (index > -1) {
+            const newDoc = { id: fileKey, title: fileTitle, url: '' };
+
+            if (type === 'required') {
+                if (!candidates[index].documents) candidates[index].documents = [];
+                candidates[index].documents!.push(newDoc);
+            } else {
+                if (!candidates[index].miscDocuments) candidates[index].miscDocuments = [];
+                candidates[index].miscDocuments!.push(newDoc);
+            }
+            
+            await saveAllCandidates(candidates);
+            revalidatePath(`/dashboard/employees`);
+            return { success: true };
+        } else {
+            throw new Error("Could not find candidate to update.");
+        }
+     } catch (error) {
+         console.error("Error updating with file upload: ", error);
+        return { success: false, error: (error as Error).message || "Failed to update candidate." };
+     }
+}
+
 
 export async function updateCandidateStatus(id: string, status: 'interview' | 'new-hire' | 'employee' | 'inactive', inactiveInfo?: any) {
     try {
@@ -143,6 +187,7 @@ export async function updateCandidateStatus(id: string, status: 'interview' | 'n
             throw new Error("Candidate not found");
         }
 
+        revalidatePath('/');
         return { success: true };
     } catch (error) {
         console.error("Error updating status: ", error);
@@ -155,6 +200,7 @@ export async function deleteCandidate(id: string) {
         const candidates = await getAllCandidates();
         const updatedCandidates = candidates.filter(c => c.id !== id);
         await saveAllCandidates(updatedCandidates);
+        revalidatePath('/');
         return { success: true };
     } catch (error) {
         console.error("Error deleting document: ", error);
@@ -186,5 +232,41 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
 
 export async function resetDemoData() {
     await kv.del(CANDIDATES_KEY);
-    revalidatePath('/dashboard');
+    revalidatePath('/');
+}
+
+export async function deleteEmployeeFile(employeeId: string, fileKey: string) {
+    try {
+        const candidates = await getAllCandidates();
+        const index = candidates.findIndex(c => c.id === employeeId);
+
+        if (index > -1) {
+            // Remove from documents array
+            if (candidates[index].documents) {
+                candidates[index].documents = candidates[index].documents!.filter(doc => doc.id !== fileKey);
+            }
+            // Remove from miscDocuments array
+            if (candidates[index].miscDocuments) {
+                candidates[index].miscDocuments = candidates[index].miscDocuments!.filter(doc => doc.id !== fileKey);
+            }
+            await saveAllCandidates(candidates);
+            await deleteFile(fileKey); // Also delete from KV
+            revalidatePath('/dashboard/employees');
+            return { success: true };
+        } else {
+             throw new Error("Could not find employee to update.");
+        }
+    } catch (error) {
+        console.error("Error deleting file:", error);
+        return { success: false, error: "Failed to delete file." };
+    }
+}
+
+// kv-actions needs to be server-only
+export async function deleteFile(fileKey: string): Promise<void> {
+   try {
+    await kv.del(fileKey);
+  } catch (error) {
+    console.error("KV Deletion Error:", error);
+  }
 }
