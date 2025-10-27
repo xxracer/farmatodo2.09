@@ -3,7 +3,7 @@
 
 import { kv } from '@vercel/kv';
 import { Company } from "@/lib/company-schemas";
-import { generateId } from "@/lib/local-storage-client";
+import { generateIdForServer } from "@/lib/server-utils";
 import { revalidatePath } from 'next/cache';
 
 const COMPANIES_KEY = 'companies_list';
@@ -36,7 +36,7 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
             // Create
             companyToSave = {
                 ...companyData,
-                id: generateId(),
+                id: generateIdForServer(),
                 created_at: new Date().toISOString(),
             } as Company;
             companies.push(companyToSave);
