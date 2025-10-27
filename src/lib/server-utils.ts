@@ -1,6 +1,3 @@
-
-'use server';
-
 /**
  * Generates a simple unique ID for server-side operations.
  * @returns A string representing a unique ID.
