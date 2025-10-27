@@ -47,8 +47,9 @@ export const companySchema = z.object({
   onboardingProcesses: z.array(onboardingProcessSchema).optional(),
 
   // These are now legacy and will be migrated to the new structure.
-  // We keep them for now to avoid breaking existing data.
-  applicationForms: z.any().optional(),
+  // For backward compatibility, we'll keep them but mark as optional/any.
+  formCustomization: z.any().optional(),
+  phase1Images: z.any().optional(),
   interviewImage: z.any().optional(),
   // requiredDocs is now per-process, but we keep it for backward compatibility
   requiredDocs: z.any().optional(),

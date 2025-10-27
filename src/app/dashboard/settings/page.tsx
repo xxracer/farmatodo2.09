@@ -3,7 +3,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit } from "lucide-react";
+import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -83,12 +83,37 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
             setCompanyForEdit(prev => ({ ...prev, logo: base64Logo }));
         }
     };
+    
+    const handlePhase1ImageUpload = async (processId: string, files: FileList | null) => {
+        if (!files) return;
+        const imagePromises = Array.from(files).map(file => toBase64(file));
+        const base64Images = await Promise.all(imagePromises);
+        
+        setOnboardingProcesses(prev => prev.map(p => {
+            if (p.id === processId) {
+                return {
+                    ...p,
+                    applicationForm: {
+                        ...p.applicationForm,
+                        images: [...(p.applicationForm.images || []), ...base64Images]
+                    }
+                };
+            }
+            return p;
+        }));
+    };
+    
+    const handleInterviewImageUpload = async (processId: string, file: File | null) => {
+        if (!file) return;
+        const base64Image = await toBase64(file);
+        handleUpdateNestedProcessField(processId, 'interviewScreen', 'imageUrl', base64Image);
+    };
 
     const handleAddNewProcess = () => {
         const newProcess: OnboardingProcess = {
             id: generateId(),
             name: `New Onboarding Process #${onboardingProcesses.length + 1}`,
-            applicationForm: { id: generateId(), name: 'Default Application', type: 'template' },
+            applicationForm: { id: generateId(), name: 'Default Application', type: 'template', images: [] },
             interviewScreen: { type: 'template', imageUrl: null },
             requiredDocs: [],
         };
@@ -260,9 +285,102 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="pt-4 space-y-6">
+                                     {/* Phase 1 Configuration */}
+                                    <div className="p-4 border rounded-md bg-background/50 space-y-4">
+                                        <h3 className="font-semibold">Phase 1: Application Form</h3>
+                                        <RadioGroup 
+                                            value={process.applicationForm.type} 
+                                            onValueChange={(value) => handleUpdateNestedProcessField(process.id, 'applicationForm', 'type', value)}
+                                            className="space-y-2"
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="template" id={`template-${process.id}`} />
+                                                <Label htmlFor={`template-${process.id}`}>Use Template Application Form</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="custom" id={`custom-${process.id}`} />
+                                                <Label htmlFor={`custom-${process.id}`}>Use Custom Application Form Images</Label>
+                                            </div>
+                                        </RadioGroup>
+                                        
+                                        {process.applicationForm.type === 'custom' && (
+                                            <div className="pl-6 pt-2 space-y-2">
+                                                <Label htmlFor={`phase1-upload-${process.id}`}>Upload Form Images (e.g., screenshots of a PDF)</Label>
+                                                <Input 
+                                                    id={`phase1-upload-${process.id}`}
+                                                    type="file"
+                                                    multiple
+                                                    accept="image/*"
+                                                    onChange={(e) => handlePhase1ImageUpload(process.id, e.target.files)}
+                                                />
+                                                <div className="flex flex-wrap gap-2 pt-2">
+                                                    {(process.applicationForm.images || []).map((img, idx) => (
+                                                        <div key={idx} className="relative">
+                                                            <Image src={img} alt={`Form page ${idx+1}`} width={80} height={100} className="object-cover rounded-md border" />
+                                                            <Button
+                                                                variant="destructive" size="icon" className="h-6 w-6 absolute -top-2 -right-2 rounded-full"
+                                                                onClick={() => {
+                                                                    const newImages = [...(process.applicationForm.images || [])];
+                                                                    newImages.splice(idx, 1);
+                                                                    handleUpdateNestedProcessField(process.id, 'applicationForm', 'images', newImages);
+                                                                }}
+                                                            ><Trash2 className="h-4 w-4" /></Button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-end items-center">
+                                            <Button variant="outline" asChild><Link href="/dashboard/settings/preview/application" target="_blank"><Edit className="mr-2 h-4 w-4" />Preview Phase 1 Page</Link></Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Phase 2 Configuration */}
+                                    <div className="p-4 border rounded-md bg-background/50 space-y-4">
+                                        <h3 className="font-semibold">Phase 2: Interview Screen</h3>
+                                         <RadioGroup 
+                                            value={process.interviewScreen.type} 
+                                            onValueChange={(value) => handleUpdateNestedProcessField(process.id, 'interviewScreen', 'type', value)}
+                                            className="space-y-2"
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="template" id={`interview-template-${process.id}`} />
+                                                <Label htmlFor={`interview-template-${process.id}`}>Use Template Interview Screen</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="custom" id={`interview-custom-${process.id}`} />
+                                                <Label htmlFor={`interview-custom-${process.id}`}>Use Custom Background Image</Label>
+                                            </div>
+                                        </RadioGroup>
+
+                                        {process.interviewScreen.type === 'custom' && (
+                                            <div className="pl-6 pt-2 space-y-2">
+                                                <Label htmlFor={`phase2-upload-${process.id}`}>Upload Background Image</Label>
+                                                <Input 
+                                                    id={`phase2-upload-${process.id}`}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleInterviewImageUpload(process.id, e.target.files?.[0] || null)}
+                                                />
+                                                {process.interviewScreen.imageUrl && (
+                                                    <div className="relative w-24 mt-2">
+                                                        <Image src={process.interviewScreen.imageUrl} alt="Interview background preview" width={96} height={54} className="object-cover rounded-md border" />
+                                                         <Button
+                                                            variant="destructive" size="icon" className="h-6 w-6 absolute -top-2 -right-2 rounded-full"
+                                                            onClick={() => handleUpdateNestedProcessField(process.id, 'interviewScreen', 'imageUrl', null)}
+                                                        ><Trash2 className="h-4 w-4" /></Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="flex justify-end items-center">
+                                            <Button variant="outline" asChild><Link href="/dashboard/settings/preview/interview" target="_blank"><Edit className="mr-2 h-4 w-4" />Preview Phase 2 Page</Link></Button>
+                                        </div>
+                                    </div>
+
                                     {/* Phase 3 Configuration */}
                                     <div className="p-4 border rounded-md bg-background/50 space-y-4">
-                                    <h3 className="font-semibold">Required Documentation</h3>
+                                    <h3 className="font-semibold">Phase 3: Required Documentation</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                                         <div className="space-y-4">
                                             <Label>Select documents required for this process</Label>
@@ -337,7 +455,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                     <Button type="button" variant="outline" size="sm" onClick={handleAddNewProcess}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Onboarding Process
                     </Button>
-                    {!companyForEdit.id && <p className="text-xs text-muted-foreground">You must save the company before adding onboarding processes.</p>}
+                    <p className="text-xs text-muted-foreground">You must save the company before adding onboarding processes.</p>
                 </CardContent>
             </Card>
         </div>
