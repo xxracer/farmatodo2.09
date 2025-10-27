@@ -41,7 +41,7 @@ const STANDARD_DOCS: RequiredDoc[] = [
 
 function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>, onSave: (companyData: Partial<Company>) => void, isPending: boolean }) {
     const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>(company);
-    const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>(company.onboardingProcesses || []);
+    const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>([]);
     const [users, setUsers] = useState<{name: string, role: string, email: string}[]>([]);
     const { toast } = useToast();
 
@@ -51,7 +51,13 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
     }, [company]);
 
 
-    const handleInternalSave = () => {
+    const handleInternalSaveCompany = () => {
+        // Only saves company details, not onboarding processes
+        onSave(companyForEdit);
+    }
+
+    const handleSaveProcesses = () => {
+        // Saves the entire company object including the processes
         onSave({ ...companyForEdit, onboardingProcesses });
     }
 
@@ -91,13 +97,11 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
         
         setOnboardingProcesses(prev => prev.map(p => {
             if (p.id === processId) {
-                return {
-                    ...p,
-                    applicationForm: {
-                        ...p.applicationForm,
-                        images: [...(p.applicationForm.images || []), ...base64Images]
-                    }
+                const updatedForm = {
+                    ...p.applicationForm,
+                    images: [...(p.applicationForm?.images || []), ...base64Images]
                 };
+                return { ...p, applicationForm: updatedForm };
             }
             return p;
         }));
@@ -127,10 +131,11 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
     const handleUpdateNestedProcessField = (processId: string, topField: 'applicationForm' | 'interviewScreen', nestedField: string, value: any) => {
         setOnboardingProcesses(prev => prev.map(p => {
             if (p.id === processId) {
+                const topFieldValue = p[topField] || {};
                 return {
                     ...p,
                     [topField]: {
-                        ...p[topField],
+                        ...topFieldValue,
                         [nestedField]: value
                     }
                 };
@@ -185,7 +190,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                     <Building className="h-5 w-5" />
                     {companyForEdit.id ? 'Edit Company Details' : 'New Company Details'}
                     </div>
-                     <Button size="lg" disabled={isPending} onClick={handleInternalSave}>
+                     <Button size="lg" disabled={isPending} onClick={handleInternalSaveCompany}>
                         {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         Save Company
                     </Button>
@@ -289,7 +294,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                                     <div className="p-4 border rounded-md bg-background/50 space-y-4">
                                         <h3 className="font-semibold">Phase 1: Application Form</h3>
                                         <RadioGroup 
-                                            value={process.applicationForm.type} 
+                                            value={process.applicationForm?.type || 'template'} 
                                             onValueChange={(value) => handleUpdateNestedProcessField(process.id, 'applicationForm', 'type', value)}
                                             className="space-y-2"
                                         >
@@ -303,7 +308,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                                             </div>
                                         </RadioGroup>
                                         
-                                        {process.applicationForm.type === 'custom' && (
+                                        {process.applicationForm?.type === 'custom' && (
                                             <div className="pl-6 pt-2 space-y-2">
                                                 <Label htmlFor={`phase1-upload-${process.id}`}>Upload Form Images (e.g., screenshots of a PDF)</Label>
                                                 <Input 
@@ -314,13 +319,13 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                                                     onChange={(e) => handlePhase1ImageUpload(process.id, e.target.files)}
                                                 />
                                                 <div className="flex flex-wrap gap-2 pt-2">
-                                                    {(process.applicationForm.images || []).map((img, idx) => (
+                                                    {(process.applicationForm?.images || []).map((img, idx) => (
                                                         <div key={idx} className="relative">
                                                             <Image src={img} alt={`Form page ${idx+1}`} width={80} height={100} className="object-cover rounded-md border" />
                                                             <Button
                                                                 variant="destructive" size="icon" className="h-6 w-6 absolute -top-2 -right-2 rounded-full"
                                                                 onClick={() => {
-                                                                    const newImages = [...(process.applicationForm.images || [])];
+                                                                    const newImages = [...(process.applicationForm?.images || [])];
                                                                     newImages.splice(idx, 1);
                                                                     handleUpdateNestedProcessField(process.id, 'applicationForm', 'images', newImages);
                                                                 }}
@@ -339,7 +344,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                                     <div className="p-4 border rounded-md bg-background/50 space-y-4">
                                         <h3 className="font-semibold">Phase 2: Interview Screen</h3>
                                          <RadioGroup 
-                                            value={process.interviewScreen.type} 
+                                            value={process.interviewScreen?.type || 'template'} 
                                             onValueChange={(value) => handleUpdateNestedProcessField(process.id, 'interviewScreen', 'type', value)}
                                             className="space-y-2"
                                         >
@@ -353,7 +358,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                                             </div>
                                         </RadioGroup>
 
-                                        {process.interviewScreen.type === 'custom' && (
+                                        {process.interviewScreen?.type === 'custom' && (
                                             <div className="pl-6 pt-2 space-y-2">
                                                 <Label htmlFor={`phase2-upload-${process.id}`}>Upload Background Image</Label>
                                                 <Input 
@@ -362,7 +367,7 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                                                     accept="image/*"
                                                     onChange={(e) => handleInterviewImageUpload(process.id, e.target.files?.[0] || null)}
                                                 />
-                                                {process.interviewScreen.imageUrl && (
+                                                {process.interviewScreen?.imageUrl && (
                                                     <div className="relative w-24 mt-2">
                                                         <Image src={process.interviewScreen.imageUrl} alt="Interview background preview" width={96} height={54} className="object-cover rounded-md border" />
                                                          <Button
@@ -452,10 +457,16 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
                             </AccordionItem>
                         ))}
                     </Accordion>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddNewProcess}>
+                     <Button type="button" variant="outline" onClick={handleAddNewProcess}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Onboarding Process
                     </Button>
                     <p className="text-xs text-muted-foreground">You must save the company before adding onboarding processes.</p>
+                </CardContent>
+                <CardContent>
+                    <Button size="lg" disabled={isPending} onClick={handleSaveProcesses}>
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save Onboarding Processes
+                    </Button>
                 </CardContent>
             </Card>
         </div>
@@ -477,11 +488,11 @@ export default function SettingsPage() {
     try {
         const data = await getCompanies();
         setAllCompanies(data);
-        if (data.length > 0) {
-            setManagementMode('multiple');
-            setEditingCompany(null); // Default to list view
+        if (data.length > 0 && managementMode === 'multiple') {
+            setEditingCompany(null); // Default to list view in multiple mode
+        } else if (data.length > 0 && managementMode === 'single') {
+            setEditingCompany(data[0]); // Edit first company in single mode
         } else {
-            setManagementMode('single');
             setEditingCompany({}); // Default to form view for a new company
         }
     } catch (error) {
@@ -493,7 +504,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadAllCompanies();
-  }, []);
+  }, [managementMode]);
   
   const handleSaveCompany = (companyData: Partial<Company>) => {
       startTransition(async () => {
@@ -536,10 +547,9 @@ export default function SettingsPage() {
   const handleManagementModeChange = (value: 'single' | 'multiple') => {
     setManagementMode(value);
     if (value === 'single') {
-        // If switching to single, edit the first company or a new one
-        setEditingCompany(allCompanies[0] || {});
+        const firstCompany = allCompanies[0] || {};
+        setEditingCompany(firstCompany);
     } else {
-        // If switching to multiple, show the list
         setEditingCompany(null);
     }
   }
