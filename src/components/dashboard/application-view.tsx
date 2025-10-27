@@ -3,12 +3,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ApplicationData, type DocumentFile } from "@/lib/schemas";
-import { Check, X, Paperclip, Download, FileText } from "lucide-react";
-import Link from "next/link";
+import { Check, X, Paperclip, Download } from "lucide-react";
 import { Button } from "../ui/button";
 import { format, parseISO, isValid } from "date-fns";
-import { useEffect, useState } from "react";
-import { getFile } from "@/app/actions/kv-actions";
 
 // Helper to safely convert a string or date object to a formatted date string
 function formatDisplayDate(dateValue: any): string {
@@ -59,39 +56,20 @@ const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
 };
 
 const FileRow = ({ label, fileKey }: { label: string, fileKey?: string }) => {
-    const [fileUrl, setFileUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        async function fetchUrl() {
-            if (fileKey) {
-                if (fileKey.startsWith('data:')) {
-                    setFileUrl(fileKey);
-                } else {
-                    const url = await getFile(fileKey);
-                    setFileUrl(url);
-                }
-            }
-        }
-        fetchUrl();
-    }, [fileKey]);
-    
     if (!fileKey) return null;
 
     const downloadName = label.replace(/\s/g, '_');
+    const fileUrl = `/files/${encodeURIComponent(fileKey)}`;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
             <div>
-                {fileUrl ? (
-                    <Button asChild variant="link" className="p-0 h-auto">
-                        <a href={fileUrl} download={downloadName} target="_blank" rel="noopener noreferrer">
-                            View/Download Document <Download className="ml-2 h-4 w-4" />
-                        </a>
-                    </Button>
-                ) : (
-                    <span className="text-xs text-muted-foreground">Loading link...</span>
-                )}
+                <Button asChild variant="link" className="p-0 h-auto">
+                    <a href={fileUrl} download={downloadName} target="_blank" rel="noopener noreferrer">
+                        View/Download Document <Download className="ml-2 h-4 w-4" />
+                    </a>
+                </Button>
             </div>
         </div>
     )

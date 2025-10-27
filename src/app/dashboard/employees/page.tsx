@@ -135,7 +135,7 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.documents?.map((doc: DocumentFile) => (
                                             <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={`/files/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'required')}>
@@ -161,7 +161,7 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.miscDocuments?.map((doc: DocumentFile) => (
                                              <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={`/files/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'misc')}>
@@ -311,11 +311,11 @@ export default function EmployeesPage() {
 
       try {
           const fileName = `${employeeId}/${type}/${Date.now()}-${file.name}`;
-          const fileUrl = await uploadKvFile(file, fileName);
+          const fileKey = await uploadKvFile(file, fileName);
 
-          const newDocument: DocumentFile = { id: fileName, title, url: fileUrl };
+          const newDocument: DocumentFile = { id: fileKey, title, url: '' }; // URL is unused client-side now.
           
-          const currentEmployees = await getEmployees();
+          const currentEmployees = getAll<ApplicationData>('candidates');
           const updatedEmployees = currentEmployees.map(emp => {
               if (emp.id === employeeId) {
                   if (type === 'required') {
@@ -347,7 +347,7 @@ export default function EmployeesPage() {
       try {
           await deleteFile(fileId);
 
-          const currentEmployees = await getEmployees();
+          const currentEmployees = getAll<ApplicationData>('candidates');
           const updatedEmployees = currentEmployees.map(emp => {
               if (emp.id === employeeId) {
                   const updatedDocs = type === 'required' 
