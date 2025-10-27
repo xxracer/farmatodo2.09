@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
-import { getCompanies, createOrUpdateCompany, deleteCompany, deleteAllCompanies } from "@/app/actions/company-actions";
-import { resetDemoData } from "@/app/actions/client-actions";
+import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
 import { type Company, type OnboardingProcess, type RequiredDoc } from "@/lib/company-schemas";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
@@ -601,16 +600,6 @@ export default function SettingsPage() {
     setActiveAccordionItem('');
   }
   
-  const handleResetDemo = () => {
-      startTransition(async () => {
-          await resetDemoData();
-          await deleteAllCompanies();
-          toast({ title: "Demo Reset", description: "All data has been cleared."});
-          await loadAllCompanies();
-      })
-  }
-
-
   const renderContent = () => {
     if (isLoading) {
         return (
@@ -727,10 +716,10 @@ export default function SettingsPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Management & Demo</CardTitle>
-                <CardDescription>Select a mode to manage your company profiles and reset the demo environment.</CardDescription>
+                <CardTitle>Management Mode</CardTitle>
+                <CardDescription>Select a mode to manage your company profiles.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-wrap items-center justify-between gap-4">
+            <CardContent>
                 <RadioGroup value={managementMode} onValueChange={(value) => handleManagementModeChange(value as 'single' | 'multiple')} className="flex space-x-4">
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="single" id="single" />
@@ -741,25 +730,6 @@ export default function SettingsPage() {
                         <Label htmlFor="multiple">Multiple Companies</Label>
                     </div>
                 </RadioGroup>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
-                            <RefreshCcw className="mr-2 h-4 w-4" /> Reset Demo
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action will permanently delete all company profiles from Vercel KV and all candidate data from your browser's local storage. This cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleResetDemo}>Yes, Reset Demo</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </CardContent>
         </Card>
 
