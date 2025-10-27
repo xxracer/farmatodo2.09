@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Allow loading images from data URIs
+    domains: [],
+    unoptimized: false,
   },
 };
 

@@ -27,7 +27,6 @@ function ApplicationContent() {
         let foundProcess: OnboardingProcess | null = null;
 
         if (processId) {
-            // Find the company and process that matches the processId
             for (const c of companies) {
                 const p = c.onboardingProcesses?.find(p => p.id === processId);
                 if (p) {
@@ -36,10 +35,12 @@ function ApplicationContent() {
                     break;
                 }
             }
-        } else if (companies.length > 0) {
-            // Fallback to the first company if no processId is provided
+        } 
+        
+        // Fallback to the first company if no processId is provided or if no match was found
+        if (!foundCompany && companies.length > 0) {
             foundCompany = companies[0];
-            // And use its first process, if available
+            // Use its first process if available, otherwise it's fine for it to be null
             foundProcess = foundCompany.onboardingProcesses?.[0] || null;
         }
         
@@ -48,7 +49,7 @@ function ApplicationContent() {
             setProcess(foundProcess);
         } else {
              // If no company is configured at all, show a default placeholder.
-            setCompany({ name: "Company", logo: "https://placehold.co/150x50.png" });
+            setCompany({ name: "Company", logo: "https://placehold.co/150x50" });
         }
         setLoading(false);
     }
@@ -63,8 +64,8 @@ function ApplicationContent() {
     );
   }
 
-  if (!company?.name) {
-    notFound();
+  if (!company) {
+    return notFound();
   }
 
   const useTemplate = !process || process.applicationForm?.type === 'template';
@@ -78,7 +79,7 @@ function ApplicationContent() {
             {company.logo && (
               <Image
                   src={company.logo}
-                  alt={`${company.name} Logo`}
+                  alt={`${company.name || 'Company'} Logo`}
                   width={150}
                   height={50}
                   className="mb-4 object-contain"
