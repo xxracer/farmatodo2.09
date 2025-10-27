@@ -4,32 +4,56 @@
 import { ApplicationForm } from "@/components/dashboard/application-form";
 import { getCompanies } from "@/app/actions/company-actions";
 import Image from "next/image";
-import { Company } from "@/lib/company-schemas";
+import { Company, OnboardingProcess } from "@/lib/company-schemas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { notFound } from "next/navigation";
-import { useEffect, useState } from "react";
+import { notFound, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
+function ApplicationContent() {
+  const searchParams = useSearchParams();
+  const processId = searchParams.get('processId');
 
-export default function ApplicationPage() {
   const [company, setCompany] = useState<Partial<Company> | null>(null);
+  const [process, setProcess] = useState<Partial<OnboardingProcess> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadFirstCompany = async () => {
+    const loadCompanyAndProcess = async () => {
         setLoading(true);
         const companies = await getCompanies();
-        if (companies && companies.length > 0) {
-            setCompany(companies[0]);
+        let foundCompany: Company | null = null;
+        let foundProcess: OnboardingProcess | null = null;
+
+        if (processId) {
+            // Find the company and process that matches the processId
+            for (const c of companies) {
+                const p = c.onboardingProcesses?.find(p => p.id === processId);
+                if (p) {
+                    foundCompany = c;
+                    foundProcess = p;
+                    break;
+                }
+            }
+        } else if (companies.length > 0) {
+            // Fallback to the first company if no processId is provided
+            foundCompany = companies[0];
+            // And use its first process, if available
+            foundProcess = foundCompany.onboardingProcesses?.[0] || null;
+        }
+        
+        if (foundCompany) {
+            setCompany(foundCompany);
+            setProcess(foundProcess);
         } else {
-            // If no company is configured, show a default placeholder.
+             // If no company is configured at all, show a default placeholder.
             setCompany({ name: "Company", logo: "https://placehold.co/150x50.png" });
         }
         setLoading(false);
     }
-    loadFirstCompany();
-  }, []);
+    loadCompanyAndProcess();
+  }, [processId]);
 
   if (loading) {
     return (
@@ -43,7 +67,9 @@ export default function ApplicationPage() {
     notFound();
   }
 
-  const useTemplate = !company.formCustomization || company.formCustomization === 'template';
+  const useTemplate = !process || process.applicationForm?.type === 'template';
+  const customImages = process?.applicationForm?.images || [];
+
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background p-4">
@@ -59,7 +85,10 @@ export default function ApplicationPage() {
                   data-ai-hint="company logo"
               />
             )}
-          <h1 className="font-headline text-3xl font-bold text-center">Candidate Application for {company.name}</h1>
+          <h1 className="font-headline text-3xl font-bold text-center">
+            Candidate Application for {company.name}
+            {process?.name && <span className="block text-xl text-muted-foreground mt-1">({process.name})</span>}
+          </h1>
           <p className="text-muted-foreground text-center">Fill out the form below to apply.</p>
         </div>
         
@@ -68,10 +97,10 @@ export default function ApplicationPage() {
         ) : (
              <Card>
                 <CardContent className="p-2 md:p-4">
-                     {company.phase1Images && company.phase1Images.length > 0 ? (
+                     {customImages.length > 0 ? (
                         <Carousel className="w-full">
                             <CarouselContent>
-                                {company.phase1Images.map((url, index) => (
+                                {customImages.map((url, index) => (
                                     <CarouselItem key={index}>
                                         <Image
                                             src={url}
@@ -98,4 +127,16 @@ export default function ApplicationPage() {
       </div>
     </div>
   );
+}
+
+export default function ApplicationPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        }>
+            <ApplicationContent />
+        </Suspense>
+    )
 }

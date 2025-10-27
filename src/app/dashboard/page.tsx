@@ -4,31 +4,34 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CandidateView } from "@/components/dashboard/candidate-view";
-import { Settings, Loader2 } from 'lucide-react';
+import { Settings, Loader2, Link as LinkIcon, ClipboardCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { getCompanies } from '../actions/company-actions';
+import { type Company } from '@/lib/company-schemas';
+import { CopyApplicationLink } from '@/components/dashboard/copy-link';
 
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [isConfigured, setIsConfigured] = useState(false);
+  const [company, setCompany] = useState<Company | null>(null);
 
   useEffect(() => {
     async function checkConfiguration() {
         const companies = await getCompanies();
         if (companies && companies.length > 0) {
-            setIsConfigured(true);
+            setCompany(companies[0]);
         }
         setLoading(false);
     }
     checkConfiguration();
 
-    window.addEventListener('storage', checkConfiguration);
+    const handleStorageChange = () => checkConfiguration();
+    window.addEventListener('storage', handleStorageChange);
     return () => {
-        window.removeEventListener('storage', checkConfiguration);
+        window.removeEventListener('storage', handleStorageChange);
     }
   }, []);
 
@@ -41,7 +44,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!isConfigured) {
+  if (!company) {
     return (
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full">
             <Card className="w-full max-w-lg text-center">
@@ -64,5 +67,73 @@ export default function DashboardPage() {
     )
   }
 
-  return <CandidateView />;
+  const onboardingProcesses = company.onboardingProcesses || [];
+
+  return (
+    <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 className="text-3xl font-headline font-bold text-foreground">Welcome to the Onboard Panel</h1>
+                <p className="text-muted-foreground">
+                    Manage candidates or share application links to start onboarding.
+                </p>
+            </div>
+        </div>
+
+        {onboardingProcesses.length > 0 && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <LinkIcon className="h-5 w-5" />
+                        Application Links
+                    </CardTitle>
+                    <CardDescription>
+                        Share these links with candidates to start a specific onboarding process.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {onboardingProcesses.map(process => (
+                        <div key={process.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
+                            <span className="font-medium">{process.name}</span>
+                            <CopyApplicationLink 
+                                processId={process.id}
+                                processName={process.name}
+                            />
+                        </div>
+                    ))}
+                    {onboardingProcesses.length > 1 && (
+                         <div className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 border-t mt-2 pt-3">
+                            <span className="font-medium text-muted-foreground">Generic Application</span>
+                             <CopyApplicationLink />
+                         </div>
+                    )}
+                </CardContent>
+            </Card>
+        )}
+
+        {onboardingProcesses.length === 0 && (
+            <div className="flex items-center justify-between rounded-lg border p-4">
+                 <p className="text-muted-foreground">
+                    No onboarding processes configured yet.
+                </p>
+                 <CopyApplicationLink />
+            </div>
+        )}
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                    <ClipboardCheck className="h-6 w-6" />
+                    Active Candidate Pipeline
+                </CardTitle>
+                 <CardDescription>
+                    Track candidates currently in the interview or documentation phase.
+                </CardDescription>
+            </CardHeader>
+             <CardContent>
+                <CandidateView />
+            </CardContent>
+        </Card>
+    </div>
+  );
 }

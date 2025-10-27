@@ -4,7 +4,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentationPhase } from "@/components/dashboard/documentation-phase";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
-import { CopyApplicationLink } from "@/components/dashboard/copy-link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ClipboardCheck, Users } from "lucide-react";
 import { getInterviewCandidates } from "@/app/actions/client-actions";
@@ -31,10 +30,9 @@ function CandidateDetails({ interviewCandidate }: { interviewCandidate: Applicat
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h1 className="text-3xl font-headline font-bold text-foreground">
+                <h2 className="text-xl font-headline font-semibold text-foreground">
                   New Candidate for {interviewCandidate.applyingFor.join(', ')}: {interviewCandidate.firstName} {interviewCandidate.lastName}
-                </h1>
-                <CopyApplicationLink />
+                </h2>
             </div>
 
             <ProgressTracker 
@@ -54,7 +52,7 @@ function CandidateDetails({ interviewCandidate }: { interviewCandidate: Applicat
                     />
                 </TabsContent>
                 <TabsContent value="documentation" className="mt-6">
-                    <DocumentationPhase candidateId={interviewCandidate.id} candidateProfile="" submittedDocuments={[]} />
+                    <DocumentationPhase candidateId={interviewCandidate.id} />
                 </TabsContent>
             </Tabs>
         </div>
@@ -87,7 +85,7 @@ export function CandidateView() {
 
     if (loading) {
         return (
-            <div className="flex flex-1 items-center justify-center">
+            <div className="flex flex-1 items-center justify-center p-8">
                 <Users className="h-12 w-12 text-muted-foreground animate-pulse" />
             </div>
         )
@@ -95,30 +93,19 @@ export function CandidateView() {
 
     if (!interviewCandidate) {
         return (
-            <div className="space-y-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-headline font-bold text-foreground">Welcome to the Onboard Panel</h1>
-                         <p className="text-muted-foreground">
-                            Share the application link to start onboarding a new candidate.
-                        </p>
+            <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[200px]">
+                <CardHeader className="p-0">
+                    <div className="flex justify-center mb-4">
+                        <Users className="h-12 w-12 text-muted-foreground" />
                     </div>
-                    <CopyApplicationLink />
-                </div>
-                <Card className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[400px]">
-                    <CardHeader>
-                        <div className="flex justify-center mb-4">
-                            <ClipboardCheck className="h-16 w-16 text-muted-foreground" />
-                        </div>
-                        <CardTitle className="font-headline text-2xl">No Active Candidate for Interview</CardTitle>
-                        <CardDescription>
-                            Once a candidate is set for an interview, their progress will appear here.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <p className="text-sm text-muted-foreground">Go to the 'Candidates' section to select one for an interview.</p>
-                    </CardContent>
-                </Card>
+                    <CardTitle className="font-headline text-xl">No Active Candidate for Interview</CardTitle>
+                    <CardDescription>
+                        Once a candidate is set for an interview, their progress will appear here.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 mt-4">
+                    <p className="text-sm text-muted-foreground">Go to the 'Candidates' section to select one for an interview.</p>
+                </CardContent>
             </div>
         )
     }
