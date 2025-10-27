@@ -39,19 +39,20 @@ const STANDARD_DOCS: RequiredDoc[] = [
     { id: 'proofOfAddress', label: 'Proof of Address', type: 'upload' },
 ];
 
-function CompanyForm({ company, onSave, isPending, onSaveSuccess }: { company: Partial<Company>, onSave: (companyData: Partial<Company>) => void, isPending: boolean, onSaveSuccess: () => void }) {
+function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordionItem, setActiveAccordionItem }: { company: Partial<Company>, onSave: (companyData: Partial<Company>) => void, isPending: boolean, onSaveSuccess: () => void, activeAccordionItem: string, setActiveAccordionItem: (value: string) => void }) {
     const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>(company);
     const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>([]);
     const [users, setUsers] = useState<{name: string, role: string, email: string}[]>([]);
-    const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>('company-details');
     const { toast } = useToast();
 
      useEffect(() => {
         setCompanyForEdit(company);
         setOnboardingProcesses(company.onboardingProcesses || []);
         // Reset accordion to be open when a new company is selected/created
-        setActiveAccordionItem('company-details');
-    }, [company]);
+        if (!company.id) {
+            setActiveAccordionItem('company-details');
+        }
+    }, [company, setActiveAccordionItem]);
 
 
     const handleInternalSaveCompany = () => {
@@ -494,6 +495,7 @@ export default function SettingsPage() {
   const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [editingCompany, setEditingCompany] = useState<Partial<Company> | null>(null);
   const [managementMode, setManagementMode] = useState<'single' | 'multiple'>('single');
+  const [activeAccordionItem, setActiveAccordionItem] = useState('company-details');
 
   const loadAllCompanies = async () => {
     setIsLoading(true);
@@ -516,6 +518,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadAllCompanies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managementMode]);
   
   const handleSaveCompany = (companyData: Partial<Company>) => {
@@ -547,12 +550,14 @@ export default function SettingsPage() {
   
   const handleAddNewCompany = () => {
     setEditingCompany({});
+    setActiveAccordionItem('company-details');
   }
 
   const handleEditCompany = (id: string) => {
     const company = allCompanies.find(c => c.id === id);
     if (company) {
         setEditingCompany(company);
+        setActiveAccordionItem('company-details');
     }
   }
   
@@ -568,10 +573,7 @@ export default function SettingsPage() {
 
   const onSaveSuccess = () => {
     // This function will be called from the form to collapse the accordion
-    const formElement = document.querySelector('[data-radix-collection-item]');
-    if (formElement) {
-        (formElement as HTMLElement).click(); // This is a bit of a hack to trigger the accordion
-    }
+    setActiveAccordionItem('');
   }
 
 
@@ -585,7 +587,14 @@ export default function SettingsPage() {
     }
 
     if (managementMode === 'single') {
-        return <CompanyForm company={allCompanies[0] || {}} onSave={handleSaveCompany} isPending={isPending} onSaveSuccess={onSaveSuccess} />;
+        return <CompanyForm 
+            company={allCompanies[0] || {}} 
+            onSave={handleSaveCompany} 
+            isPending={isPending} 
+            onSaveSuccess={onSaveSuccess}
+            activeAccordionItem={activeAccordionItem}
+            setActiveAccordionItem={setActiveAccordionItem}
+            />;
     }
     
     // Multiple company mode
@@ -596,7 +605,14 @@ export default function SettingsPage() {
                  <Button variant="outline" onClick={() => setEditingCompany(null)} className="mb-4">
                     &larr; Back to Company List
                 </Button>
-                <CompanyForm company={editingCompany} onSave={handleSaveCompany} isPending={isPending} onSaveSuccess={onSaveSuccess} />
+                <CompanyForm 
+                    company={editingCompany} 
+                    onSave={handleSaveCompany} 
+                    isPending={isPending} 
+                    onSaveSuccess={onSaveSuccess} 
+                    activeAccordionItem={activeAccordionItem}
+                    setActiveAccordionItem={setActiveAccordionItem}
+                />
             </div>
          );
     }
