@@ -5,7 +5,7 @@ import { kv } from '@vercel/kv';
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
 import { generateIdForServer } from '@/lib/server-utils';
 import { revalidatePath } from 'next/cache';
-import { uploadKvFile } from './kv-actions';
+import { uploadKvFile, deleteFile } from './kv-actions';
 
 const CANDIDATES_KEY = 'candidates';
 
@@ -15,7 +15,7 @@ async function getAllCandidates(): Promise<ApplicationData[]> {
 
 async function saveAllCandidates(candidates: ApplicationData[]) {
     await kv.set(CANDIDATES_KEY, candidates);
-    revalidatePath('/'); // Revalidate all paths
+    revalidatePath('/'); // Revalidate all paths that show candidate/employee data
 }
 
 export async function createCandidate(data: ApplicationSchema) {
@@ -63,6 +63,7 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
         } as ApplicationData;
         
         if (pdfFile instanceof File) {
+            // Upload the PDF to Vercel KV and get the key
             const applicationPdfUrl = await uploadKvFile(pdfFile, `${newEmployee.id}/legacy-application.pdf`);
             newEmployee.applicationPdfUrl = applicationPdfUrl;
         }
@@ -260,13 +261,4 @@ export async function deleteEmployeeFile(employeeId: string, fileKey: string) {
         console.error("Error deleting file:", error);
         return { success: false, error: "Failed to delete file." };
     }
-}
-
-// kv-actions needs to be server-only
-export async function deleteFile(fileKey: string): Promise<void> {
-   try {
-    await kv.del(fileKey);
-  } catch (error) {
-    console.error("KV Deletion Error:", error);
-  }
 }
