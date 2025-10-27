@@ -100,7 +100,7 @@ export async function getEmployees(): Promise<ApplicationData[]> {
 
 export async function getPersonnel(): Promise<ApplicationData[]> {
     const all = await getAllCandidates();
-    const sorted = all.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at-!).getTime());
+    const sorted = all.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
     return sorted.filter(c => ['new-hire', 'employee', 'inactive'].includes(c.status!));
 }
 
