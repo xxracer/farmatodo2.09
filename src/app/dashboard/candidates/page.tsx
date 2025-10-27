@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getCandidates } from "@/app/actions/client-actions";
 import { CandidatesActions } from "./_components/candidates-actions";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 // Helper to convert string to JS Date
 function toDate(dateString: string | Date | undefined): Date | null {
@@ -24,6 +25,8 @@ function toDate(dateString: string | Date | undefined): Date | null {
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const loadData = async () => {
     setLoading(true);
@@ -33,15 +36,12 @@ export default function CandidatesPage() {
   };
 
   useEffect(() => {
-    loadData();
-
-    window.addEventListener('storage', loadData);
-    return () => {
-      window.removeEventListener('storage', loadData);
-    };
+    startTransition(() => {
+      loadData();
+    });
   }, []);
 
-  if (loading) {
+  if (loading || isPending) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Users className="h-12 w-12 text-muted-foreground animate-pulse" />

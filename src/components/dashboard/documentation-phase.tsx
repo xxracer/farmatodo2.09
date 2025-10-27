@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import { AlertCircle, FileCheck, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,28 +34,30 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
   const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
   const [companyName, setCompanyName] = useState<string>('');
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const loadData = useCallback(async () => {
     if (candidateId) {
       const candidateData = await getCandidate(candidateId);
       setCandidate(candidateData ? JSON.parse(JSON.stringify(candidateData)) : null);
     }
-    // Load company settings to get the required docs list
     const companies = await getCompanies();
     if (companies && companies.length > 0) {
-        setRequiredDocs(companies[0].requiredDocs || []);
-        setCompanyName(companies[0].name || '');
+        // Assuming the candidate belongs to the first company or a specific logic is needed
+        const currentCompany = companies[0];
+        setCompanyName(currentCompany.name || '');
+
+        // Find the process this candidate might be associated with
+        const process = currentCompany.onboardingProcesses?.find(p => candidate?.applyingFor.includes(p.name));
+        setRequiredDocs(process?.requiredDocs || currentCompany.requiredDocs || []);
     }
 
-  }, [candidateId]);
+  }, [candidateId, candidate?.applyingFor]);
 
   useEffect(() => {
-    loadData();
-
-    window.addEventListener('storage', loadData);
-    return () => {
-      window.removeEventListener('storage', loadData);
-    };
+    startTransition(() => {
+        loadData();
+    });
   }, [loadData]);
 
 
@@ -95,6 +97,10 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
         title: "Connection Simulated",
         description: "Successfully connected to Google Drive account.",
     });
+  }
+
+  if (isPending) {
+    return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
   }
 
   return (

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,6 +43,7 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
     const [error, setError] = useState<string | null>(null);
     const [extractedData, setExtractedData] = useState<ExtractEmployeeDataOutput | null>(null);
     const [hireDate, setHireDate] = useState<Date | null>(null);
+    const [isPending, startTransition] = useTransition();
 
     const { control, handleSubmit, watch, formState: { errors } } = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -54,7 +55,7 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
         setIsLoading(true);
         setError(null);
         setExtractedData(null);
-        setHireDate(data.hireDate); // Store hire date
+        setHireDate(data.hireDate); 
         
         try {
             const pdfDataUri = await fileToDataURL(data.pdf);
@@ -70,47 +71,45 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
     
     const handleConfirmAndSave = async () => {
         if (!extractedData || !hireDate || !pdfFile) return;
-        setIsLoading(true);
         
-        try {
-            const tempId = Date.now().toString();
-            const applicationPdfUrl = await uploadKvFile(pdfFile, `${tempId}/legacy-application.pdf`);
+        startTransition(async () => {
+            try {
+                const tempId = Date.now().toString();
+                const applicationPdfUrl = await uploadKvFile(pdfFile, `${tempId}/legacy-application.pdf`);
 
-            // The AI returns the date as a "YYYY-MM-DD" string. Parse it into a Date object.
-            const expirationDateStr = extractedData.driversLicenseExpiration || "";
-            const expirationDate = expirationDateStr ? parse(expirationDateStr, 'yyyy-MM-dd', new Date()) : undefined;
+                const expirationDateStr = extractedData.driversLicenseExpiration || "";
+                const expirationDate = expirationDateStr ? parse(expirationDateStr, 'yyyy-MM-dd', new Date()) : undefined;
 
-            const employeeData = {
-                firstName: extractedData.firstName,
-                lastName: extractedData.lastName,
-                streetAddress: extractedData.address,
-                city: extractedData.city,
-                state: extractedData.state,
-                zipCode: extractedData.zipCode,
-                driversLicenseExpiration: expirationDate && !isNaN(expirationDate.getTime()) ? expirationDate.toISOString() : undefined,
-                date: hireDate.toISOString(), // Using 'date' field to store hire date as it's used elsewhere for hire/application date
-                position: extractedData.position,
-                homePhone: extractedData.homePhone,
-                emergencyContact: extractedData.emergencyContact,
-                documents: [],
-                miscDocuments: [],
-                applicationPdfUrl,
-            };
+                const employeeData = {
+                    firstName: extractedData.firstName,
+                    lastName: extractedData.lastName,
+                    streetAddress: extractedData.address,
+                    city: extractedData.city,
+                    state: extractedData.state,
+                    zipCode: extractedData.zipCode,
+                    driversLicenseExpiration: expirationDate && !isNaN(expirationDate.getTime()) ? expirationDate.toISOString() : undefined,
+                    date: hireDate.toISOString(),
+                    position: extractedData.position,
+                    homePhone: extractedData.homePhone,
+                    emergencyContact: extractedData.emergencyContact,
+                    documents: [],
+                    miscDocuments: [],
+                    applicationPdfUrl,
+                };
 
-            const result = await createLegacyEmployee(employeeData);
-            
-            if (result.success) {
-                toast({ title: "Employee Added", description: `${extractedData.firstName} ${extractedData.lastName} has been added to the system.` });
-                onEmployeeAdded(); // Callback to close dialog and refresh list
-            } else {
-                toast({ variant: "destructive", title: "Save Failed", description: result.error });
+                const result = await createLegacyEmployee(employeeData);
+                
+                if (result.success) {
+                    toast({ title: "Employee Added", description: `${extractedData.firstName} ${extractedData.lastName} has been added.` });
+                    onEmployeeAdded();
+                } else {
+                    toast({ variant: "destructive", title: "Save Failed", description: result.error });
+                }
+            } catch (e) {
+                console.error(e);
+                toast({ variant: "destructive", title: "Save Failed", description: (e as Error).message || "An unexpected error occurred." });
             }
-        } catch (e) {
-            console.error(e);
-            toast({ variant: "destructive", title: "Save Failed", description: (e as Error).message || "An unexpected error occurred." });
-        } finally {
-            setIsLoading(false);
-        }
+        });
     }
 
 
@@ -154,9 +153,9 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
                     <Input value={extractedData.driversLicenseExpiration} onChange={(e) => setExtractedData({ ...extractedData, driversLicenseExpiration: e.target.value })} />
                 </div>
                 <div className="flex justify-end gap-2">
-                     <Button variant="ghost" onClick={() => setExtractedData(null)}>Back</Button>
-                     <Button onClick={handleConfirmAndSave} disabled={isLoading}>
-                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                     <Button variant="ghost" onClick={() => setExtractedData(null)} disabled={isPending}>Back</Button>
+                     <Button onClick={handleConfirmAndSave} disabled={isPending}>
+                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                          Confirm and Save
                      </Button>
                 </div>

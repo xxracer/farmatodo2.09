@@ -7,7 +7,7 @@ import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ClipboardCheck, Users } from "lucide-react";
 import { getInterviewCandidates } from "@/app/actions/client-actions";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useTransition } from "react";
 import type { ApplicationData } from "@/lib/schemas";
 import { InterviewReviewForm } from "./interview-review-form";
 
@@ -63,6 +63,7 @@ function CandidateDetails({ interviewCandidate }: { interviewCandidate: Applicat
 export function CandidateView() {
     const [interviewCandidate, setInterviewCandidate] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isPending, startTransition] = useTransition();
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -73,17 +74,12 @@ export function CandidateView() {
     }, []);
 
     useEffect(() => {
-        loadData();
-
-        const handleStorageChange = () => {
+        startTransition(() => {
             loadData();
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
+        });
     }, [loadData]);
 
-    if (loading) {
+    if (loading || isPending) {
         return (
             <div className="flex flex-1 items-center justify-center p-8">
                 <Users className="h-12 w-12 text-muted-foreground animate-pulse" />

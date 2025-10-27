@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
 import { add, isBefore, format } from "date-fns";
 import { AlertTriangle, UserCheck, Mail } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 // Helper to convert string to JS Date
 function toDate(dateString: string | Date | undefined): Date | null {
@@ -35,6 +36,8 @@ export default function NewHiresPage() {
   const [newHires, setNewHires] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const fetchNewHires = useCallback(async () => {
     setLoading(true);
@@ -44,12 +47,9 @@ export default function NewHiresPage() {
   }, []);
 
   useEffect(() => {
-    fetchNewHires();
-    
-    window.addEventListener('storage', fetchNewHires);
-    return () => {
-      window.removeEventListener('storage', fetchNewHires);
-    };
+    startTransition(() => {
+        fetchNewHires();
+    });
   }, [fetchNewHires]);
 
   const handleRenewLicense = (candidate: ApplicationData) => {
@@ -68,7 +68,7 @@ export default function NewHiresPage() {
     });
   };
 
-  if (loading) {
+  if (loading || isPending) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <UserCheck className="h-12 w-12 text-muted-foreground animate-pulse" />

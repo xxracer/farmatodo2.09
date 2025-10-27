@@ -5,7 +5,7 @@ import { getEmployees, updateCandidateStatus, deleteCandidate } from "@/app/acti
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApplicationData, DocumentFile } from "@/lib/schemas";
 import { Briefcase, UserPlus, Folder, User, Search, Trash2, Archive, Upload, Loader2, File as FileIcon } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddLegacyEmployeeForm } from "./_components/add-legacy-employee-form";
@@ -23,7 +23,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { uploadKvFile, deleteFile } from "@/app/actions/kv-actions";
-import { saveAll } from "@/lib/local-storage-client";
 import { format } from "date-fns";
 
 
@@ -135,7 +134,7 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.documents?.map((doc: DocumentFile) => (
                                             <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={`/employees/${employee.id}/file/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={`/files/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'required')}>
@@ -161,7 +160,7 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.miscDocuments?.map((doc: DocumentFile) => (
                                              <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={`/employees/${employee.id}/file/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={`/files/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'misc')}>
@@ -269,38 +268,42 @@ export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const data = await getEmployees();
     setEmployees(data);
     setLoading(false);
-  }
+  }, []);
 
   useEffect(() => {
-    loadData();
-    window.addEventListener('storage', loadData);
-    return () => {
-      window.removeEventListener('storage', loadData);
-    };
-  }, []);
+    startTransition(() => {
+        loadData();
+    });
+  }, [loadData]);
   
   const onEmployeeAdded = () => {
     setIsFormOpen(false);
-    loadData();
+    startTransition(() => {
+        loadData();
+    });
   }
 
   const handleStatusChange = async (id: string, info: InactiveInfo) => {
-    await updateCandidateStatus(id, 'inactive', info);
-    toast({ title: 'Employee Updated', description: 'Status set to inactive.' });
-    loadData();
+    startTransition(async () => {
+        await updateCandidateStatus(id, 'inactive', info);
+        toast({ title: 'Employee Updated', description: 'Status set to inactive.' });
+        loadData();
+    });
   }
   
   const handleDelete = async (id: string) => {
-    await deleteCandidate(id);
-    // You might also want to delete all associated files from KV store here
-    toast({ title: 'Employee Deleted', description: 'All employee data has been removed.' });
-    loadData();
+    startTransition(async () => {
+        await deleteCandidate(id);
+        toast({ title: 'Employee Deleted', description: 'All employee data has been removed.' });
+        loadData();
+    });
   }
   
   const handleUpload = async (employeeId: string, file: File, title: string, type: 'required' | 'misc') => {
@@ -312,24 +315,11 @@ export default function EmployeesPage() {
       try {
           const fileName = `${employeeId}/${type}/${Date.now()}-${file.name}`;
           const fileKey = await uploadKvFile(file, fileName);
-
-          const newDocument: DocumentFile = { id: fileKey, title, url: '' }; // URL is handled by the viewer component
           
-          const currentEmployees = await getEmployees();
-          const updatedEmployees = currentEmployees.map(emp => {
-              if (emp.id === employeeId) {
-                  if (type === 'required') {
-                      return { ...emp, documents: [...(emp.documents || []), newDocument] };
-                  } else {
-                       return { ...emp, miscDocuments: [...(emp.miscDocuments || []), newDocument] };
-                  }
-              }
-              return emp;
+          startTransition(() => {
+            loadData();
           });
           
-          saveAll<ApplicationData>('candidates', updatedEmployees);
-          
-          loadData();
           toast({ title: 'Upload Successful', description: `${title} has been added.`});
 
       } catch (error) {
@@ -347,25 +337,9 @@ export default function EmployeesPage() {
       try {
           await deleteFile(fileId);
 
-          const currentEmployees = await getEmployees();
-          const updatedEmployees = currentEmployees.map(emp => {
-              if (emp.id === employeeId) {
-                  const updatedDocs = type === 'required' 
-                      ? emp.documents?.filter(d => d.id !== fileId) 
-                      : emp.miscDocuments?.filter(d => d.id !== fileId);
-
-                  if (type === 'required') {
-                      return { ...emp, documents: updatedDocs };
-                  } else {
-                      return { ...emp, miscDocuments: updatedDocs };
-                  }
-              }
-              return emp;
+          startTransition(() => {
+            loadData();
           });
-          
-          saveAll<ApplicationData>('candidates', updatedEmployees);
-
-          loadData();
           toast({ title: 'File Deleted', description: 'The document has been removed.'});
       } catch (error) {
           console.error(error);
@@ -385,7 +359,7 @@ export default function EmployeesPage() {
   }, [employees, searchTerm]);
 
 
-  if (loading) {
+  if (loading || isPending) {
     return (
          <div className="flex flex-1 items-center justify-center">
             <Briefcase className="h-12 w-12 text-muted-foreground animate-pulse" />

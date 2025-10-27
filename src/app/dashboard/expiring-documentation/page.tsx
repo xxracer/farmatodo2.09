@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
 import { add, isBefore, format } from "date-fns";
 import { AlertTriangle, FileClock, Mail } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 // Helper to convert string to JS Date
 function toDate(dateString: string | Date | undefined): Date | null {
@@ -37,6 +38,9 @@ export default function ExpiringDocumentationPage() {
   const [expiringPersonnel, setExpiringPersonnel] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
 
   const fetchPersonnel = useCallback(async () => {
     setLoading(true);
@@ -47,15 +51,9 @@ export default function ExpiringDocumentationPage() {
   }, []);
 
   useEffect(() => {
-    fetchPersonnel();
-    
-    // Listen for custom event to reload data
-    const handleReload = () => fetchPersonnel();
-    window.addEventListener('data-changed', handleReload);
-
-    return () => {
-      window.removeEventListener('data-changed', handleReload);
-    };
+    startTransition(() => {
+        fetchPersonnel();
+    });
   }, [fetchPersonnel]);
 
   const handleRenewLicense = (candidate: ApplicationData) => {
@@ -74,7 +72,7 @@ export default function ExpiringDocumentationPage() {
     });
   };
 
-  if (loading) {
+  if (loading || isPending) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <FileClock className="h-12 w-12 text-muted-foreground animate-pulse" />

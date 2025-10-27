@@ -5,7 +5,7 @@ import { getEmployees, updateCandidateStatus, deleteCandidate } from "@/app/acti
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApplicationData, DocumentFile } from "@/lib/schemas";
 import { Briefcase, UserPlus, Folder, User, Search, Trash2, Archive, Upload, Loader2, File as FileIcon } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddLegacyEmployeeForm } from "./_components/add-legacy-employee-form";
@@ -23,9 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { uploadKvFile, deleteFile } from "@/app/actions/kv-actions";
-import { saveAll } from "@/lib/local-storage-client";
 import { format } from "date-fns";
-
 
 type InactiveInfo = {
   date: Date;
@@ -54,7 +52,6 @@ function EmployeeList({
     const [inactiveInfo, setInactiveInfo] = useState<{ date: Date | undefined, reason: string, description: string }>({ date: new Date(), reason: '', description: '' });
     const { toast } = useToast();
 
-    // State for uploading new documents
     const [newDocFile, setNewDocFile] = useState<File | null>(null);
     const [newDocTitle, setNewDocTitle] = useState('');
     const [uploadTarget, setUploadTarget] = useState<{ employeeId: string; type: 'required' | 'misc' } | null>(null);
@@ -268,39 +265,43 @@ export default function EmployeesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const data = await getEmployees();
     setEmployees(data);
     setLoading(false);
-  }
+  }, []);
 
   useEffect(() => {
-    loadData();
-    window.addEventListener('storage', loadData);
-    return () => {
-      window.removeEventListener('storage', loadData);
-    };
-  }, []);
+    startTransition(() => {
+        loadData();
+    });
+  }, [loadData]);
   
   const onEmployeeAdded = () => {
     setIsFormOpen(false);
-    loadData();
+    startTransition(() => {
+        loadData();
+    });
   }
 
   const handleStatusChange = async (id: string, info: InactiveInfo) => {
     await updateCandidateStatus(id, 'inactive', info);
     toast({ title: 'Employee Updated', description: 'Status set to inactive.' });
-    loadData();
+    startTransition(() => {
+        loadData();
+    });
   }
   
   const handleDelete = async (id: string) => {
     await deleteCandidate(id);
-    // You might also want to delete all associated files from KV store here
     toast({ title: 'Employee Deleted', description: 'All employee data has been removed.' });
-    loadData();
+    startTransition(() => {
+        loadData();
+    });
   }
   
   const handleUpload = async (employeeId: string, file: File, title: string, type: 'required' | 'misc') => {
@@ -311,25 +312,13 @@ export default function EmployeesPage() {
 
       try {
           const fileName = `${employeeId}/${type}/${Date.now()}-${file.name}`;
-          const fileKey = await uploadKvFile(file, fileName);
+          await uploadKvFile(file, fileName);
 
-          const newDocument: DocumentFile = { id: fileKey, title, url: '' }; // URL is unused client-side now.
-          
-          const currentEmployees = getAll<ApplicationData>('candidates');
-          const updatedEmployees = currentEmployees.map(emp => {
-              if (emp.id === employeeId) {
-                  if (type === 'required') {
-                      return { ...emp, documents: [...(emp.documents || []), newDocument] };
-                  } else {
-                       return { ...emp, miscDocuments: [...(emp.miscDocuments || []), newDocument] };
-                  }
-              }
-              return emp;
+          // The data is already being saved on the server, we just need to re-fetch
+          startTransition(() => {
+            loadData();
           });
           
-          saveAll<ApplicationData>('candidates', updatedEmployees);
-          
-          loadData();
           toast({ title: 'Upload Successful', description: `${title} has been added.`});
 
       } catch (error) {
@@ -347,25 +336,9 @@ export default function EmployeesPage() {
       try {
           await deleteFile(fileId);
 
-          const currentEmployees = getAll<ApplicationData>('candidates');
-          const updatedEmployees = currentEmployees.map(emp => {
-              if (emp.id === employeeId) {
-                  const updatedDocs = type === 'required' 
-                      ? emp.documents?.filter(d => d.id !== fileId) 
-                      : emp.miscDocuments?.filter(d => d.id !== fileId);
-
-                  if (type === 'required') {
-                      return { ...emp, documents: updatedDocs };
-                  } else {
-                      return { ...emp, miscDocuments: updatedDocs };
-                  }
-              }
-              return emp;
+          startTransition(() => {
+            loadData();
           });
-          
-          saveAll<ApplicationData>('candidates', updatedEmployees);
-
-          loadData();
           toast({ title: 'File Deleted', description: 'The document has been removed.'});
       } catch (error) {
           console.error(error);
@@ -385,7 +358,7 @@ export default function EmployeesPage() {
   }, [employees, searchTerm]);
 
 
-  if (loading) {
+  if (loading || isPending) {
     return (
          <div className="flex flex-1 items-center justify-center">
             <Briefcase className="h-12 w-12 text-muted-foreground animate-pulse" />
