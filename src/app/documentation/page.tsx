@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertTriangle, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getCompanies } from "@/app/actions/company-actions";
-import { Company } from "@/lib/company-schemas";
+import { Company, OnboardingProcess, RequiredDoc } from "@/lib/company-schemas";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 
@@ -17,25 +17,34 @@ function DocumentationPageContent() {
     const companyIdFromUrl = searchParams.get('company'); // This is a slug like 'licoreria'
 
     const [company, setCompany] = useState<Partial<Company> | null>(null);
+    const [process, setProcess] = useState<Partial<OnboardingProcess> | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function getCompanyForDocumentation() {
-            if (!companyIdFromUrl) return null;
-
-            const companies = await getCompanies();
-            // Find the company whose name, when slugified, matches the URL parameter
-            const foundCompany = companies.find(
-                c => c.name?.toLowerCase().replace(/\s+/g, '-') === companyIdFromUrl
-            );
-
-            return foundCompany || null;
-        }
-
         async function loadData() {
             setLoading(true);
-            const companyData = await getCompanyForDocumentation();
-            setCompany(companyData);
+            const companies = await getCompanies();
+            let foundCompany: Company | null = null;
+            let foundProcess: OnboardingProcess | null = null;
+
+            if (companyIdFromUrl) {
+                // Find the company whose name, when slugified, matches the URL parameter
+                foundCompany = companies.find(
+                    c => c.name?.toLowerCase().replace(/\s+/g, '-') === companyIdFromUrl
+                ) || null;
+                // For documentation, we assume it's linked to the first available process.
+                // A more robust solution might pass a processId as well.
+                if (foundCompany) {
+                    foundProcess = foundCompany.onboardingProcesses?.[0] || null;
+                }
+            } else if (companies.length > 0) {
+                 // Fallback to the first company if no companyId is in the URL
+                foundCompany = companies[0];
+                foundProcess = foundCompany.onboardingProcesses?.[0] || null;
+            }
+
+            setCompany(foundCompany);
+            setProcess(foundProcess);
             setLoading(false);
         }
 
@@ -68,15 +77,15 @@ function DocumentationPageContent() {
          )
     }
 
-    const requiredDocs = company?.requiredDocs || [];
+    const requiredDocs: RequiredDoc[] = process?.requiredDocs || [];
 
     return (
         <div className="flex min-h-screen flex-col items-center bg-background p-4">
             <div className="w-full max-w-4xl">
                 <div className="mb-8 flex flex-col items-center">
                     {company?.logo && (
-                    <Image 
-                        src={company.logo} 
+                    <Image
+                        src={company.logo}
                         alt={`${company.name} Logo`}
                         width={150}
                         height={50}
@@ -89,9 +98,9 @@ function DocumentationPageContent() {
                 </div>
                 
                 {candidateId ? (
-                <DocumentationForm 
-                    companyName={company?.name || ''} 
-                    candidateId={candidateId} 
+                <DocumentationForm
+                    companyName={company?.name || ''}
+                    candidateId={candidateId}
                     requiredDocs={requiredDocs}
                 />
                 ) : (

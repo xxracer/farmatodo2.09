@@ -4,7 +4,7 @@
 import { InterviewReviewForm } from "@/components/dashboard/interview-review-form";
 import Image from "next/image";
 import { getCompanies } from "@/app/actions/company-actions";
-import { Company } from "@/lib/company-schemas";
+import { Company, OnboardingProcess } from "@/lib/company-schemas";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -17,7 +17,7 @@ function InterviewPreview({ interviewImageUrl }: { interviewImageUrl: string | n
                                           src={interviewImageUrl || "https://placehold.co/1920x1080.png"}
                                                           alt="Interview Background"
                                                                           fill
-                                                                                          objectFit="cover"
+                                                                          objectFit="cover"
                                                                                                           className="opacity-10"
                                                                                                                           data-ai-hint="office background"
                                                                                                                                       />
@@ -29,41 +29,47 @@ function InterviewPreview({ interviewImageUrl }: { interviewImageUrl: string | n
                                                                                                                                                                                    </div>
                                                                                                                                                                                      );
                                                                                                                                                                                      }
-                                                                                                                                                                                     
-                                                                                                                                                                                     
-                                                                                                                                                                                     export default function InterviewPreviewPage() {
-                                                                                                                                                                                       const [interviewImage, setInterviewImage] = useState<string | null>(null);
-                                                                                                                                                                                         const [loading, setLoading] = useState(true);
-                                                                                                                                                                                         
-                                                                                                                                                                                           useEffect(() => {
-                                                                                                                                                                                               async function loadSettings() {
-                                                                                                                                                                                                     const companies = await getCompanies();
-                                                                                                                                                                                                           if (companies && companies.length > 0) {
-                                                                                                                                                                                                                   const firstCompany = companies[0];
-                                                                                                                                                                                                                           if (firstCompany.interviewImage) {
-                                                                                                                                                                                                                                       setInterviewImage(firstCompany.interviewImage);
-                                                                                                                                                                                                                                               }
-                                                                                                                                                                                                                                                     }
-                                                                                                                                                                                                                                                           setLoading(false);
-                                                                                                                                                                                                                                                               }
-                                                                                                                                                                                                                                                                   loadSettings();
-                                                                                                                                                                                                                                                                     }, []);
-                                                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                                                       if (loading) {
-                                                                                                                                                                                                                                                                           return (
-                                                                                                                                                                                                                                                                                   <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-                                                                                                                                                                                                                                                                                               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                                                                                                                                                                                                                                                                                       </div>
-                                                                                                                                                                                                                                                                                                           )
-                                                                                                                                                                                                                                                                                                             }
-                                                                                                                                                                                                                                                                                                             
-                                                                                                                                                                                                                                                                                                               return (
-                                                                                                                                                                                                                                                                                                                   <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 relative">
-                                                                                                                                                                                                                                                                                                                           <div className="fixed top-0 left-0 w-full bg-background/80 backdrop-blur-sm p-2 text-center text-sm font-semibold border-b shadow-sm z-20">
-                                                                                                                                                                                                                                                                                                                                       PREVIEW MODE
-                                                                                                                                                                                                                                                                                                                                               </div>
-                                                                                                                                                                                                                                                                                                                                                       <InterviewPreview interviewImageUrl={interviewImage} />
-                                                                                                                                                                                                                                                                                                                                                           </div>
-                                                                                                                                                                                                                                                                                                                                                             );
-                                                                                                                                                                                                                                                                                                                                                             }
-                                                                                                                                                                                                                                                                                                                                                             "
+
+
+export default function InterviewPreviewPage() {
+    const [interviewImage, setInterviewImage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadSettings() {
+            setLoading(true);
+            try {
+                const companies = await getCompanies();
+                if (companies && companies.length > 0) {
+                    const firstCompany = companies[0];
+                    const firstProcess = firstCompany.onboardingProcesses?.[0];
+                    if (firstProcess && firstProcess.interviewScreen?.imageUrl) {
+                        setInterviewImage(firstProcess.interviewScreen.imageUrl);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load interview preview settings:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadSettings();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 relative">
+            <div className="fixed top-0 left-0 w-full bg-background/80 backdrop-blur-sm p-2 text-center text-sm font-semibold border-b shadow-sm z-20">
+                PREVIEW MODE
+            </div>
+            <InterviewPreview interviewImageUrl={interviewImage} />
+        </div>
+    );
+}
