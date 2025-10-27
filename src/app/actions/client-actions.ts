@@ -8,7 +8,9 @@ import { uploadKvFile } from "./kv-actions";
 const CANDIDATES_KEY = 'candidates';
 
 function dispatchStorageEvent() {
-    window.dispatchEvent(new Event('storage'));
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('storage'));
+    }
 }
 
 export async function createCandidate(data: ApplicationSchema) {
@@ -33,7 +35,7 @@ export async function createCandidate(data: ApplicationSchema) {
         }
 
 
-        const candidates = await getCandidates();
+        const candidates = getAll<ApplicationData>(CANDIDATES_KEY);
         candidates.push(newCandidate as ApplicationData);
         saveAll<ApplicationData>(CANDIDATES_KEY, candidates);
         
