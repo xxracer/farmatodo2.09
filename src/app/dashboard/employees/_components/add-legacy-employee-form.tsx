@@ -18,7 +18,7 @@ import { format, parse } from "date-fns";
 import { extractEmployeeDataFromPdf } from "@/ai/flows/extract-employee-data";
 import { createLegacyEmployee } from "@/app/actions/client-actions";
 import { ExtractEmployeeDataOutput } from "@/lib/schemas";
-import { uploadFile } from "@/app/actions/kv-actions";
+import { uploadKvFile } from "@/app/actions/kv-actions";
 
 
 // Helper to convert a File to a base64 data URI
@@ -74,7 +74,7 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
         
         try {
             const tempId = Date.now().toString();
-            const applicationPdfUrl = await uploadFile(pdfFile, `${tempId}/legacy-application.pdf`);
+            const applicationPdfUrl = await uploadKvFile(pdfFile, `${tempId}/legacy-application.pdf`);
 
             // The AI returns the date as a "YYYY-MM-DD" string. Parse it into a Date object.
             const expirationDateStr = extractedData.driversLicenseExpiration || "";

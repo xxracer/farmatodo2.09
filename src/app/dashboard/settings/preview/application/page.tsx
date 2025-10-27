@@ -9,23 +9,35 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
+import { getFile } from "@/app/actions/kv-actions";
 
 
 export default function ApplicationPreviewPage() {
   const [company, setCompany] = useState<Partial<Company> | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [process, setProcess] = useState<Partial<OnboardingProcess> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadSettings() {
+      setLoading(true);
       const companies = await getCompanies();
+      let companyToSet: Partial<Company> | null = null;
       if (companies && companies.length > 0) {
-        const firstCompany = companies[0];
-        setCompany(firstCompany);
-        setProcess(firstCompany.onboardingProcesses?.[0] || null);
+        companyToSet = companies[0];
+        setProcess(companyToSet.onboardingProcesses?.[0] || null);
       } else {
-        setCompany({ name: "Your Company", logo: "https://placehold.co/150x50.png" });
+        companyToSet = { name: "Your Company" };
       }
+      setCompany(companyToSet);
+
+      if (companyToSet?.logo) {
+        const url = await getFile(companyToSet.logo);
+        setLogoUrl(url);
+      } else {
+        setLogoUrl(null)
+      }
+
       setLoading(false);
     }
     loadSettings();
@@ -51,10 +63,10 @@ export default function ApplicationPreviewPage() {
         </div>
         <div className="w-full max-w-4xl mt-12">
             <div className="mb-8 flex flex-col items-center">
-                {company?.logo &&
+                {logoUrl &&
                     <Image
-                        src={company.logo}
-                        alt={`${company.name || 'Company'} Logo`}
+                        src={logoUrl}
+                        alt={`${company?.name || 'Company'} Logo`}
                         width={150}
                         height={50}
                         className="mb-4 object-contain"

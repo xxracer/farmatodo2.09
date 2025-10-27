@@ -22,7 +22,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { uploadFile, deleteFile } from "@/app/actions/kv-actions";
+import { uploadKvFile, deleteFile } from "@/app/actions/kv-actions";
 import { saveAll } from "@/lib/local-storage-client";
 import { format } from "date-fns";
 
@@ -311,7 +311,7 @@ export default function EmployeesPage() {
 
       try {
           const fileName = `${employeeId}/${type}/${Date.now()}-${file.name}`;
-          const fileUrl = await uploadFile(file, fileName);
+          const fileUrl = await uploadKvFile(file, fileName);
 
           const newDocument: DocumentFile = { id: fileName, title, url: fileUrl };
           

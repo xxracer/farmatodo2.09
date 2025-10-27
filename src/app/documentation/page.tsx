@@ -9,6 +9,7 @@ import { getCompanies } from "@/app/actions/company-actions";
 import { Company, OnboardingProcess, RequiredDoc } from "@/lib/company-schemas";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
+import { getFile } from "../actions/kv-actions";
 
 
 function DocumentationPageContent() {
@@ -17,6 +18,7 @@ function DocumentationPageContent() {
     const companyIdFromUrl = searchParams.get('company'); // This is a slug like 'licoreria'
 
     const [company, setCompany] = useState<Partial<Company> | null>(null);
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [process, setProcess] = useState<Partial<OnboardingProcess> | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -45,6 +47,14 @@ function DocumentationPageContent() {
 
             setCompany(foundCompany);
             setProcess(foundProcess);
+            
+            if (foundCompany?.logo) {
+                const url = await getFile(foundCompany.logo);
+                setLogoUrl(url);
+            } else {
+                setLogoUrl(null);
+            }
+
             setLoading(false);
         }
 
@@ -83,9 +93,9 @@ function DocumentationPageContent() {
         <div className="flex min-h-screen flex-col items-center bg-background p-4">
             <div className="w-full max-w-4xl">
                 <div className="mb-8 flex flex-col items-center">
-                    {company?.logo && (
+                    {logoUrl && (
                     <Image
-                        src={company.logo}
+                        src={logoUrl}
                         alt={`${company.name} Logo`}
                         width={150}
                         height={50}

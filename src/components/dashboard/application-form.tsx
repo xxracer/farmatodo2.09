@@ -34,16 +34,6 @@ import { Textarea } from "../ui/textarea"
 import { createCandidate } from "@/app/actions/client-actions"
 import { Loader2 } from "lucide-react"
 
-// Helper to convert a File to a base64 data URI
-async function fileToDataURL(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 
 export function ApplicationForm({ companyName }: { companyName: string }) {
     const { toast } = useToast()
@@ -109,30 +99,9 @@ export function ApplicationForm({ companyName }: { companyName: string }) {
         setIsSubmitting(true);
 
         try {
-            const resumeFile = data.resume;
-            const licenseFile = data.driversLicense;
-
-            if (!resumeFile) {
-                toast({ variant: "destructive", title: "Submission Failed", description: "Resume file is missing." });
-                setIsSubmitting(false);
-                return;
-            }
-
-            if (!licenseFile) {
-                toast({ variant: "destructive", title: "Submission Failed", description: "Driver's license file is missing." });
-                setIsSubmitting(false);
-                return;
-            }
-
-            // Convert files to data URLs to store in localStorage
-            const resumeURL = await fileToDataURL(resumeFile);
-            const driversLicenseURL = await fileToDataURL(licenseFile);
-
             const result = await createCandidate({
                 ...data,
                 applyingFor: [companyName],
-                resume: resumeURL,
-                driversLicense: driversLicenseURL,
             });
 
             if (result.success) {
