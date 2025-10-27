@@ -14,25 +14,34 @@ import { CopyApplicationLink } from '@/components/dashboard/copy-link';
 
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<Company | null>(null);
 
   useEffect(() => {
     async function checkConfiguration() {
-        const companies = await getCompanies();
-        if (companies && companies.length > 0) {
-            setCompany(companies[0]);
+        setLoading(true);
+        try {
+            const companies = await getCompanies();
+            setCompany(companies[0] || null);
+        } catch (error) {
+            console.error("Failed to load company data", error);
+            setCompany(null);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
     checkConfiguration();
 
-    const handleStorageChange = () => checkConfiguration();
+    // This listener ensures the dashboard updates when company settings are changed elsewhere.
+    const handleStorageChange = () => {
+        checkConfiguration();
+    };
+
     window.addEventListener('storage', handleStorageChange);
+
     return () => {
         window.removeEventListener('storage', handleStorageChange);
-    }
+    };
   }, []);
 
   if (loading) {
@@ -113,9 +122,12 @@ export default function DashboardPage() {
 
         {onboardingProcesses.length === 0 && (
             <div className="flex items-center justify-between rounded-lg border p-4">
-                 <p className="text-muted-foreground">
-                    No onboarding processes configured yet.
-                </p>
+                 <div>
+                    <p className="font-medium">Generic Application Link</p>
+                    <p className="text-sm text-muted-foreground">
+                        No onboarding processes configured. This link uses the default application.
+                    </p>
+                 </div>
                  <CopyApplicationLink />
             </div>
         )}

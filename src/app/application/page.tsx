@@ -44,13 +44,8 @@ function ApplicationContent() {
             foundProcess = foundCompany.onboardingProcesses?.[0] || null;
         }
         
-        if (foundCompany) {
-            setCompany(foundCompany);
-            setProcess(foundProcess);
-        } else {
-             // If no company is configured at all, show a default placeholder.
-            setCompany({ name: "Company", logo: "https://placehold.co/150x50" });
-        }
+        setCompany(foundCompany);
+        setProcess(foundProcess);
         setLoading(false);
     }
     loadCompanyAndProcess();
@@ -65,7 +60,13 @@ function ApplicationContent() {
   }
 
   if (!company) {
-    return notFound();
+     // If no company is configured at all, show a message.
+     return (
+        <div className="flex min-h-screen flex-col items-center justify-center text-center">
+            <h1 className="text-2xl font-bold">No Company Configured</h1>
+            <p className="text-muted-foreground">This application portal has not been set up yet.</p>
+        </div>
+     )
   }
 
   const useTemplate = !process || process.applicationForm?.type === 'template';
