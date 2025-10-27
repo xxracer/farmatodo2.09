@@ -18,6 +18,11 @@ export default function LoginPage() {
           <p className="text-muted-foreground text-center">Enter your credentials to access your dashboard.</p>
         </div>
         <LoginForm />
+         <div className="mt-4 text-center text-xs">
+          <Link href="/superuser/login" className="text-muted-foreground hover:text-primary underline">
+            Super User Access
+          </Link>
+        </div>
       </div>
     </div>
   );
