@@ -50,8 +50,8 @@ export async function createCandidate(data: ApplicationSchema) {
     }
 }
 
-// Adjusted to handle a File object for the PDF
-export async function createLegacyEmployee(employeeData: Partial<ApplicationData>, pdfFile?: File) {
+// The employee data now contains the pre-uploaded applicationPdfUrl
+export async function createLegacyEmployee(employeeData: Partial<ApplicationData>) {
     try {
         const newEmployee: ApplicationData = {
             ...employeeData,
@@ -62,12 +62,6 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
             education: employeeData.education || { college: {}, voTech: {}, highSchool: {}, other: {} },
         } as ApplicationData;
         
-        if (pdfFile instanceof File) {
-            // Upload the PDF to Vercel KV and get the key
-            const applicationPdfUrl = await uploadKvFile(pdfFile, `${newEmployee.id}/legacy-application.pdf`);
-            newEmployee.applicationPdfUrl = applicationPdfUrl;
-        }
-
         const candidates = await getAllCandidates();
         candidates.push(newEmployee);
         await saveAllCandidates(candidates);
