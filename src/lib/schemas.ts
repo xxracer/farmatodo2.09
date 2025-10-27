@@ -8,9 +8,9 @@ const ACCEPTED_PDF_ONLY = ["application/pdf"];
 
 
 export interface DocumentFile {
-  id: string;
+  id: string; // This will be the key from Vercel KV
   title: string;
-  url: string;
+  url: string; // This will be empty, as the URL is constructed dynamically
 }
 
 
@@ -139,11 +139,11 @@ export type ApplicationSchema = z.infer<typeof applicationSchema>;
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
     created_at?: string;
-    resume?: string; // This will now be a URL from Vercel KV for employees
-    driversLicense?: string; // This will now be a URL from Vercel KV for employees
-    applicationPdfUrl?: string; // URL for the original PDF from a legacy employee
+    resume?: string; // This will now be a key from Vercel KV
+    driversLicense?: string; // This will now be a key from Vercel KV
+    applicationPdfUrl?: string; // key for the original PDF from a legacy employee
     
-    // New document fields from documentation form
+    // New document fields from documentation form (will store KV keys)
     idCard?: string;
     proofOfAddress?: string;
     i9?: string;
@@ -220,5 +220,3 @@ export const ExtractEmployeeDataOutputSchema = z.object({
   emergencyContact: z.string().describe("The employee's emergency contact (name and phone number)."),
 });
 export type ExtractEmployeeDataOutput = z.infer<typeof ExtractEmployeeDataOutputSchema>;
-
-    

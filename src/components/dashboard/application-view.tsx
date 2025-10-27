@@ -2,11 +2,13 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { type ApplicationData } from "@/lib/schemas";
-import { Check, X, Paperclip, Download } from "lucide-react";
+import { type ApplicationData, type DocumentFile } from "@/lib/schemas";
+import { Check, X, Paperclip, Download, FileText } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { format, parseISO, isValid } from "date-fns";
+import { useEffect, useState } from "react";
+import { getFile } from "@/app/actions/kv-actions";
 
 // Helper to safely convert a string or date object to a formatted date string
 function formatDisplayDate(dateValue: any): string {
@@ -14,7 +16,6 @@ function formatDisplayDate(dateValue: any): string {
     try {
         const date = dateValue instanceof Date ? dateValue : parseISO(dateValue);
         if (!isValid(date)) {
-            // Try a more lenient parse for "YYYY-MM-DD"
             const parts = String(dateValue).split('-');
             if (parts.length === 3) {
                 const parsed = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
@@ -24,7 +25,6 @@ function formatDisplayDate(dateValue: any): string {
         }
         return format(date, "PPP");
     } catch (error) {
-        // Fallback for invalid date formats
         return String(dateValue);
     }
 }
@@ -58,31 +58,41 @@ const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
     );
 };
 
-const FileRow = ({ label, value }: { label: string, value?: string }) => {
-    if (!value) return null;
-    // Check if the value is a base64 data URI or a Vercel KV key
-    const isDataUrl = value.startsWith('data:');
-    const isKvKey = !isDataUrl && value.includes('/'); // Simple check if it looks like a path/key
+const FileRow = ({ label, fileKey }: { label: string, fileKey?: string }) => {
+    const [fileUrl, setFileUrl] = useState<string | null>(null);
 
-    if (!isDataUrl && !isKvKey) return null;
+    useEffect(() => {
+        async function fetchUrl() {
+            if (fileKey) {
+                if (fileKey.startsWith('data:')) {
+                    setFileUrl(fileKey);
+                } else {
+                    const url = await getFile(fileKey);
+                    setFileUrl(url);
+                }
+            }
+        }
+        fetchUrl();
+    }, [fileKey]);
     
-    // For KV keys, we'll need a server action or API route to fetch the file securely.
-    // For this example, we'll just link to the data URI directly.
-    // A more robust solution would handle KV keys differently.
-    const href = isDataUrl ? value : `/api/files?key=${encodeURIComponent(value)}`;
-    const downloadName = isDataUrl ? `${label.replace(/\s/g, '_')}.pdf` : undefined;
+    if (!fileKey) return null;
 
+    const downloadName = label.replace(/\s/g, '_');
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
-            <p>
-                <Button asChild variant="link" className="p-0 h-auto">
-                    <a href={value} download={downloadName}>
-                        View/Download Document <Download className="ml-2 h-4 w-4" />
-                    </a>
-                </Button>
-            </p>
+            <div>
+                {fileUrl ? (
+                    <Button asChild variant="link" className="p-0 h-auto">
+                        <a href={fileUrl} download={downloadName} target="_blank" rel="noopener noreferrer">
+                            View/Download Document <Download className="ml-2 h-4 w-4" />
+                        </a>
+                    </Button>
+                ) : (
+                    <span className="text-xs text-muted-foreground">Loading link...</span>
+                )}
+            </div>
         </div>
     )
 }
@@ -235,40 +245,43 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <DataRow label="Job Requirement Limitation" value={data.jobRequirementLimitation} />
             </CardContent>
         </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">Credentials, Skills & Resume</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-                <FileRow label="Original Application PDF" value={data.applicationPdfUrl} />
-                <FileRow label="Resume File" value={data.resume} />
-                <DataRow label="Specialized Skills & Qualifications" value={data.specializedSkills} />
-            </CardContent>
-        </Card>
-
+        
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Attached Documents</CardTitle>
-                <CardDescription>Documents uploaded during the documentation phase.</CardDescription>
+                <CardDescription>Documents uploaded during the application and documentation phases.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                <FileRow label="Driver's License" value={data.driversLicense} />
+                 <FileRow label="Original Application PDF" fileKey={data.applicationPdfUrl} />
+                 <FileRow label="Resume File" fileKey={data.resume} />
+                 <FileRow label="Driver's License" fileKey={data.driversLicense} />
+                 <FileRow label="Government-issued ID" fileKey={data.idCard} />
+                 <FileRow label="Proof of Address" fileKey={data.proofOfAddress} />
+                 <FileRow label="Form I-9" fileKey={data.i9} />
+                 <FileRow label="Form W-4" fileKey={data.w4} />
+                 <FileRow label="Educational Diplomas" fileKey={data.educationalDiplomas} />
+
+                 {data.documents?.map(doc => <FileRow key={doc.id} label={doc.title} fileKey={doc.id} />)}
+                 {data.miscDocuments?.map(doc => <FileRow key={doc.id} label={doc.title} fileKey={doc.id} />)}
+
                 <DataRow label="Name on License" value={data.driversLicenseName} />
                 <DataRow label="License Expiration" value={data.driversLicenseExpiration} isDate={true}/>
-                
-                <FileRow label="Government-issued ID" value={data.idCard} />
-                <FileRow label="Proof of Address" value={data.proofOfAddress} />
-                <FileRow label="Form I-9" value={data.i9} />
-                <FileRow label="Form W-4" value={data.w4} />
-                <FileRow label="Educational Diplomas" value={data.educationalDiplomas} />
-                
-                {!data.idCard && !data.proofOfAddress && !data.driversLicense && !data.i9 && !data.w4 && !data.educationalDiplomas && !data.applicationPdfUrl && (
+
+                {!data.resume && !data.driversLicense && !data.idCard && (data.documents?.length || 0) === 0 && (
                     <div className="flex items-center justify-center text-sm text-muted-foreground p-4">
                         <Paperclip className="mr-2 h-4 w-4" />
                         No documents have been uploaded yet.
                     </div>
                 )}
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Credentials & Skills</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                <DataRow label="Specialized Skills & Qualifications" value={data.specializedSkills} />
             </CardContent>
         </Card>
 

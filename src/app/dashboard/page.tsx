@@ -2,9 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CandidateView } from "@/components/dashboard/candidate-view";
-import { Settings, Loader2, Link as LinkIcon, ClipboardCheck } from 'lucide-react';
+import { Settings, Loader2, Link as LinkIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -31,17 +30,6 @@ export default function DashboardPage() {
         }
     }
     checkConfiguration();
-
-    // This listener ensures the dashboard updates when company settings are changed elsewhere.
-    const handleStorageChange = () => {
-        checkConfiguration();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
   }, []);
 
   if (loading) {
@@ -134,8 +122,7 @@ export default function DashboardPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle className="font-headline text-2xl flex items-center gap-2">
-                    <ClipboardCheck className="h-6 w-6" />
+                <CardTitle className="font-headline text-2xl">
                     Active Candidate Pipeline
                 </CardTitle>
                  <CardDescription>

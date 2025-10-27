@@ -7,15 +7,17 @@ import Image from "next/image";
 import { Company, OnboardingProcess } from "@/lib/company-schemas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { notFound, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { getFile } from "../actions/kv-actions";
 
 function ApplicationContent() {
   const searchParams = useSearchParams();
   const processId = searchParams.get('processId');
 
   const [company, setCompany] = useState<Partial<Company> | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [process, setProcess] = useState<Partial<OnboardingProcess> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,15 +39,22 @@ function ApplicationContent() {
             }
         } 
         
-        // Fallback to the first company if no processId is provided or if no match was found
         if (!foundCompany && companies.length > 0) {
             foundCompany = companies[0];
-            // Use its first process if available, otherwise it's fine for it to be null
             foundProcess = foundCompany.onboardingProcesses?.[0] || null;
         }
         
         setCompany(foundCompany);
         setProcess(foundProcess);
+
+        if (foundCompany?.logo) {
+            // The logo field is a key to KV, so we fetch the URL
+            const url = await getFile(foundCompany.logo);
+            setLogoUrl(url);
+        } else {
+            setLogoUrl(null);
+        }
+
         setLoading(false);
     }
     loadCompanyAndProcess();
@@ -60,7 +69,6 @@ function ApplicationContent() {
   }
 
   if (!company) {
-     // If no company is configured at all, show a message.
      return (
         <div className="flex min-h-screen flex-col items-center justify-center text-center">
             <h1 className="text-2xl font-bold">No Company Configured</h1>
@@ -77,9 +85,9 @@ function ApplicationContent() {
     <div className="flex min-h-screen flex-col items-center bg-background p-4">
       <div className="w-full max-w-4xl">
         <div className="mb-8 flex flex-col items-center">
-            {company.logo && (
+            {logoUrl && (
               <Image
-                  src={company.logo}
+                  src={logoUrl}
                   alt={`${company.name || 'Company'} Logo`}
                   width={150}
                   height={50}

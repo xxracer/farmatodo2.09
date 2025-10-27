@@ -3,7 +3,7 @@
 
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
 import { getAll, getById, saveAll, saveById, deleteById, generateId } from "@/lib/local-storage-client";
-import { uploadFile } from "./kv-actions";
+import { uploadKvFile } from "./kv-actions";
 
 const CANDIDATES_KEY = 'candidates';
 
@@ -24,11 +24,11 @@ export async function createCandidate(data: ApplicationSchema) {
         
         // Handle file uploads to KV store
         if (data.resume instanceof File) {
-            const resumeUrl = await uploadFile(data.resume, `${newCandidate.id}/resume-${data.resume.name}`);
+            const resumeUrl = await uploadKvFile(data.resume, `${newCandidate.id}/resume-${data.resume.name}`);
             newCandidate.resume = resumeUrl;
         }
         if (data.driversLicense instanceof File) {
-            const licenseUrl = await uploadFile(data.driversLicense, `${newCandidate.id}/license-${data.driversLicense.name}`);
+            const licenseUrl = await uploadKvFile(data.driversLicense, `${newCandidate.id}/license-${data.driversLicense.name}`);
             newCandidate.driversLicense = licenseUrl;
         }
 
@@ -180,4 +180,10 @@ export async function checkForExpiringDocuments(): Promise<boolean> {
         console.error("Error checking for expiring documents:", error);
         return false;
     }
+}
+
+export async function resetDemoData() {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(CANDIDATES_KEY);
+    dispatchStorageEvent();
 }

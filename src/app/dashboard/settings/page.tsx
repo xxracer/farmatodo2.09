@@ -1,16 +1,16 @@
 
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit, Upload } from "lucide-react";
+import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit, Upload, RefreshCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
-import { getCompanies, createOrUpdateCompany, deleteCompany } from "@/app/actions/company-actions";
+import { getCompanies, createOrUpdateCompany, deleteCompany, deleteAllCompanies } from "@/app/actions/company-actions";
+import { resetDemoData } from "@/app/actions/client-actions";
 import { type Company, type OnboardingProcess, type RequiredDoc } from "@/lib/company-schemas";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
@@ -21,16 +21,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
-import { uploadFile } from "@/app/actions/kv-actions";
+import { uploadKvFile, getFile } from "@/app/actions/kv-actions";
 
-
-// Helper to convert file to Base64
-const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-});
 
 const STANDARD_DOCS: RequiredDoc[] = [
     { id: 'i9', label: 'Form I-9', type: 'upload' },
@@ -40,16 +32,29 @@ const STANDARD_DOCS: RequiredDoc[] = [
     { id: 'proofOfAddress', label: 'Proof of Address', type: 'upload' },
 ];
 
-function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordionItem, setActiveAccordionItem }: { company: Partial<Company>, onSave: (companyData: Partial<Company>) => void, isPending: boolean, onSaveSuccess: () => void, activeAccordionItem: string, setActiveAccordionItem: (value: string) => void }) {
+function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordionItem, setActiveAccordionItem }: { company: Partial<Company>, onSave: (companyData: Partial<Company>, logoFile?: File) => void, isPending: boolean, onSaveSuccess: () => void, activeAccordionItem: string, setActiveAccordionItem: (value: string) => void }) {
     const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>(company);
+    const [logoFile, setLogoFile] = useState<File | undefined>();
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>([]);
     const [users, setUsers] = useState<{name: string, role: string, email: string}[]>([]);
     const { toast } = useToast();
 
      useEffect(() => {
+        const fetchAndSetLogo = async (logoKey: string) => {
+            const url = await getFile(logoKey);
+            setLogoPreview(url);
+        };
+
         setCompanyForEdit(company);
         setOnboardingProcesses(company.onboardingProcesses || []);
-        // Reset accordion to be open when a new company is selected/created
+        
+        if (company.logo) {
+            fetchAndSetLogo(company.logo);
+        } else {
+            setLogoPreview(null);
+        }
+        
         if (!company.id) {
             setActiveAccordionItem('company-details');
         }
@@ -57,14 +62,12 @@ function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordio
 
 
     const handleInternalSaveCompany = () => {
-        // Only saves company details, not onboarding processes
-        onSave(companyForEdit);
+        onSave(companyForEdit, logoFile);
         onSaveSuccess();
     }
 
     const handleSaveProcesses = () => {
-        // Saves the entire company object including the processes
-        onSave({ ...companyForEdit, onboardingProcesses });
+        onSave({ ...companyForEdit, onboardingProcesses }, logoFile);
     }
 
     const handleAddNewUser = (e: React.FormEvent<HTMLFormElement>) => {
@@ -89,20 +92,24 @@ function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordio
         e.currentTarget.reset();
     };
 
-    const handleLogoChange = async (file: File | null) => {
+    const handleLogoChange = (file: File | null) => {
         if (file) {
-            try {
-                const base64 = await toBase64(file);
-                setCompanyForEdit(prev => ({ ...prev, logo: base64 }));
-                toast({ title: 'Logo Ready', description: 'Click "Save Company" to finalize.'});
-            } catch (error) {
-                toast({ variant: 'destructive', title: 'Logo Upload Failed', description: (error as Error).message });
-            }
+            setLogoFile(file);
+            setLogoPreview(URL.createObjectURL(file)); // Create a temporary URL for preview
+            toast({ title: 'Logo Ready', description: 'Click "Save Company" to finalize.'});
         }
     };
     
     const handlePhase1ImageUpload = async (processId: string, files: FileList | null) => {
         if (!files) return;
+        // This still uses Base64 for simplicity as it's part of a larger object structure
+        const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+
         const imagePromises = Array.from(files).map(file => toBase64(file));
         const base64Images = await Promise.all(imagePromises);
         
@@ -120,6 +127,12 @@ function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordio
     
     const handleInterviewImageUpload = async (processId: string, file: File | null) => {
         if (!file) return;
+        const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
         const base64Image = await toBase64(file);
         handleUpdateNestedProcessField(processId, 'interviewScreen', 'imageUrl', base64Image);
     };
@@ -237,7 +250,7 @@ function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordio
                                         <Label htmlFor="company-logo">Company Logo</Label>
                                         <div className="flex items-center gap-4">
                                             <Input id="company-logo" type="file" className="max-w-xs" onChange={(e) => handleLogoChange(e.target.files?.[0] || null)} accept="image/*" />
-                                            {companyForEdit.logo && <Image src={companyForEdit.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
+                                            {logoPreview && <Image src={logoPreview} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
                                         </div>
                                     </div>
                                 </div>
@@ -509,11 +522,11 @@ export default function SettingsPage() {
         const data = await getCompanies();
         setAllCompanies(data);
         if (data.length > 0 && managementMode === 'multiple') {
-            setEditingCompany(null); // Default to list view in multiple mode
+            setEditingCompany(null);
         } else if (data.length > 0 && managementMode === 'single') {
-            setEditingCompany(data[0]); // Edit first company in single mode
+            setEditingCompany(data[0]);
         } else {
-            setEditingCompany({}); // Default to form view for a new company
+            setEditingCompany({});
         }
     } catch (error) {
         toast({ variant: 'destructive', title: "Failed to load companies", description: (error as Error).message });
@@ -527,7 +540,7 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managementMode]);
   
-  const handleSaveCompany = (companyData: Partial<Company>) => {
+  const handleSaveCompany = (companyData: Partial<Company>, logoFile?: File) => {
       startTransition(async () => {
           if (!companyData.name) {
               toast({ variant: 'destructive', title: "Validation Error", description: "Company name is required."});
@@ -535,8 +548,15 @@ export default function SettingsPage() {
           }
           
           try {
-              const result = await createOrUpdateCompany(companyData);
-              if (!result.success || !result.company) throw new Error("Failed to save company settings.");
+              let dataToSave = { ...companyData };
+              if (logoFile) {
+                  const logoKey = `logo-${companyData.name?.replace(/\s+/g, '-')}-${Date.now()}`;
+                  const uploadedKey = await uploadKvFile(logoFile, logoKey);
+                  dataToSave.logo = uploadedKey;
+              }
+
+              const result = await createOrUpdateCompany(dataToSave);
+              if (!result.success || !result.company) throw new Error(result.error || "Failed to save company settings.");
               toast({ title: "Company Settings Saved", description: `Settings for ${result.company.name} have been saved.` });
               
               await loadAllCompanies();
@@ -578,8 +598,16 @@ export default function SettingsPage() {
   }
 
   const onSaveSuccess = () => {
-    // This function will be called from the form to collapse the accordion
     setActiveAccordionItem('');
+  }
+  
+  const handleResetDemo = () => {
+      startTransition(async () => {
+          await resetDemoData();
+          await deleteAllCompanies();
+          toast({ title: "Demo Reset", description: "All data has been cleared."});
+          await loadAllCompanies();
+      })
   }
 
 
@@ -603,9 +631,7 @@ export default function SettingsPage() {
             />;
     }
     
-    // Multiple company mode
     if (editingCompany) {
-        // Show form to edit a specific company or add a new one
          return (
             <div>
                  <Button variant="outline" onClick={() => setEditingCompany(null)} className="mb-4">
@@ -623,7 +649,6 @@ export default function SettingsPage() {
          );
     }
 
-    // Show list of companies
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -702,10 +727,10 @@ export default function SettingsPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Company Management</CardTitle>
-                <CardDescription>Select a mode to manage your company profiles.</CardDescription>
+                <CardTitle>Management & Demo</CardTitle>
+                <CardDescription>Select a mode to manage your company profiles and reset the demo environment.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4">
                 <RadioGroup value={managementMode} onValueChange={(value) => handleManagementModeChange(value as 'single' | 'multiple')} className="flex space-x-4">
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="single" id="single" />
@@ -716,6 +741,25 @@ export default function SettingsPage() {
                         <Label htmlFor="multiple">Multiple Companies</Label>
                     </div>
                 </RadioGroup>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                            <RefreshCcw className="mr-2 h-4 w-4" /> Reset Demo
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action will permanently delete all company profiles from Vercel KV and all candidate data from your browser's local storage. This cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleResetDemo}>Yes, Reset Demo</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
         </Card>
 

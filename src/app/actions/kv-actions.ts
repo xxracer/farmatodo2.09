@@ -19,7 +19,7 @@ async function fileToDataURL(file: File): Promise<string> {
  * @param fileName The name to use as the key in KV.
  * @returns The key under which the file was stored.
  */
-export async function uploadFile(file: File, fileName: string): Promise<string> {
+export async function uploadKvFile(file: File, fileName: string): Promise<string> {
   try {
     const dataUrl = await fileToDataURL(file);
     await kv.set(fileName, dataUrl);
@@ -55,5 +55,39 @@ export async function deleteFile(fileKey: string): Promise<void> {
     await kv.del(fileKey);
   } catch (error) {
     console.error("KV Deletion Error:", error);
+  }
+}
+
+/**
+ * Retrieves a file from KV and returns it as a Response object.
+ * This is useful for streaming files or displaying them directly in the browser.
+ */
+export async function getFileAsResponse(key: string): Promise<Response> {
+  try {
+    const dataUrl = await kv.get<string>(key);
+
+    if (!dataUrl) {
+      return new Response('File not found', { status: 404 });
+    }
+
+    // Correctly parse the Data URI
+    const parts = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!parts) {
+      return new Response('Invalid data URL format', { status: 500 });
+    }
+
+    const mimeType = parts[1];
+    const base64Data = parts[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    return new Response(buffer, {
+      headers: {
+        'Content-Type': mimeType,
+        'Content-Length': String(buffer.length),
+      },
+    });
+  } catch (error) {
+    console.error(`KV getFileAsResponse Error for key ${key}:`, error);
+    return new Response('Error retrieving file', { status: 500 });
   }
 }

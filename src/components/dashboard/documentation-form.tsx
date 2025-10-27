@@ -25,16 +25,8 @@ import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 import { RequiredDoc } from "@/lib/company-schemas"
 import Link from "next/link"
+import { uploadKvFile } from "@/app/actions/kv-actions"
 
-
-async function fileToDataURL(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
 
 const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
     const shape: Record<string, any> = {};
@@ -84,9 +76,11 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs }: { 
             for (const doc of requiredDocs) {
                 const file = data[doc.id as keyof typeof data];
                 if (file instanceof File) {
-                    // Use a more descriptive key for the backend
                     const key = doc.id === 'proofOfIdentity' ? 'idCard' : doc.id;
-                    documentsToUpload[key] = await fileToDataURL(file);
+                    // Use a unique name for the file in KV storage
+                    const fileName = `${candidateId}/${key}-${file.name}`;
+                    const fileUrl = await uploadKvFile(file, fileName);
+                    documentsToUpload[key] = fileUrl; // Store the key from KV
                 }
             }
 
