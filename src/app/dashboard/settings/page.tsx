@@ -92,11 +92,9 @@ function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordio
     const handleLogoChange = async (file: File | null) => {
         if (file) {
             try {
-                const companyId = companyForEdit.id || generateId();
-                const fileName = `logos/${companyId}/${file.name}`;
-                const fileUrl = await uploadFile(file, fileName);
-                setCompanyForEdit(prev => ({ ...prev, logo: fileUrl, id: companyId }));
-                toast({ title: 'Logo Uploaded', description: 'Click "Save Company" to finalize.'});
+                const base64 = await toBase64(file);
+                setCompanyForEdit(prev => ({ ...prev, logo: base64 }));
+                toast({ title: 'Logo Ready', description: 'Click "Save Company" to finalize.'});
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Logo Upload Failed', description: (error as Error).message });
             }
