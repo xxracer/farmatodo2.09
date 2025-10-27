@@ -39,21 +39,25 @@ const STANDARD_DOCS: RequiredDoc[] = [
     { id: 'proofOfAddress', label: 'Proof of Address', type: 'upload' },
 ];
 
-function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>, onSave: (companyData: Partial<Company>) => void, isPending: boolean }) {
+function CompanyForm({ company, onSave, isPending, onSaveSuccess }: { company: Partial<Company>, onSave: (companyData: Partial<Company>) => void, isPending: boolean, onSaveSuccess: () => void }) {
     const [companyForEdit, setCompanyForEdit] = useState<Partial<Company>>(company);
     const [onboardingProcesses, setOnboardingProcesses] = useState<OnboardingProcess[]>([]);
     const [users, setUsers] = useState<{name: string, role: string, email: string}[]>([]);
+    const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>('company-details');
     const { toast } = useToast();
 
      useEffect(() => {
         setCompanyForEdit(company);
         setOnboardingProcesses(company.onboardingProcesses || []);
+        // Reset accordion to be open when a new company is selected/created
+        setActiveAccordionItem('company-details');
     }, [company]);
 
 
     const handleInternalSaveCompany = () => {
         // Only saves company details, not onboarding processes
         onSave(companyForEdit);
+        onSaveSuccess();
     }
 
     const handleSaveProcesses = () => {
@@ -183,92 +187,100 @@ function CompanyForm({ company, onSave, isPending }: { company: Partial<Company>
     
     return (
         <div className="space-y-6 mt-6">
-            <Card>
-                <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    {companyForEdit.id ? 'Edit Company Details' : 'New Company Details'}
-                    </div>
-                     <Button size="lg" disabled={isPending} onClick={handleInternalSaveCompany}>
-                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Save Company
-                    </Button>
-                </CardTitle>
-                <CardDescription>Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Left Side: Company Details */}
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="company-name">Company Name</Label>
-                            <Input id="company-name" placeholder="e.g., Noble Health" value={companyForEdit.name || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, name: e.target.value}))} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="company-address">Address</Label>
-                            <Input id="company-address" placeholder="123 Main St, Anytown, USA" value={companyForEdit.address || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, address: e.target.value}))} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="company-phone">Phone Number</Label>
-                                <Input id="company-phone" type="tel" value={companyForEdit.phone || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, phone: e.target.value}))} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="company-fax">Fax</Label>
-                                <Input id="company-fax" value={companyForEdit.fax || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, fax: e.target.value}))} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="company-email">Company Email</Label>
-                            <Input id="company-email" type="email" value={companyForEdit.email || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, email: e.target.value}))} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="company-logo">Company Logo</Label>
-                            <div className="flex items-center gap-4">
-                                <Input id="company-logo" type="file" className="max-w-xs" onChange={(e) => handleLogoChange(e.target.files?.[0] || null)} accept="image/*" />
-                                {companyForEdit.logo && <Image src={companyForEdit.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
-                            </div>
-                        </div>
-                    </div>
+            <Accordion type="single" collapsible value={activeAccordionItem} onValueChange={setActiveAccordionItem}>
+                <AccordionItem value="company-details" className="border rounded-lg">
+                    <Card>
+                        <AccordionTrigger className="w-full hover:no-underline p-6">
+                             <CardHeader className="p-0 text-left">
+                                <CardTitle className="flex items-center gap-2">
+                                    <Building className="h-5 w-5" />
+                                    {companyForEdit.id ? 'Edit Company Details' : 'New Company Details'}
+                                </CardTitle>
+                                <CardDescription>Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
+                            </CardHeader>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <CardContent className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Left Side: Company Details */}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="company-name">Company Name</Label>
+                                        <Input id="company-name" placeholder="e.g., Noble Health" value={companyForEdit.name || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, name: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="company-address">Address</Label>
+                                        <Input id="company-address" placeholder="123 Main St, Anytown, USA" value={companyForEdit.address || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, address: e.target.value}))} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="company-phone">Phone Number</Label>
+                                            <Input id="company-phone" type="tel" value={companyForEdit.phone || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, phone: e.target.value}))} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="company-fax">Fax</Label>
+                                            <Input id="company-fax" value={companyForEdit.fax || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, fax: e.target.value}))} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="company-email">Company Email</Label>
+                                        <Input id="company-email" type="email" value={companyForEdit.email || ''} onChange={(e) => setCompanyForEdit(prev => ({...prev, email: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="company-logo">Company Logo</Label>
+                                        <div className="flex items-center gap-4">
+                                            <Input id="company-logo" type="file" className="max-w-xs" onChange={(e) => handleLogoChange(e.target.files?.[0] || null)} accept="image/*" />
+                                            {companyForEdit.logo && <Image src={companyForEdit.logo} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
+                                        </div>
+                                    </div>
+                                </div>
 
-                    {/* Right Side: Onboarding Users */}
-                    <div className="space-y-4">
-                        <Label className="font-semibold">Onboarding Users</Label>
-                        <form onSubmit={handleAddNewUser} className="grid grid-cols-1 gap-4 items-end p-4 border rounded-md">
-                            <div className="space-y-2">
-                                <Label htmlFor="user-name">User Name</Label>
-                                <Input id="user-name" name="user-name" placeholder="e.g., John Doe" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="user-role">Role</Label>
-                                <Input id="user-role" name="user-role" placeholder="e.g., HR Manager" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="user-email">Email</Label>
-                                <Input id="user-email" name="user-email" type="email" placeholder="e.g., john.doe@company.com" />
-                            </div>
-                            <Button type="submit">
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add User
-                            </Button>
-                        </form>
-                        <div className="space-y-2">
-                            {users.map((user, index) => (
-                                <div key={index} className="flex justify-between items-center p-2 border rounded-md">
-                                <div>
-                                    <p className="font-medium">{user.name} <span className="text-xs text-muted-foreground">({user.role})</span></p>
-                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                {/* Right Side: Onboarding Users */}
+                                <div className="space-y-4">
+                                    <Label className="font-semibold">Onboarding Users</Label>
+                                    <form onSubmit={handleAddNewUser} className="grid grid-cols-1 gap-4 items-end p-4 border rounded-md">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="user-name">User Name</Label>
+                                            <Input id="user-name" name="user-name" placeholder="e.g., John Doe" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="user-role">Role</Label>
+                                            <Input id="user-role" name="user-role" placeholder="e.g., HR Manager" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="user-email">Email</Label>
+                                            <Input id="user-email" name="user-email" type="email" placeholder="e.g., john.doe@company.com" />
+                                        </div>
+                                        <Button type="submit">
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add User
+                                        </Button>
+                                    </form>
+                                    <div className="space-y-2">
+                                        {users.map((user, index) => (
+                                            <div key={index} className="flex justify-between items-center p-2 border rounded-md">
+                                            <div>
+                                                <p className="font-medium">{user.name} <span className="text-xs text-muted-foreground">({user.role})</span></p>
+                                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                                            </div>
+                                            <Button variant="ghost" size="icon" onClick={() => setUsers(users.filter((_, i) => i !== index))}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <Button variant="ghost" size="icon" onClick={() => setUsers(users.filter((_, i) => i !== index))}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
+                            </div>
+                            </CardContent>
+                             <CardContent>
+                                <Button size="lg" disabled={isPending} onClick={handleInternalSaveCompany}>
+                                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    Save Company & Continue
                                 </Button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-                </CardContent>
-            </Card>
+                            </CardContent>
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+            </Accordion>
       
             <Card>
                 <CardHeader>
@@ -554,6 +566,14 @@ export default function SettingsPage() {
     }
   }
 
+  const onSaveSuccess = () => {
+    // This function will be called from the form to collapse the accordion
+    const formElement = document.querySelector('[data-radix-collection-item]');
+    if (formElement) {
+        (formElement as HTMLElement).click(); // This is a bit of a hack to trigger the accordion
+    }
+  }
+
 
   const renderContent = () => {
     if (isLoading) {
@@ -565,7 +585,7 @@ export default function SettingsPage() {
     }
 
     if (managementMode === 'single') {
-        return <CompanyForm company={allCompanies[0] || {}} onSave={handleSaveCompany} isPending={isPending} />;
+        return <CompanyForm company={allCompanies[0] || {}} onSave={handleSaveCompany} isPending={isPending} onSaveSuccess={onSaveSuccess} />;
     }
     
     // Multiple company mode
@@ -576,7 +596,7 @@ export default function SettingsPage() {
                  <Button variant="outline" onClick={() => setEditingCompany(null)} className="mb-4">
                     &larr; Back to Company List
                 </Button>
-                <CompanyForm company={editingCompany} onSave={handleSaveCompany} isPending={isPending} />
+                <CompanyForm company={editingCompany} onSave={handleSaveCompany} isPending={isPending} onSaveSuccess={onSaveSuccess} />
             </div>
          );
     }
