@@ -2,7 +2,7 @@
 'use client';
 
 import { Company } from "@/lib/company-schemas";
-import { getAll, saveAll, saveById, deleteById, generateId } from "@/lib/local-storage-client";
+import { getAll, saveAll, saveById, deleteById, generateId, getById } from "@/lib/local-storage-client";
 
 const COMPANIES_KEY = 'companies';
 
@@ -15,8 +15,7 @@ export async function getCompanies(): Promise<Company[]> {
 }
 
 export async function getCompany(id: string): Promise<Company | null> {
-    const companies = await getCompanies();
-    return companies.find(c => c.id === id) || null;
+    return getById<Company>(COMPANIES_KEY, id);
 }
 
 export async function createOrUpdateCompany(companyData: Partial<Company>) {

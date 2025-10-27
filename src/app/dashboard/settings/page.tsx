@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
+import { uploadFile } from "@/app/actions/kv-actions";
 
 
 // Helper to convert file to Base64
@@ -90,8 +91,15 @@ function CompanyForm({ company, onSave, isPending, onSaveSuccess, activeAccordio
 
     const handleLogoChange = async (file: File | null) => {
         if (file) {
-            const base64Logo = await toBase64(file);
-            setCompanyForEdit(prev => ({ ...prev, logo: base64Logo }));
+            try {
+                const companyId = companyForEdit.id || generateId();
+                const fileName = `logos/${companyId}/${file.name}`;
+                const fileUrl = await uploadFile(file, fileName);
+                setCompanyForEdit(prev => ({ ...prev, logo: fileUrl, id: companyId }));
+                toast({ title: 'Logo Uploaded', description: 'Click "Save Company" to finalize.'});
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Logo Upload Failed', description: (error as Error).message });
+            }
         }
     };
     
