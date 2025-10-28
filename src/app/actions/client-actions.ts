@@ -66,7 +66,7 @@ export async function createCandidate(data: ApplicationSchema): Promise<{ succes
     }
 }
 
-export async function createLegacyEmployee(employeeData: Partial<ApplicationData>, pdfFile: File): Promise<{ success: boolean, id?: string, error?: string }> {
+export async function createLegacyEmployee(employeeData: Partial<ApplicationData>): Promise<{ success: boolean, id?: string, error?: string }> {
     try {
         const newEmployee: ApplicationData = {
             ...employeeData,
@@ -76,10 +76,6 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
             applyingFor: employeeData.applyingFor || [],
             education: employeeData.education || { college: {}, voTech: {}, highSchool: {}, other: {} },
         } as ApplicationData;
-
-        if (pdfFile instanceof File) {
-            newEmployee.applicationPdfUrl = await fileToDataURL(pdfFile);
-        }
         
         const candidates = getAllFromStorage();
         candidates.push(newEmployee);
@@ -91,6 +87,7 @@ export async function createLegacyEmployee(employeeData: Partial<ApplicationData
         return { success: false, error: (error as Error).message || "Failed to create legacy employee." };
     }
 }
+
 
 export async function getCandidates(): Promise<ApplicationData[]> {
     const all = getAllFromStorage();
