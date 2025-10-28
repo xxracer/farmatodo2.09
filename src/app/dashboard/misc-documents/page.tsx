@@ -1,4 +1,3 @@
-
 import { Files } from "lucide-react";
 
 export default function MiscDocumentsPage() {
@@ -8,7 +7,7 @@ export default function MiscDocumentsPage() {
         <Files className="h-12 w-12 text-muted-foreground" />
         <h3 className="text-2xl font-bold tracking-tight">Miscellaneous Documents</h3>
         <p className="text-sm text-muted-foreground">
-          This page is under construction. A repository for other company or employee documents.
+          This page has been moved. Please see 'Compliance Check'.
         </p>
       </div>
     </div>

@@ -22,13 +22,13 @@ import {
   Briefcase,
   FileClock,
   BookOpenCheck,
-  Files,
+  ShieldCheck,
   AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback, useTransition } from "react";
-import { checkForExpiringDocuments } from "@/app/actions/client-actions";
+import { checkForExpiringDocuments } from "@/app/actions/candidate-actions";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -144,12 +144,12 @@ export function DashboardSidebar() {
            <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              isActive={pathname.startsWith("/dashboard/misc-documents")}
-              tooltip="Misc Documents"
+              isActive={pathname.startsWith("/dashboard/compliance-check")}
+              tooltip="Compliance Check"
             >
-              <Link href="/dashboard/misc-documents">
-                <Files />
-                <span>Misc Docs</span>
+              <Link href="/dashboard/compliance-check">
+                <ShieldCheck />
+                <span>Compliance Check</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
