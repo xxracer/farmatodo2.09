@@ -28,7 +28,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback, useTransition } from "react";
-import { checkForExpiringDocuments } from "@/app/actions/candidate-actions";
+import { checkForExpiringDocuments } from "../actions/client-actions";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -51,8 +51,12 @@ export function DashboardSidebar() {
         });
     }, 5 * 60 * 1000); // Poll every 5 minutes
 
+    // Also listen for storage events to re-check immediately
+    window.addEventListener('storage', checkDocs);
+
     return () => {
       clearInterval(interval);
+      window.removeEventListener('storage', checkDocs);
     };
   }, [pathname, checkDocs]);
 
@@ -117,6 +121,18 @@ export function DashboardSidebar() {
            <SidebarMenuItem>
             <SidebarMenuButton
               asChild
+              isActive={pathname.startsWith("/dashboard/compliance-check")}
+              tooltip="Compliance Check"
+            >
+              <Link href="/dashboard/compliance-check">
+                <ShieldCheck />
+                <span>Compliance Check</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
               isActive={pathname.startsWith("/dashboard/expiring-documentation")}
               tooltip="Expiring Documentation"
             >
@@ -138,18 +154,6 @@ export function DashboardSidebar() {
               <Link href="/dashboard/in-services">
                 <BookOpenCheck />
                 <span>In-Services</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith("/dashboard/compliance-check")}
-              tooltip="Compliance Check"
-            >
-              <Link href="/dashboard/compliance-check">
-                <ShieldCheck />
-                <span>Compliance Check</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
