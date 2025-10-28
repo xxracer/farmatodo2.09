@@ -44,17 +44,6 @@ const officialDocLinks: Record<string, string> = {
     'w4': 'https://www.irs.gov/pub/irs-pdf/fw4.pdf',
 }
 
-// Helper to convert a File to a base64 data URI
-async function fileToDataURL(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
-
 export function DocumentationForm({ companyName, candidateId, requiredDocs }: { companyName: string, candidateId?: string | null, requiredDocs: RequiredDoc[] }) {
     const { toast } = useToast()
     const router = useRouter()
@@ -79,15 +68,13 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs }: { 
 
         setIsSubmitting(true);
         try {
-            const documentsToUpload: Record<string, string> = {};
+            const documentsToUpload: { [key: string]: File } = {};
             
             for (const doc of requiredDocs) {
                 const file = data[doc.id as keyof typeof data];
                 if (file instanceof File) {
-                    const dataUrl = await fileToDataURL(file);
-                    // Map specific IDs to the correct field names in ApplicationData
                     const key = doc.id === 'proofOfIdentity' ? 'idCard' : doc.id;
-                    documentsToUpload[key] = dataUrl;
+                    documentsToUpload[key] = file;
                 }
             }
 

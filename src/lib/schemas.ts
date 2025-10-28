@@ -8,9 +8,8 @@ const ACCEPTED_PDF_ONLY = ["application/pdf"];
 
 
 export interface DocumentFile {
-  id: string; // This will be a unique ID
+  id: string; // This will now be the KV key
   title: string;
-  url: string; // This will now be a data URI
 }
 
 
@@ -139,11 +138,11 @@ export type ApplicationSchema = z.infer<typeof applicationSchema>;
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
     created_at?: string;
-    resume?: string; // This will now be a data URI
-    driversLicense?: string; // This will now be a data URI
-    applicationPdfUrl?: string; // data URI for the original PDF from a legacy employee
+    resume?: string; // This will now be a Vercel KV key
+    driversLicense?: string; // This will now be a Vercel KV key
+    applicationPdfUrl?: string; // Vercel KV key for the original PDF from a legacy employee
     
-    // New document fields from documentation form (will store data URIs)
+    // New document fields from documentation form (will store Vercel KV keys)
     idCard?: string;
     proofOfAddress?: string;
     i9?: string;

@@ -10,12 +10,7 @@ export async function GET(
     const employeeId = decodeURIComponent(params.employeeId);
     const fileKey = decodeURIComponent(params.fileKey);
 
-    // Reconstruct the full key as it was saved.
-    // This part depends on the saving logic in `employees/page.tsx`.
-    // Example reconstruction:
-    // const fullKey = `${employeeId}/required/${fileKey}`; 
-    // You MUST know the full path. For this example, we assume the fileKey is the full path.
-    const fullKey = fileKey;
-
-    return await getFileAsResponse(fullKey);
+    // The fileKey from the ApplicationView component is already the full key.
+    // No reconstruction needed.
+    return await getFileAsResponse(fileKey);
 }

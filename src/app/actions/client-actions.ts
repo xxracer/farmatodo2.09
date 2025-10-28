@@ -3,6 +3,7 @@
 
 import { generateId } from "@/lib/local-storage-client";
 import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
+import { uploadKvFile, deleteFile } from "./kv-actions";
 
 // This file now acts as a client-side API for interacting with localStorage.
 
@@ -23,40 +24,36 @@ function saveAllToStorage(data: ApplicationData[]) {
     window.dispatchEvent(new Event('storage'));
 }
 
-// Helper to convert a File to a base64 data URI
-async function fileToDataURL(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 // --- Public Client Actions ---
 
 export async function createCandidate(data: ApplicationSchema): Promise<{ success: boolean, id?: string, error?: string }> {
     try {
         const id = generateId();
-        const newCandidate: Partial<ApplicationData> = {
+        let resumeKey: string | undefined = undefined;
+        let licenseKey: string | undefined = undefined;
+
+        // Upload files to KV and get their keys
+        if (data.resume instanceof File) {
+            resumeKey = await uploadKvFile(data.resume, `${id}/resume/${data.resume.name}`);
+        }
+        if (data.driversLicense instanceof File) {
+            licenseKey = await uploadKvFile(data.driversLicense, `${id}/driversLicense/${data.driversLicense.name}`);
+        }
+
+        const newCandidate: ApplicationData = {
             ...data,
             id: id,
             created_at: new Date().toISOString(),
             status: 'candidate',
             documents: [],
-            miscDocuments: []
+            miscDocuments: [],
+            // Store the KV keys instead of the files or data URLs
+            resume: resumeKey,
+            driversLicense: licenseKey,
         };
-        
-        // Convert files to data URLs before saving
-        if (data.resume instanceof File) {
-            newCandidate.resume = await fileToDataURL(data.resume);
-        }
-        if (data.driversLicense instanceof File) {
-            newCandidate.driversLicense = await fileToDataURL(data.driversLicense);
-        }
 
         const candidates = getAllFromStorage();
-        candidates.push(newCandidate as ApplicationData);
+        candidates.push(newCandidate);
         saveAllToStorage(candidates);
         
         return { success: true, id: newCandidate.id };
@@ -124,13 +121,20 @@ export async function getCandidate(id: string): Promise<ApplicationData | null> 
     return candidates.find(c => c.id === id) || null;
 }
 
-export async function updateCandidateWithDocuments(id: string, documents: { [key: string]: string }): Promise<{ success: boolean, error?: string }> {
+export async function updateCandidateWithDocuments(id: string, documentFiles: { [key: string]: File }): Promise<{ success: boolean, error?: string }> {
     try {
         const candidates = getAllFromStorage();
         const index = candidates.findIndex(c => c.id === id);
 
         if (index > -1) {
-            candidates[index] = { ...candidates[index], ...documents };
+            const documentsToUpdate: { [key: string]: string } = {};
+            for (const docKey in documentFiles) {
+                const file = documentFiles[docKey];
+                const kvKey = await uploadKvFile(file, `${id}/docs/${docKey}/${file.name}`);
+                documentsToUpdate[docKey] = kvKey;
+            }
+
+            candidates[index] = { ...candidates[index], ...documentsToUpdate };
             saveAllToStorage(candidates);
         } else {
             throw new Error("Could not find candidate to update.")
@@ -143,14 +147,14 @@ export async function updateCandidateWithDocuments(id: string, documents: { [key
     }
 }
 
-export async function updateCandidateWithFileUpload(id: string, file: File, title: string, type: 'required' | 'misc'): Promise<{ success: boolean, error?: string }> {
+export async function updateCandidateWithFileUpload(id: string, file: File, title: string, type: 'required' | 'misc'): Promise<{ success: boolean, error?: string, fileKey?: string }> {
      try {
         const candidates = getAllFromStorage();
         const index = candidates.findIndex(c => c.id === id);
 
         if (index > -1) {
-            const dataUrl = await fileToDataURL(file);
-            const newDoc = { id: generateId(), title: title, url: dataUrl };
+            const fileKey = await uploadKvFile(file, `${id}/${type}/${title.replace(/\s+/g, '_')}-${file.name}`);
+            const newDoc = { id: fileKey, title: title };
 
             if (type === 'required') {
                 if (!candidates[index].documents) candidates[index].documents = [];
@@ -161,7 +165,7 @@ export async function updateCandidateWithFileUpload(id: string, file: File, titl
             }
             
             saveAllToStorage(candidates);
-            return { success: true };
+            return { success: true, fileKey };
         } else {
             throw new Error("Could not find candidate to update.");
         }
@@ -196,6 +200,7 @@ export async function updateCandidateStatus(id: string, status: 'interview' | 'n
 
 export async function deleteCandidate(id: string): Promise<{ success: boolean, error?: string }> {
     try {
+        // Here we could also add logic to delete associated files from KV if needed
         const candidates = getAllFromStorage();
         const updatedCandidates = candidates.filter(c => c.id !== id);
         saveAllToStorage(updatedCandidates);
@@ -236,19 +241,18 @@ export async function resetDemoData() {
     }
 }
 
-export async function deleteEmployeeFile(employeeId: string, fileId: string): Promise<{ success: boolean, error?: string }> {
+export async function deleteEmployeeFile(employeeId: string, fileKey: string, type: 'required' | 'misc'): Promise<{ success: boolean, error?: string }> {
     try {
+        await deleteFile(fileKey);
         const candidates = getAllFromStorage();
         const index = candidates.findIndex(c => c.id === employeeId);
 
         if (index > -1) {
-            // Remove from documents array
-            if (candidates[index].documents) {
-                candidates[index].documents = candidates[index].documents!.filter(doc => doc.id !== fileId);
+            if (type === 'required' && candidates[index].documents) {
+                candidates[index].documents = candidates[index].documents!.filter(doc => doc.id !== fileKey);
             }
-            // Remove from miscDocuments array
-            if (candidates[index].miscDocuments) {
-                candidates[index].miscDocuments = candidates[index].miscDocuments!.filter(doc => doc.id !== fileId);
+            if (type === 'misc' && candidates[index].miscDocuments) {
+                candidates[index].miscDocuments = candidates[index].miscDocuments!.filter(doc => doc.id !== fileKey);
             }
             saveAllToStorage(candidates);
             return { success: true };

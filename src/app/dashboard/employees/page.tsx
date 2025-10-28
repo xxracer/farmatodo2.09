@@ -42,7 +42,7 @@ function EmployeeList({
     onStatusChange: (id: string, info: InactiveInfo) => void,
     onDelete: (id: string) => void,
     onUpload: (employeeId: string, file: File, title: string, type: 'required' | 'misc') => void,
-    onDeleteFile: (employeeId: string, fileId: string) => void,
+    onDeleteFile: (employeeId: string, fileKey: string, type: 'required' | 'misc') => void,
     isUploading: boolean,
 }) {
     const [isInactiveModalOpen, setInactiveModalOpen] = useState(false);
@@ -133,10 +133,10 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.documents?.map((doc: DocumentFile) => (
                                             <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={`/employees/${employee.id}/file/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id)}>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'required')}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                             </div>
@@ -159,10 +159,10 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.miscDocuments?.map((doc: DocumentFile) => (
                                              <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={`/employees/${employee.id}/file/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id)}>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'misc')}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                             </div>
@@ -323,17 +323,17 @@ export default function EmployeesPage() {
       }
   }
 
-  const handleDeleteFile = async (employeeId: string, fileId: string) => {
+  const handleDeleteFile = async (employeeId: string, fileKey: string, type: 'required' | 'misc') => {
       if (!confirm("Are you sure you want to delete this document?")) return;
 
       toast({ title: 'Deleting...', description: 'Please wait while the file is deleted.'});
       try {
-          await deleteEmployeeFile(employeeId, fileId);
+          await deleteEmployeeFile(employeeId, fileKey, type);
           toast({ title: 'File Deleted', description: 'The document has been removed.'});
           loadData();
       } catch (error) {
           console.error(error);
-          toast({ variant: 'destructive', title: 'Deletion Failed', description: 'Could not delete the file.'});
+          toast({ variant: 'destructive', title: 'Deletion Failed', description: (error as Error).message || 'Could not delete the file.'});
       }
   }
 

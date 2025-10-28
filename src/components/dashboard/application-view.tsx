@@ -55,17 +55,18 @@ const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
     );
 };
 
-const FileRow = ({ label, fileUrl }: { label: string, fileUrl?: string }) => {
-    if (!fileUrl) return null;
+const FileRow = ({ label, fileKey, employeeId }: { label: string, fileKey?: string, employeeId?: string }) => {
+    if (!fileKey || !employeeId) return null;
 
-    const downloadName = label.replace(/\s/g, '_');
+    // The endpoint is now dynamic based on the employee and file
+    const fileUrl = `/employees/${employeeId}/file/${encodeURIComponent(fileKey)}`;
     
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
             <div>
                 <Button asChild variant="link" className="p-0 h-auto">
-                    <a href={fileUrl} download={downloadName} target="_blank" rel="noopener noreferrer">
+                    <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                         View/Download Document <Download className="ml-2 h-4 w-4" />
                     </a>
                 </Button>
@@ -229,17 +230,17 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <CardDescription>Documents uploaded during the application and documentation phases.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                 <FileRow label="Original Application PDF" fileUrl={data.applicationPdfUrl} />
-                 <FileRow label="Resume File" fileUrl={data.resume} />
-                 <FileRow label="Driver's License" fileUrl={data.driversLicense} />
-                 <FileRow label="Government-issued ID" fileUrl={data.idCard} />
-                 <FileRow label="Proof of Address" fileUrl={data.proofOfAddress} />
-                 <FileRow label="Form I-9" fileUrl={data.i9} />
-                 <FileRow label="Form W-4" fileUrl={data.w4} />
-                 <FileRow label="Educational Diplomas" fileUrl={data.educationalDiplomas} />
+                 <FileRow label="Original Application PDF" fileKey={data.applicationPdfUrl} employeeId={data.id} />
+                 <FileRow label="Resume File" fileKey={data.resume} employeeId={data.id} />
+                 <FileRow label="Driver's License" fileKey={data.driversLicense} employeeId={data.id} />
+                 <FileRow label="Government-issued ID" fileKey={data.idCard} employeeId={data.id} />
+                 <FileRow label="Proof of Address" fileKey={data.proofOfAddress} employeeId={data.id} />
+                 <FileRow label="Form I-9" fileKey={data.i9} employeeId={data.id} />
+                 <FileRow label="Form W-4" fileKey={data.w4} employeeId={data.id} />
+                 <FileRow label="Educational Diplomas" fileKey={data.educationalDiplomas} employeeId={data.id} />
 
-                 {data.documents?.map(doc => <FileRow key={doc.id} label={doc.title} fileUrl={doc.url} />)}
-                 {data.miscDocuments?.map(doc => <FileRow key={doc.id} label={doc.title} fileUrl={doc.url} />)}
+                 {data.documents?.map(doc => <FileRow key={doc.id} label={doc.title} fileKey={doc.id} employeeId={data.id} />)}
+                 {data.miscDocuments?.map(doc => <FileRow key={doc.id} label={doc.title} fileKey={doc.id} employeeId={data.id} />)}
 
                 <DataRow label="Name on License" value={data.driversLicenseName} />
                 <DataRow label="License Expiration" value={data.driversLicenseExpiration} isDate={true}/>

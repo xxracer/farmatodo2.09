@@ -1,14 +1,16 @@
 
+import { getFileAsResponse } from "@/app/actions/kv-actions";
 import { NextRequest } from "next/server";
 
-// This route is no longer needed with localStorage.
-// However, we keep it to prevent build errors if it's referenced somewhere.
-// It will now return a 404.
-
+// This route is deprecated and no longer needed with the new /employees/[id]/file/[key] route
+// but is kept to avoid breaking old links during transition.
 export async function GET(
     request: NextRequest,
     { params }: { params: { fileKey: string } }
 ) {
     
-    return new Response('File access is now handled via data URIs with localStorage.', { status: 404 });
+    // The param is URL-encoded, so decode it.
+    const fileKey = decodeURIComponent(params.fileKey);
+
+    return await getFileAsResponse(fileKey);
 }
