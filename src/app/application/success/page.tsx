@@ -16,11 +16,6 @@ export default function ApplicationSuccessPage() {
             Someone from our company will contact you to schedule an interview in case your profile is selected. Goodbye.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button asChild className="mt-6">
-            <Link href="/">Return to Home</Link>
-          </Button>
-        </CardContent>
       </Card>
     </div>
   );
