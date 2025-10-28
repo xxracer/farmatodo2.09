@@ -1,11 +1,11 @@
 
 'use client';
 
-import { getEmployees, updateCandidateStatus, deleteCandidate } from "@/app/actions/client-actions";
+import { getEmployees, updateCandidateStatus, deleteCandidate, deleteEmployeeFile, updateCandidateWithFileUpload } from "@/app/actions/client-actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApplicationData, DocumentFile } from "@/lib/schemas";
 import { Briefcase, UserPlus, Folder, User, Search, Trash2, Archive, Upload, Loader2, File as FileIcon } from "lucide-react";
-import { useEffect, useState, useMemo, useTransition, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddLegacyEmployeeForm } from "./_components/add-legacy-employee-form";
@@ -22,7 +22,6 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { uploadKvFile, deleteFile } from "@/app/actions/kv-actions";
 import { format } from "date-fns";
 
 type InactiveInfo = {
@@ -43,7 +42,7 @@ function EmployeeList({
     onStatusChange: (id: string, info: InactiveInfo) => void,
     onDelete: (id: string) => void,
     onUpload: (employeeId: string, file: File, title: string, type: 'required' | 'misc') => void,
-    onDeleteFile: (employeeId: string, fileId: string, type: 'required' | 'misc') => void,
+    onDeleteFile: (employeeId: string, fileId: string) => void,
     isUploading: boolean,
 }) {
     const [isInactiveModalOpen, setInactiveModalOpen] = useState(false);
@@ -52,8 +51,10 @@ function EmployeeList({
     const [inactiveInfo, setInactiveInfo] = useState<{ date: Date | undefined, reason: string, description: string }>({ date: new Date(), reason: '', description: '' });
     const { toast } = useToast();
 
-    const [newDocFile, setNewDocFile] = useState<File | null>(null);
-    const [newDocTitle, setNewDocTitle] = useState('');
+    // State for uploading new documents - independent for each type to avoid conflicts
+    const [newRequiredDoc, setNewRequiredDoc] = useState<{ file: File | null; title: string }>({ file: null, title: '' });
+    const [newMiscDoc, setNewMiscDoc] = useState<{ file: File | null; title: string }>({ file: null, title: '' });
+
     const [uploadTarget, setUploadTarget] = useState<{ employeeId: string; type: 'required' | 'misc' } | null>(null);
     const [activeAccordionItem, setActiveAccordionItem] = useState<string | null>(null);
 
@@ -82,21 +83,21 @@ function EmployeeList({
         setDeleteConfirmOpen(true);
     }
     
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setNewDocFile(e.target.files[0]);
-        }
-    };
-    
     const handleUploadDocument = (employeeId: string, type: 'required' | 'misc') => {
-        if (!newDocFile || !newDocTitle) {
+        const docState = type === 'required' ? newRequiredDoc : newMiscDoc;
+        if (!docState.file || !docState.title) {
             toast({ variant: 'destructive', title: 'Upload Failed', description: 'Please select a file and provide a title.'});
             return;
         }
         setUploadTarget({ employeeId, type });
-        onUpload(employeeId, newDocFile, newDocTitle, type);
-        setNewDocFile(null);
-        setNewDocTitle('');
+        onUpload(employeeId, docState.file, docState.title, type);
+        
+        // Reset the correct form
+        if (type === 'required') {
+            setNewRequiredDoc({ file: null, title: '' });
+        } else {
+            setNewMiscDoc({ file: null, title: '' });
+        }
     };
     
     const isCurrentlyUploading = (employeeId: string, type: 'required' | 'misc') => {
@@ -132,10 +133,10 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.documents?.map((doc: DocumentFile) => (
                                             <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={`/files/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'required')}>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id)}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                             </div>
@@ -143,8 +144,8 @@ function EmployeeList({
                                         {(!employee.documents || employee.documents.length === 0) && <p className="text-sm text-muted-foreground">No required documents uploaded.</p>}
                                         <div className="mt-4 pt-4 border-t space-y-2">
                                             <h4 className="font-medium">Upload New Required Document</h4>
-                                            <Input placeholder="Document Title (e.g., Driver's License)" value={newDocTitle} onChange={e => setNewDocTitle(e.target.value)} />
-                                            <Input type="file" onChange={handleFileChange} />
+                                            <Input placeholder="Document Title (e.g., Driver's License)" value={newRequiredDoc.title} onChange={e => setNewRequiredDoc(prev => ({ ...prev, title: e.target.value }))} />
+                                            <Input type="file" onChange={e => setNewRequiredDoc(prev => ({...prev, file: e.target.files?.[0] || null}))} />
                                             <Button size="sm" onClick={() => handleUploadDocument(employee.id, 'required')} disabled={isCurrentlyUploading(employee.id, 'required')}>
                                                 {isCurrentlyUploading(employee.id, 'required') ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                                 Upload
@@ -158,10 +159,10 @@ function EmployeeList({
                                     <AccordionContent className="p-4 bg-muted/30 rounded-md space-y-2">
                                         {employee.miscDocuments?.map((doc: DocumentFile) => (
                                              <div key={doc.id} className="flex items-center justify-between gap-2 text-sm hover:bg-muted/50 p-1 rounded-md">
-                                                <a href={`/files/${encodeURIComponent(doc.id)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
                                                     <FileIcon className="h-4 w-4" /> {doc.title}
                                                 </a>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id, 'misc')}>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDeleteFile(employee.id, doc.id)}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                             </div>
@@ -169,8 +170,8 @@ function EmployeeList({
                                         {(!employee.miscDocuments || employee.miscDocuments.length === 0) && <p className="text-sm text-muted-foreground">No miscellaneous documents uploaded.</p>}
                                         <div className="mt-4 pt-4 border-t space-y-2">
                                             <h4 className="font-medium">Upload New Miscellaneous Document</h4>
-                                            <Input placeholder="Document Title (e.g., Performance Review)" value={newDocTitle} onChange={e => setNewDocTitle(e.target.value)} />
-                                            <Input type="file" onChange={handleFileChange} />
+                                            <Input placeholder="Document Title (e.g., Performance Review)" value={newMiscDoc.title} onChange={e => setNewMiscDoc(prev => ({...prev, title: e.target.value }))} />
+                                            <Input type="file" onChange={e => setNewMiscDoc(prev => ({...prev, file: e.target.files?.[0] || null}))} />
                                             <Button size="sm" onClick={() => handleUploadDocument(employee.id, 'misc')} disabled={isCurrentlyUploading(employee.id, 'misc')}>
                                                 {isCurrentlyUploading(employee.id, 'misc') ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                                 Upload
@@ -265,7 +266,6 @@ export default function EmployeesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const loadData = useCallback(async () => {
@@ -276,32 +276,29 @@ export default function EmployeesPage() {
   }, []);
 
   useEffect(() => {
-    startTransition(() => {
-        loadData();
-    });
+    loadData();
+    // Listen for storage changes to keep data in sync across tabs
+    window.addEventListener('storage', loadData);
+    return () => {
+      window.removeEventListener('storage', loadData);
+    };
   }, [loadData]);
   
   const onEmployeeAdded = () => {
     setIsFormOpen(false);
-    startTransition(() => {
-        loadData();
-    });
+    loadData();
   }
 
   const handleStatusChange = async (id: string, info: InactiveInfo) => {
     await updateCandidateStatus(id, 'inactive', info);
     toast({ title: 'Employee Updated', description: 'Status set to inactive.' });
-    startTransition(() => {
-        loadData();
-    });
+    loadData();
   }
   
   const handleDelete = async (id: string) => {
     await deleteCandidate(id);
     toast({ title: 'Employee Deleted', description: 'All employee data has been removed.' });
-    startTransition(() => {
-        loadData();
-    });
+    loadData();
   }
   
   const handleUpload = async (employeeId: string, file: File, title: string, type: 'required' | 'misc') => {
@@ -311,35 +308,29 @@ export default function EmployeesPage() {
       toast({ title: 'Uploading...', description: 'Please wait while the file is uploaded.'});
 
       try {
-          const fileName = `${employeeId}/${type}/${Date.now()}-${file.name}`;
-          await uploadKvFile(file, fileName);
-
-          // The data is already being saved on the server, we just need to re-fetch
-          startTransition(() => {
+          const result = await updateCandidateWithFileUpload(employeeId, file, title, type);
+          if (result.success) {
+            toast({ title: 'Upload Successful', description: `${title} has been added.`});
             loadData();
-          });
-          
-          toast({ title: 'Upload Successful', description: `${title} has been added.`});
-
+          } else {
+            throw new Error(result.error);
+          }
       } catch (error) {
           console.error(error);
-          toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the file.'});
+          toast({ variant: 'destructive', title: 'Upload Failed', description: (error as Error).message || 'Could not upload the file.'});
       } finally {
         setIsUploading(false);
       }
   }
 
-  const handleDeleteFile = async (employeeId: string, fileId: string, type: 'required' | 'misc') => {
+  const handleDeleteFile = async (employeeId: string, fileId: string) => {
       if (!confirm("Are you sure you want to delete this document?")) return;
 
       toast({ title: 'Deleting...', description: 'Please wait while the file is deleted.'});
       try {
-          await deleteFile(fileId);
-
-          startTransition(() => {
-            loadData();
-          });
+          await deleteEmployeeFile(employeeId, fileId);
           toast({ title: 'File Deleted', description: 'The document has been removed.'});
+          loadData();
       } catch (error) {
           console.error(error);
           toast({ variant: 'destructive', title: 'Deletion Failed', description: 'Could not delete the file.'});
@@ -358,7 +349,7 @@ export default function EmployeesPage() {
   }, [employees, searchTerm]);
 
 
-  if (loading || isPending) {
+  if (loading) {
     return (
          <div className="flex flex-1 items-center justify-center">
             <Briefcase className="h-12 w-12 text-muted-foreground animate-pulse" />

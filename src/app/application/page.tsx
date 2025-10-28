@@ -48,9 +48,14 @@ function ApplicationContent() {
         setProcess(foundProcess);
 
         if (foundCompany?.logo) {
-            // The logo field is a key to KV, so we fetch the URL
-            const url = await getFile(foundCompany.logo);
-            setLogoUrl(url);
+            try {
+                // The logo field is a key to KV, so we fetch the URL
+                const url = await getFile(foundCompany.logo);
+                setLogoUrl(url);
+            } catch (e) {
+                console.error("Failed to load company logo:", e);
+                setLogoUrl(null);
+            }
         } else {
             setLogoUrl(null);
         }

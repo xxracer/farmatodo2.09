@@ -18,7 +18,6 @@ import { format, parse } from "date-fns";
 import { extractEmployeeDataFromPdf } from "@/ai/flows/extract-employee-data";
 import { createLegacyEmployee } from "@/app/actions/client-actions";
 import { ExtractEmployeeDataOutput } from "@/lib/schemas";
-import { uploadKvFile } from "@/app/actions/kv-actions";
 
 
 // Helper to convert a File to a base64 data URI
@@ -75,9 +74,6 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
         setIsLoading(true);
         
         try {
-            // First, upload the PDF file to Vercel KV and get its key
-            const applicationPdfUrl = await uploadKvFile(originalPdfFile, `legacy-applications/${Date.now()}-${originalPdfFile.name}`);
-
             // The AI returns the date as a "YYYY-MM-DD" string. Parse it into a Date object.
             const expirationDateStr = extractedData.driversLicenseExpiration || "";
             const expirationDate = expirationDateStr ? parse(expirationDateStr, 'yyyy-MM-dd', new Date()) : undefined;
@@ -96,10 +92,9 @@ export function AddLegacyEmployeeForm({ onEmployeeAdded }: { onEmployeeAdded: ()
                 emergencyContact: extractedData.emergencyContact,
                 documents: [],
                 miscDocuments: [],
-                applicationPdfUrl: applicationPdfUrl, // Add the URL from KV
             };
             
-            const result = await createLegacyEmployee(employeeData);
+            const result = await createLegacyEmployee(employeeData, originalPdfFile);
             
             if (result.success) {
                 toast({ title: "Employee Added", description: `${extractedData.firstName} ${extractedData.lastName} has been added to the system.` });

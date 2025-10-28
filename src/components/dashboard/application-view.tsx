@@ -55,12 +55,11 @@ const DataRow = ({ label, value, isDate = false }: DataRowProps) => {
     );
 };
 
-const FileRow = ({ label, fileKey }: { label: string, fileKey?: string }) => {
-    if (!fileKey) return null;
+const FileRow = ({ label, fileUrl }: { label: string, fileUrl?: string }) => {
+    if (!fileUrl) return null;
 
     const downloadName = label.replace(/\s/g, '_');
-    const fileUrl = `/files/${encodeURIComponent(fileKey)}`;
-
+    
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <p className="font-medium text-muted-foreground">{label}</p>
@@ -230,17 +229,17 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
                 <CardDescription>Documents uploaded during the application and documentation phases.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                 <FileRow label="Original Application PDF" fileKey={data.applicationPdfUrl} />
-                 <FileRow label="Resume File" fileKey={data.resume} />
-                 <FileRow label="Driver's License" fileKey={data.driversLicense} />
-                 <FileRow label="Government-issued ID" fileKey={data.idCard} />
-                 <FileRow label="Proof of Address" fileKey={data.proofOfAddress} />
-                 <FileRow label="Form I-9" fileKey={data.i9} />
-                 <FileRow label="Form W-4" fileKey={data.w4} />
-                 <FileRow label="Educational Diplomas" fileKey={data.educationalDiplomas} />
+                 <FileRow label="Original Application PDF" fileUrl={data.applicationPdfUrl} />
+                 <FileRow label="Resume File" fileUrl={data.resume} />
+                 <FileRow label="Driver's License" fileUrl={data.driversLicense} />
+                 <FileRow label="Government-issued ID" fileUrl={data.idCard} />
+                 <FileRow label="Proof of Address" fileUrl={data.proofOfAddress} />
+                 <FileRow label="Form I-9" fileUrl={data.i9} />
+                 <FileRow label="Form W-4" fileUrl={data.w4} />
+                 <FileRow label="Educational Diplomas" fileUrl={data.educationalDiplomas} />
 
-                 {data.documents?.map(doc => <FileRow key={doc.id} label={doc.title} fileKey={doc.id} />)}
-                 {data.miscDocuments?.map(doc => <FileRow key={doc.id} label={doc.title} fileKey={doc.id} />)}
+                 {data.documents?.map(doc => <FileRow key={doc.id} label={doc.title} fileUrl={doc.url} />)}
+                 {data.miscDocuments?.map(doc => <FileRow key={doc.id} label={doc.title} fileUrl={doc.url} />)}
 
                 <DataRow label="Name on License" value={data.driversLicenseName} />
                 <DataRow label="License Expiration" value={data.driversLicenseExpiration} isDate={true}/>

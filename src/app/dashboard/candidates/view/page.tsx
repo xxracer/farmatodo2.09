@@ -10,7 +10,7 @@ import { type ApplicationData } from "@/lib/schemas";
 import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare, UserX } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useCallback, Suspense, useTransition } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 
 function ApplicationViewContent() {
     const router = useRouter();
@@ -20,8 +20,6 @@ function ApplicationViewContent() {
 
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isPending, startTransition] = useTransition();
-
 
     const loadData = useCallback(async () => {
         if (candidateId) {
@@ -35,24 +33,20 @@ function ApplicationViewContent() {
     }, [candidateId]);
 
     useEffect(() => {
-        startTransition(() => {
-            loadData();
-        });
+        loadData();
     }, [loadData]);
 
-    const handleAction = (action: (...args: any[]) => Promise<any>, successCallback: () => void, errorTitle: string) => {
-        startTransition(async () => {
-            try {
-                const result = await action();
-                if (result.success) {
-                    successCallback();
-                } else {
-                    toast({ variant: "destructive", title: errorTitle, description: result.error });
-                }
-            } catch (error) {
-                toast({ variant: "destructive", title: errorTitle, description: (error as Error).message });
+    const handleAction = async (action: () => Promise<any>, successCallback: () => void, errorTitle: string) => {
+        try {
+            const result = await action();
+            if (result.success) {
+                successCallback();
+            } else {
+                toast({ variant: "destructive", title: errorTitle, description: result.error });
             }
-        });
+        } catch (error) {
+            toast({ variant: "destructive", title: errorTitle, description: (error as Error).message });
+        }
     };
 
     const handleSetToInterview = (id: string) => {
@@ -93,7 +87,7 @@ function ApplicationViewContent() {
         );
     }
 
-    if (loading || isPending) {
+    if (loading) {
         return (
             <div className="flex flex-1 items-center justify-center">
                 <UserSearch className="h-12 w-12 text-muted-foreground animate-pulse" />

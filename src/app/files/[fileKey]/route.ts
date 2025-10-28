@@ -1,15 +1,14 @@
 
-import { getFileAsResponse } from "@/app/actions/kv-actions";
 import { NextRequest } from "next/server";
+
+// This route is no longer needed with localStorage.
+// However, we keep it to prevent build errors if it's referenced somewhere.
+// It will now return a 404.
 
 export async function GET(
     request: NextRequest,
     { params }: { params: { fileKey: string } }
 ) {
-    // The fileKey is URL-encoded, so we decode it.
-    // The fileKey should be the full, unique path as it was stored in Vercel KV.
-    const fileKey = decodeURIComponent(params.fileKey);
-
-    // No need to reconstruct the path, as the `fileKey` parameter now contains the full path.
-    return await getFileAsResponse(fileKey);
+    
+    return new Response('File access is now handled via data URIs with localStorage.', { status: 404 });
 }

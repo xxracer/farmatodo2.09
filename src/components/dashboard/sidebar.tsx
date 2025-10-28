@@ -42,13 +42,14 @@ export function DashboardSidebar() {
   useEffect(() => {
     checkDocs();
     
-    // Listen for a custom event to re-check documents
-    window.addEventListener('data-changed', checkDocs);
+    // Listen for a custom event dispatched on storage changes
+    const handleStorageChange = () => checkDocs();
+    window.addEventListener('storage', handleStorageChange);
     
     const interval = setInterval(checkDocs, 5 * 60 * 1000); // Poll every 5 minutes
 
     return () => {
-      window.removeEventListener('data-changed', checkDocs);
+      window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
   }, [pathname, checkDocs]);

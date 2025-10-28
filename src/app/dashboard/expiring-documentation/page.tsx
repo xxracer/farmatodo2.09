@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
 import { add, isBefore, format } from "date-fns";
 import { AlertTriangle, FileClock, Mail } from "lucide-react";
-import { useEffect, useState, useCallback, useTransition } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 // Helper to convert string to JS Date
@@ -38,7 +38,6 @@ export default function ExpiringDocumentationPage() {
   const [expiringPersonnel, setExpiringPersonnel] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
 
@@ -51,9 +50,12 @@ export default function ExpiringDocumentationPage() {
   }, []);
 
   useEffect(() => {
-    startTransition(() => {
-        fetchPersonnel();
-    });
+    fetchPersonnel();
+    // Listen for storage changes to keep data in sync across tabs
+    window.addEventListener('storage', fetchPersonnel);
+    return () => {
+        window.removeEventListener('storage', fetchPersonnel);
+    };
   }, [fetchPersonnel]);
 
   const handleRenewLicense = (candidate: ApplicationData) => {
@@ -72,7 +74,7 @@ export default function ExpiringDocumentationPage() {
     });
   };
 
-  if (loading || isPending) {
+  if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <FileClock className="h-12 w-12 text-muted-foreground animate-pulse" />

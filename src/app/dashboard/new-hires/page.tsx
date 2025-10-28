@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
 import { add, isBefore, format } from "date-fns";
 import { AlertTriangle, UserCheck, Mail } from "lucide-react";
-import { useEffect, useState, useCallback, useTransition } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 // Helper to convert string to JS Date
@@ -37,7 +37,6 @@ export default function NewHiresPage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
   const fetchNewHires = useCallback(async () => {
     setLoading(true);
@@ -47,9 +46,12 @@ export default function NewHiresPage() {
   }, []);
 
   useEffect(() => {
-    startTransition(() => {
-        fetchNewHires();
-    });
+    fetchNewHires();
+    // Listen for storage changes to keep data in sync across tabs
+    window.addEventListener('storage', fetchNewHires);
+    return () => {
+        window.removeEventListener('storage', fetchNewHires);
+    };
   }, [fetchNewHires]);
 
   const handleRenewLicense = (candidate: ApplicationData) => {
@@ -68,7 +70,7 @@ export default function NewHiresPage() {
     });
   };
 
-  if (loading || isPending) {
+  if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <UserCheck className="h-12 w-12 text-muted-foreground animate-pulse" />

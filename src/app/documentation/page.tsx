@@ -49,8 +49,13 @@ function DocumentationPageContent() {
             setProcess(foundProcess);
             
             if (foundCompany?.logo) {
-                const url = await getFile(foundCompany.logo);
-                setLogoUrl(url);
+                try {
+                    const url = await getFile(foundCompany.logo);
+                    setLogoUrl(url);
+                } catch(e) {
+                    console.error("Failed to load company logo:", e);
+                    setLogoUrl(null);
+                }
             } else {
                 setLogoUrl(null);
             }

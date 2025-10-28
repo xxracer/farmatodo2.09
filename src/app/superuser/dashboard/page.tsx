@@ -1,31 +1,34 @@
 
 'use client';
 
-import { useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCcw, LogOut, ShieldCheck } from "lucide-react";
+import { RefreshCcw, LogOut, ShieldCheck, Loader2 } from "lucide-react";
 import { deleteAllCompanies } from "@/app/actions/company-actions";
 import { resetDemoData } from "@/app/actions/client-actions";
 
 export default function SuperUserDashboardPage() {
-    const [isPending, startTransition] = useTransition();
+    const [isPending, setIsPending] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
 
-    const handleResetDemo = () => {
-        startTransition(async () => {
-            try {
-                await resetDemoData();
-                await deleteAllCompanies();
-                toast({ title: "Demo Reset Successful", description: "All company and candidate data has been cleared." });
-            } catch (error) {
-                toast({ variant: "destructive", title: "Demo Reset Failed", description: (error as Error).message });
-            }
-        });
+    const handleResetDemo = async () => {
+        setIsPending(true);
+        try {
+            // This now clears localStorage for candidates
+            await resetDemoData();
+            // This clears Vercel KV for companies
+            await deleteAllCompanies();
+            toast({ title: "Demo Reset Successful", description: "All company and candidate data has been cleared." });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Demo Reset Failed", description: (error as Error).message });
+        } finally {
+            setIsPending(false);
+        }
     };
 
     const handleLogout = () => {
@@ -50,7 +53,7 @@ export default function SuperUserDashboardPage() {
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" className="w-full" disabled={isPending}>
-                                <RefreshCcw className="mr-2 h-4 w-4" />
+                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
                                 {isPending ? "Resetting..." : "Reset All Demo Data"}
                             </Button>
                         </AlertDialogTrigger>

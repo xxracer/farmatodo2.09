@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getCandidates } from "@/app/actions/client-actions";
 import { CandidatesActions } from "./_components/candidates-actions";
 import { format } from "date-fns";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 // Helper to convert string to JS Date
@@ -26,22 +26,24 @@ export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const data = await getCandidates();
     setCandidates(data);
     setLoading(false);
-  };
-
-  useEffect(() => {
-    startTransition(() => {
-      loadData();
-    });
   }, []);
 
-  if (loading || isPending) {
+  useEffect(() => {
+    loadData();
+    // Listen for storage changes to keep data in sync across tabs
+    window.addEventListener('storage', loadData);
+    return () => {
+      window.removeEventListener('storage', loadData);
+    };
+  }, [loadData]);
+
+  if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Users className="h-12 w-12 text-muted-foreground animate-pulse" />

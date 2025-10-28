@@ -25,8 +25,6 @@ import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 import { RequiredDoc } from "@/lib/company-schemas"
 import Link from "next/link"
-import { uploadKvFile } from "@/app/actions/kv-actions"
-
 
 const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
     const shape: Record<string, any> = {};
@@ -44,6 +42,16 @@ const createDocumentationSchema = (requiredDocs: RequiredDoc[]) => {
 const officialDocLinks: Record<string, string> = {
     'i9': 'https://www.uscis.gov/sites/default/files/document/forms/i-9.pdf',
     'w4': 'https://www.irs.gov/pub/irs-pdf/fw4.pdf',
+}
+
+// Helper to convert a File to a base64 data URI
+async function fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 
@@ -76,11 +84,10 @@ export function DocumentationForm({ companyName, candidateId, requiredDocs }: { 
             for (const doc of requiredDocs) {
                 const file = data[doc.id as keyof typeof data];
                 if (file instanceof File) {
+                    const dataUrl = await fileToDataURL(file);
+                    // Map specific IDs to the correct field names in ApplicationData
                     const key = doc.id === 'proofOfIdentity' ? 'idCard' : doc.id;
-                    // Use a unique name for the file in KV storage
-                    const fileName = `${candidateId}/${key}-${file.name}`;
-                    const fileUrl = await uploadKvFile(file, fileName);
-                    documentsToUpload[key] = fileUrl; // Store the key from KV
+                    documentsToUpload[key] = dataUrl;
                 }
             }
 
