@@ -22,17 +22,18 @@ import {
   Briefcase,
   FileClock,
   BookOpenCheck,
-  Files,
+  ShieldCheck,
   AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useTransition } from "react";
 import { checkForExpiringDocuments } from "@/app/actions/client-actions";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const [showAlert, setShowAlert] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const checkDocs = useCallback(async () => {
     const hasExpiring = await checkForExpiringDocuments();
@@ -40,17 +41,22 @@ export function DashboardSidebar() {
   }, []);
 
   useEffect(() => {
-    checkDocs();
+    startTransition(() => {
+      checkDocs();
+    });
     
-    // Listen for a custom event dispatched on storage changes
-    const handleStorageChange = () => checkDocs();
-    window.addEventListener('storage', handleStorageChange);
-    
-    const interval = setInterval(checkDocs, 5 * 60 * 1000); // Poll every 5 minutes
+    const interval = setInterval(() => {
+        startTransition(() => {
+            checkDocs();
+        });
+    }, 5 * 60 * 1000); // Poll every 5 minutes
+
+    // Also listen for storage events to re-check immediately
+    window.addEventListener('storage', checkDocs);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
+      window.removeEventListener('storage', checkDocs);
     };
   }, [pathname, checkDocs]);
 
@@ -115,6 +121,18 @@ export function DashboardSidebar() {
            <SidebarMenuItem>
             <SidebarMenuButton
               asChild
+              isActive={pathname.startsWith("/dashboard/compliance-check")}
+              tooltip="Compliance Check"
+            >
+              <Link href="/dashboard/compliance-check">
+                <ShieldCheck />
+                <span>Compliance Check</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
               isActive={pathname.startsWith("/dashboard/expiring-documentation")}
               tooltip="Expiring Documentation"
             >
@@ -136,18 +154,6 @@ export function DashboardSidebar() {
               <Link href="/dashboard/in-services">
                 <BookOpenCheck />
                 <span>In-Services</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith("/dashboard/misc-documents")}
-              tooltip="Misc Documents"
-            >
-              <Link href="/dashboard/misc-documents">
-                <Files />
-                <span>Misc Docs</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
