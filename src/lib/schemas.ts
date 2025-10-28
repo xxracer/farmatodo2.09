@@ -45,6 +45,7 @@ export const applicationSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   firstName: z.string().min(1, "First name is required"),
   middleName: z.string().optional(),
+  email: z.string().email("Invalid email address").min(1, "Email is required"),
   date: z.date({
     required_error: "A date of application is required.",
   }),
@@ -134,15 +135,19 @@ export const applicationSchema = z.object({
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
 
-// This is the type for the data that will be stored in localStorage
+// This is the type for the data that will be stored
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
     created_at?: string;
-    resume?: string; // This will now be a Vercel KV key
-    driversLicense?: string; // This will now be a Vercel KV key
-    applicationPdfUrl?: string; // Vercel KV key for the original PDF from a legacy employee
+    dob?: string; // Date of birth YYYY-MM-DD
+    work_state?: string; // 2-letter state code
+    aka_names?: string[];
+    license_number?: string;
     
-    // New document fields from documentation form (will store Vercel KV keys)
+    resume?: string; 
+    driversLicense?: string;
+    applicationPdfUrl?: string;
+    
     idCard?: string;
     proofOfAddress?: string;
     i9?: string;
@@ -152,12 +157,22 @@ export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense
     documents?: DocumentFile[];
     miscDocuments?: DocumentFile[];
 
-    status?: 'candidate' | 'interview' | 'new-hire' | 'employee' | 'inactive';
+    status?: 'candidate' | 'interview' | 'new-hire' | 'employee' | 'inactive' | 'terminated';
     inactiveInfo?: {
       date: string;
       reason: string;
       description: string;
     };
+
+    // Compliance fields
+    consent_id?: string;
+    license_numbers?: {type: string, number: string, state: string}[];
+    monitoring_prefs?: any;
+    last_national_sweep_at?: string;
+    next_national_sweep_at?: string;
+
+    // Segregated sensitive identifiers (conceptual)
+    ssn_last4?: string;
 };
 
 export const interviewReviewSchema = z.object({
@@ -219,3 +234,5 @@ export const ExtractEmployeeDataOutputSchema = z.object({
   emergencyContact: z.string().describe("The employee's emergency contact (name and phone number)."),
 });
 export type ExtractEmployeeDataOutput = z.infer<typeof ExtractEmployeeDataOutputSchema>;
+
+    

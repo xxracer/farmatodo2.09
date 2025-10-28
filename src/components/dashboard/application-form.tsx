@@ -47,6 +47,7 @@ export function ApplicationForm({ companyName }: { companyName: string }) {
             lastName: "",
             firstName: "",
             middleName: "",
+            email: "",
             streetAddress: "",
             city: "",
             state: "",
@@ -172,6 +173,9 @@ export function ApplicationForm({ companyName }: { companyName: string }) {
                 <CardTitle className="font-headline">Contact Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+                 <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="jane.doe@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
                 <FormField control={form.control} name="streetAddress" render={({ field }) => (
                     <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
@@ -699,3 +703,5 @@ export function ApplicationForm({ companyName }: { companyName: string }) {
     </Form>
   )
 }
+
+    
