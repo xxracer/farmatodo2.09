@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  candidates Candidate[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      Role     @default(HR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+}
+
+model Candidate {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  status    Status   @default(PHASE1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+
+  documents Document[]
+  // When a candidate becomes an employee, a corresponding Employee record is created.
+  employee  Employee?
+}
+
+model Employee {
+  id        String   @id @default(cuid())
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+  candidateId String @unique
+
+  timeTrackings TimeTracking[]
+  payments      Payment[]
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  documentType  String
+  storagePath   String // This will be the path/URL from Vercel Blob
+  uploadDate    DateTime     @default(now())
+  status        DocStatus    @default(PENDING)
+
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  candidateId String
+}
+
+model TimeTracking {
+  id        String   @id @default(cuid())
+  date      DateTime
+  hoursWorked Float
+
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  employeeId String
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  amount     Float
+  payPeriod  String
+
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  employeeId String
+}
+
+
+enum Role {
+  HR
+  SUPERADMIN
+}
+
+enum Status {
+  PHASE1
+  PHASE2
+  PHASE3
+  HIRED
+  INACTIVE
+}
+
+enum DocStatus {
+  MISSING
+  PENDING
+  APPROVED
+}
